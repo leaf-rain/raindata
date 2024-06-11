@@ -1,0 +1,12 @@
+GrpcAddr: 192.168.31.100:8090
+Version: "v0.0.1"
+Mode: "test"
+LogConfig:
+  level: "debug"
+  caller: true
+  writer: "console"
+  encode: "json"
+  logFile:
+    maxSize: 100
+    output: 
+      - "logs"

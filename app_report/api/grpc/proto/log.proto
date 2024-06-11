@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option go_package = ".;raindata_pb";
+package raindata_pb;
+
+// Echo 服务，包含了4种类型API
+service LogServer {
+  // ClientStreamingE
+  rpc StreamReport(stream StreamReportRequest) returns (StreamReportResponse) {}
+}
+
+message StreamReportRequest {
+  string message = 1;
+}
+
+message StreamReportResponse {}

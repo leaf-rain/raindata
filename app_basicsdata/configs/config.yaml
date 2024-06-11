@@ -1,0 +1,23 @@
+GrpcAddr: 192.168.31.100:8090
+Version: "v0.0.1"
+Mode: "test"
+MetadataPath: "/raindata/metadata"
+LogConfig:
+  level: "debug"
+  caller: true
+  writer: "console"
+  encode: "json"
+  logFile:
+    maxSize: 100
+    output:
+      - "logs"
+EtcdConfig:
+  Endpoints:
+    - "192.168.31.100:2379"
+ClickhouseConfig:
+  host:
+    - "127.0.0.1:9000"
+  userName: "root"
+  password: "yeyangfengqi"
+  database: "test"
+  debug: "true"
