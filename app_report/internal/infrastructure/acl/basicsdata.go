@@ -10,5 +10,5 @@ type BasicsData interface {
 	PutMetadata(ctx context.Context, in *basicsdata_metadata.MetadataRequest) (*basicsdata_metadata.MetadataResponse, error)
 }
 
-type mudBall struct {
+type MudBallBasicsData struct {
 }
