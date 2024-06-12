@@ -1,15 +1,21 @@
 package main
 
-func iterateKeys(jsonStr string, prefix string) {
-
-}
+import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+)
 
 func main() {
-	jsonStr := `{
-		"name": "John",
-		"age": 30,
-		"city": "New York",
-	}`
+	key := []byte("gDyVgzwa0mFz9uUP7M6GQQ==")
+	data := []byte("1559129713_67297598215591297148AP6DT9ybtniUJfbwx20afc706a711eefc")
 
-	iterateKeys(jsonStr, "*")
+	h := hmac.New(sha256.New, key)
+	h.Write(data)
+	hash := h.Sum(nil)
+
+	// 将hash结果转换为16进制字符串
+	hashHex := hex.EncodeToString(hash)
+	fmt.Println("HMAC-SHA256 (Hex):", hashHex)
 }
