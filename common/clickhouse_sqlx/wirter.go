@@ -2,6 +2,7 @@ package clickhouse_sqlx
 
 import (
 	"github.com/leaf-rain/raindata/common/ecode"
+	"github.com/leaf-rain/raindata/common/parser"
 	"sync"
 )
 
@@ -25,7 +26,7 @@ var (
 
 // ClickHouse is an output service consumers from kafka messages
 type ClickHouse struct {
-	Dims      []*ColumnWithType
+	Dims      []*parser.ColumnWithType
 	NumDims   int
 	IdxSerID  int
 	NameKey   string
@@ -42,7 +43,7 @@ type ClickHouse struct {
 	DimSerID       string
 	DimMgmtID      string
 
-	seriesQuota *SeriesQuota
+	seriesQuota *parser.SeriesQuota
 
 	numFlying int32
 	mux       sync.Mutex

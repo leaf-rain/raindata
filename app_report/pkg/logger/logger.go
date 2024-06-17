@@ -15,8 +15,6 @@ import (
 	"time"
 )
 
-type AppLogger = zap.Logger
-
 type LogConfig struct {
 	StorageDays int    `json:"storageDays"`
 	LogDir      string `json:"logDir"`
@@ -24,7 +22,7 @@ type LogConfig struct {
 }
 
 // 初始化日志 logger
-func InitLog(cfg *LogConfig) (logger *AppLogger, err error) {
+func InitLogger(cfg *LogConfig) (logger *zap.Logger, err error) {
 	getWriter := func(filename string, storageDays int) (io.Writer, error) {
 		// 生成rotatelogs的Logger 实际生成的文件名 info.log.YYmmddHH
 		hook, err := rotatelogs.New(

@@ -16,20 +16,20 @@ import (
 
 // ClickhouseConfig configuration parameters
 type ClickhouseConfig struct {
-	Cluster  string
-	DB       string
-	Hosts    [][]string
-	Username string
-	Password string
-	Protocol string //native, http
+	Cluster  string     `json:"cluster,omitempty" yaml:"cluster"`
+	DB       string     `json:"DB,omitempty" yaml:"DB"`
+	Hosts    [][]string `json:"hosts,omitempty" yaml:"hosts"`
+	Username string     `json:"username,omitempty" yaml:"username"`
+	Password string     `json:"password,omitempty" yaml:"password"`
+	Protocol string     `json:"protocol,omitempty" yaml:"protocol"` //native, http
 
 	// Whether enable TLS encryption with clickhouse-server
-	Secure bool
+	Secure bool `json:"secure,omitempty" yaml:"secure"`
 	// Whether skip verify clickhouse-server cert
-	InsecureSkipVerify bool
+	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty" yaml:"insecureSkipVerify"`
 
-	RetryTimes   int // <=0 means retry infinitely
-	MaxOpenConns int
+	RetryTimes   int `json:"retryTimes,omitempty" yaml:"retryTimes"` // <=0 means retry infinitely
+	MaxOpenConns int `json:"maxOpenConns,omitempty" yaml:"maxOpenConns"`
 }
 
 func NewClickhouse(cfg *ClickhouseConfig) (*Conn, error) {
@@ -70,6 +70,13 @@ func NewClickhouse(cfg *ClickhouseConfig) (*Conn, error) {
 	for i := range cfg.Hosts {
 		opts.Addr = append(opts.Addr, cfg.Hosts[i]...)
 	}
+	if cfg.Username != "" && cfg.Password != "" && cfg.DB != "" {
+		opts.Auth = clickhouse.Auth{
+			Database: cfg.DB,
+			Username: cfg.Username,
+			Password: cfg.Password,
+		}
+	}
 	if proto == clickhouse.HTTP {
 		// refers to https://github.com/ClickHouse/clickhouse-go/issues/1150
 		// An obscure error in the HTTP protocol when using compression
@@ -86,6 +93,10 @@ func NewClickhouse(cfg *ClickhouseConfig) (*Conn, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+	err = conn.Ping()
+	if err != nil {
+		return nil, err
 	}
 	return &conn, nil
 }

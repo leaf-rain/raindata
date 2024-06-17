@@ -1,4 +1,4 @@
-package clickhouse_sqlx
+package parser
 
 import (
 	"fmt"
