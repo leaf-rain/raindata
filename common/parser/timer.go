@@ -53,5 +53,5 @@ func UnixFloat(sec, unit float64) (t time.Time) {
 		return Epoch
 	}
 	i, f := math.Modf(sec)
-	return time.Unix(int64(i), int64(f*1e9)).UTC()
+	return time.Unix(int64(i), int64(f*1e9))
 }

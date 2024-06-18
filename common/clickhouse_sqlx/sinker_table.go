@@ -2,43 +2,27 @@ package clickhouse_sqlx
 
 import (
 	"context"
+	"github.com/leaf-rain/raindata/common/parser"
 	"go.uber.org/zap"
-	"math"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
+// Decoder decodes the contents of b into v.
+// It's primarily used for decoding contents of a file into a map[string]any.
+type Decoder interface {
+	Decode(b []byte, v map[string]any) error
+}
+
 type SinkerTableConfig struct {
-	TableName string
-	Database  string
-
-	// AutoSchema will auto fetch the schema from clickhouse
-	AutoSchema     bool
-	ExcludeColumns []string
-	Dims           []struct {
-		Name       string
-		Type       string
-		SourceName string
-	} `json:"dims"`
-	// DynamicSchema will add columns present in message to clickhouse. Requires AutoSchema be true.
-	DynamicSchema struct {
-		Enable      bool
-		NotNullable bool
-		MaxDims     int // the upper limit of dynamic columns number, <=0 means math.MaxInt16. protecting dirty data attack
-		// A column is added for new key K if all following conditions are true:
-		// - K isn't in ExcludeColumns
-		// - number of existing columns doesn't reach MaxDims-1
-		// - WhiteList is empty, or K matchs WhiteList
-		// - BlackList is empty, or K doesn't match BlackList
-		WhiteList string // the regexp of white list
-		BlackList string // the regexp of black list
-	}
-
+	TableName     string
+	Database      string
 	FlushInterval int
 	BufferSize    int
-	TimeZone      string  `json:"timeZone"`
-	TimeUnit      float64 `json:"timeUnit"`
+	TimeZone      string
+	TimeUnit      float64
+	Parse         string
 }
 
 // SinkerTable object maintains number of task for each partition
@@ -48,33 +32,44 @@ type SinkerTable struct {
 	clusterConn *ClickhouseCluster
 	ctx         context.Context
 	cancel      context.CancelFunc
-	dataCh      chan interface{}
+	fetchCH     chan Fetch
 	exitCh      chan struct{}
 	processWg   sync.WaitGroup
 	mux         sync.Mutex
 	commitDone  *sync.Cond
 	state       atomic.Uint32
+	parser      parser.Parser
+	fieldMap    sync.Map
 
-	data []interface{}
+	data []string
 
 	// table相关
 	sinkerTableConfig *SinkerTableConfig
 }
 
 // NewSinkerTable get an instance of sinker with the task list
-func NewSinkerTable(ctx context.Context, config *ClickhouseConfig, cc *ClickhouseCluster, logger *zap.Logger, sinkerTableConfig *SinkerTableConfig) (*SinkerTable, error) {
+func NewSinkerTable(ctx context.Context, config *ClickhouseConfig, cc *ClickhouseCluster, logger *zap.Logger, sinkerTableConfig *SinkerTableConfig, parser parser.Parser) (*SinkerTable, error) {
 	s := &SinkerTable{
 		logger:            logger,
 		config:            config,
 		clusterConn:       cc,
 		ctx:               ctx,
-		dataCh:            make(chan interface{}, 1000),
+		fetchCH:           make(chan Fetch, 1000),
 		exitCh:            make(chan struct{}),
 		sinkerTableConfig: sinkerTableConfig,
+		parser:            parser,
 	}
 	s.state.Store(StateStopped)
 	s.commitDone = sync.NewCond(&s.mux)
+	s.flushFields()
 	return s, nil
+}
+
+func (c *SinkerTable) flushFields() {
+	// todo:查询表已经存在的字段信息存储到field map中
+	conn := c.clusterConn.GetShardConn(time.Now().Unix())
+	conn.NextGoodReplica()
+
 }
 
 func (c *SinkerTable) start() {
@@ -110,8 +105,21 @@ func (c *SinkerTable) processFetch() {
 		if bufLength > 0 {
 			c.logger.Info(c.sinkerTableConfig.TableName+" flush msg.", zap.String("traceId", traceId), zap.String("with", with), zap.Int("bufLength", bufLength))
 		}
-		var wg sync.WaitGroup
+		// todo: 校验是否有没有添加的字段
+		var err error
+		var parse parser.Metric
+		var tmp = make([][]byte, len(c.data))
+		for i := range c.data {
+			parse, err = c.parser.Parse([]byte(c.data[i]))
+			if err != nil {
+				c.logger.Error("[processFetch] parser.Parse failed.", zap.String("traceId", traceId), zap.String("with", with), zap.Error(err))
+				continue
+			}
+			tmp[i] = []byte(c.data[i])
+		}
+		c.data = c.data[:]
 		// todo:将数据写进数据库
+
 	}
 
 	ticker := time.NewTicker(time.Duration(c.sinkerTableConfig.FlushInterval) * time.Second)
@@ -120,112 +128,26 @@ func (c *SinkerTable) processFetch() {
 	wait := false
 	for {
 		select {
-		case data := <-c.dataCh:
+		case fetch := <-c.fetchCH:
 			if c.state.Load() == StateStopped {
 				continue
 			}
-			fetch := fetches.Fetch.Records()
 			if wait {
 				c.logger.Info(c.sinkerTableConfig.TableName+" flush msg.", zap.String("traceId", traceId),
 					zap.String("message", "bufThreshold not reached, use old traceId"),
 					zap.String("trace_id", traceId),
-					zap.Int("records", len(fetch)),
+					zap.Int("records", len(fetch.Data)),
 					zap.Int("totalLength", bufLength))
 			} else {
-				traceId = fetches.TraceId
-				util.LogTrace(traceId, util.TraceKindProcessStart, zap.Int("records", len(fetch)))
+				traceId = fetch.TraceId
+				c.logger.Info("process fetch.", zap.String("traceId", fetch.TraceId), zap.Int("records", len(fetch.Data)))
 			}
-			items, done := int64(len(fetch)), int64(-1)
-			var concurrency int
-			if concurrency = int(items/1000) + 1; concurrency > MaxParallelism {
-				concurrency = MaxParallelism
-			}
-
-			var wg sync.WaitGroup
-			var err error
-			wg.Add(concurrency)
-			for i := 0; i < concurrency; i++ {
-				go func() {
-					for {
-						index := atomic.AddInt64(&done, 1)
-						if index >= items || c.state.Load() == util.StateStopped {
-							wg.Done()
-							break
-						}
-
-						rec := fetch[index]
-						msg := &model.InputMessage{
-							Topic:     rec.Topic,
-							Partition: int(rec.Partition),
-							Key:       rec.Key,
-							Value:     rec.Value,
-							Offset:    rec.Offset,
-							Timestamp: &rec.Timestamp,
-						}
-						tablename := ""
-						for _, it := range rec.Headers {
-							if it.Key == "__table_name" {
-								tablename = string(it.Value)
-								break
-							}
-						}
-
-						c.tasks.Range(func(key, value any) bool {
-							tsk := value.(*Service)
-							if (tablename != "" && tsk.clickhouse.TableName == tablename) || tsk.taskCfg.Topic == rec.Topic {
-								//bufLength++
-								atomic.AddInt64(&bufLength, 1)
-								if e := tsk.Put(msg, traceId, flushFn); e != nil {
-									atomic.StoreInt64(&done, items)
-									err = e
-									// decrise the error record
-									util.Rs.Dec(1)
-									return false
-								}
-							}
-							return true
-						})
-					}
-				}()
-			}
-			wg.Wait()
-
-			// record the latest offset in order
-			// assume the c.state was reset to stopped when facing error, so that further fetch won't get processed
-			if err == nil {
-				for _, f := range *fetches.Fetch {
-					for i := range f.Topics {
-						ft := &f.Topics[i]
-						if recMap[ft.Topic] == nil {
-							recMap[ft.Topic] = make(map[int32]*model.BatchRange)
-						}
-						for j := range ft.Partitions {
-							fpr := ft.Partitions[j].Records
-							if len(fpr) == 0 {
-								continue
-							}
-							lastOff := fpr[len(fpr)-1].Offset
-							firstOff := fpr[0].Offset
-
-							or, ok := recMap[ft.Topic][ft.Partitions[j].Partition]
-							if !ok {
-								or = &model.BatchRange{Begin: math.MaxInt64, End: -1}
-								recMap[ft.Topic][ft.Partitions[j].Partition] = or
-							}
-							if or.End < lastOff {
-								or.End = lastOff
-							}
-							if or.Begin > firstOff {
-								or.Begin = firstOff
-							}
-						}
-					}
-				}
-			}
-
-			if bufLength > int64(bufThreshold) {
+			// 将数据添加到本地
+			c.data = append(c.data, fetch.Data...)
+			bufLength = len(c.data)
+			if bufLength > c.sinkerTableConfig.BufferSize {
 				flushFn(traceId, "bufLength reached")
-				ticker.Reset(time.Duration(c.grpConfig.FlushInterval) * time.Second)
+				ticker.Reset(time.Duration(c.sinkerTableConfig.FlushInterval) * time.Second)
 				wait = false
 			} else {
 				wait = true
@@ -233,7 +155,7 @@ func (c *SinkerTable) processFetch() {
 		case <-ticker.C:
 			flushFn(traceId, "ticker.C triggered")
 		case <-c.ctx.Done():
-			util.Logger.Info("stopped processing loop", zap.String("group", c.grpConfig.Name))
+			c.logger.Info("stopped processing loop", zap.String("table", c.sinkerTableConfig.Database+"."+c.sinkerTableConfig.TableName))
 			return
 		}
 	}

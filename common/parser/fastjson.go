@@ -9,7 +9,6 @@ import (
 	"golang.org/x/exp/constraints"
 	"math"
 	"net"
-	"regexp"
 	"strconv"
 	"sync"
 	"time"
@@ -20,9 +19,56 @@ var EmpytObject = make(map[string]interface{})
 
 // FastjsonParser, parser for get data in json format
 type FastjsonParser struct {
-	pp     *Pool
-	fjp    fastjson.Parser
-	fields *fastjson.Object
+	fjp          fastjson.Parser
+	fields       *fastjson.Object
+	value        *fastjson.Value
+	knownLayouts *sync.Map
+	pool         sync.Pool
+	fieldsStr    string
+	timeUnit     float64
+	local        *time.Location
+	logger       *zap.Logger
+}
+
+func NewFastjsonParser(fieldsStr string, timeUnit float64, local *time.Location, logger *zap.Logger) (*FastjsonParser, error) {
+	buf := new(FastjsonParser)
+	buf.fieldsStr = fieldsStr
+	buf.knownLayouts = &sync.Map{}
+	buf.logger = logger
+	if fieldsStr != "" {
+		value, err := fastjson.Parse(fieldsStr)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to parse fields as a valid json object")
+			return nil, err
+		}
+		buf.fields, err = value.Object()
+		if err != nil {
+			err = errors.Wrapf(err, "failed to retrive fields member")
+			return nil, err
+		}
+	}
+	buf.timeUnit = 1
+	if timeUnit != 0 {
+		buf.timeUnit = timeUnit
+	}
+	if local != nil {
+		buf.local = local
+	} else {
+		buf.local = time.Local
+	}
+	buf.pool = sync.Pool{
+		New: func() interface{} {
+			return &FastjsonMetric{
+				parser: buf,
+			}
+		},
+	}
+	return buf, nil
+}
+
+type FastjsonMetric struct {
+	parser *FastjsonParser
+	value  *fastjson.Value
 }
 
 func (p *FastjsonParser) Parse(bs []byte) (metric Metric, err error) {
@@ -37,74 +83,77 @@ func (p *FastjsonParser) Parse(bs []byte) (metric Metric, err error) {
 			value.Set(string(key), v)
 		})
 	}
-
-	metric = &FastjsonMetric{pp: p.pp, value: value}
+	buf, _ := p.pool.Get().(*FastjsonMetric)
+	if buf == nil {
+		buf = new(FastjsonMetric)
+	}
+	buf.parser = p
+	buf.value = value
 	return
 }
 
-type FastjsonMetric struct {
-	pp    *Pool
-	value *fastjson.Value
+func (p *FastjsonMetric) GetString(key string, nullable bool) (val interface{}) {
+	return getString(p.value.Get(key), nullable)
 }
 
-func (c *FastjsonMetric) GetString(key string, nullable bool) (val interface{}) {
-	return getString(c.value.Get(key), nullable)
+func (p *FastjsonMetric) GetBool(key string, nullable bool) interface{} {
+	return getBool(p.value.Get(key), nullable)
 }
 
-func (c *FastjsonMetric) GetBool(key string, nullable bool) interface{} {
-	return getBool(c.value.Get(key), nullable)
+func (p *FastjsonMetric) GetDecimal(key string, nullable bool) (val interface{}) {
+	return getDecimal(p.value.Get(key), nullable)
 }
 
-func (c *FastjsonMetric) GetDecimal(key string, nullable bool) (val interface{}) {
-	return getDecimal(c.value.Get(key), nullable)
+func (p *FastjsonMetric) GetInt8(key string, nullable bool) (val interface{}) {
+	return FastjsonGetInt[int8](p.value.Get(key), nullable, math.MinInt8, math.MaxInt8)
 }
 
-func (c *FastjsonMetric) GetInt8(key string, nullable bool) (val interface{}) {
-	return FastjsonGetInt[int8](c.value.Get(key), nullable, math.MinInt8, math.MaxInt8)
+func (p *FastjsonMetric) GetInt16(key string, nullable bool) (val interface{}) {
+	return FastjsonGetInt[int16](p.value.Get(key), nullable, math.MinInt16, math.MaxInt16)
 }
 
-func (c *FastjsonMetric) GetInt16(key string, nullable bool) (val interface{}) {
-	return FastjsonGetInt[int16](c.value.Get(key), nullable, math.MinInt16, math.MaxInt16)
+func (p *FastjsonMetric) GetInt32(key string, nullable bool) (val interface{}) {
+	return FastjsonGetInt[int32](p.value.Get(key), nullable, math.MinInt32, math.MaxInt32)
 }
 
-func (c *FastjsonMetric) GetInt32(key string, nullable bool) (val interface{}) {
-	return FastjsonGetInt[int32](c.value.Get(key), nullable, math.MinInt32, math.MaxInt32)
+func (p *FastjsonMetric) GetInt64(key string, nullable bool) (val interface{}) {
+	return FastjsonGetInt[int64](p.value.Get(key), nullable, math.MinInt64, math.MaxInt64)
 }
 
-func (c *FastjsonMetric) GetInt64(key string, nullable bool) (val interface{}) {
-	return FastjsonGetInt[int64](c.value.Get(key), nullable, math.MinInt64, math.MaxInt64)
+func (p *FastjsonMetric) GetUint8(key string, nullable bool) (val interface{}) {
+	return FastjsonGetUint[uint8](p.value.Get(key), nullable, math.MaxUint8)
 }
 
-func (c *FastjsonMetric) GetUint8(key string, nullable bool) (val interface{}) {
-	return FastjsonGetUint[uint8](c.value.Get(key), nullable, math.MaxUint8)
+func (p *FastjsonMetric) GetUint16(key string, nullable bool) (val interface{}) {
+	return FastjsonGetUint[uint16](p.value.Get(key), nullable, math.MaxUint16)
 }
 
-func (c *FastjsonMetric) GetUint16(key string, nullable bool) (val interface{}) {
-	return FastjsonGetUint[uint16](c.value.Get(key), nullable, math.MaxUint16)
+func (p *FastjsonMetric) GetUint32(key string, nullable bool) (val interface{}) {
+	return FastjsonGetUint[uint32](p.value.Get(key), nullable, math.MaxUint32)
 }
 
-func (c *FastjsonMetric) GetUint32(key string, nullable bool) (val interface{}) {
-	return FastjsonGetUint[uint32](c.value.Get(key), nullable, math.MaxUint32)
+func (p *FastjsonMetric) GetUint64(key string, nullable bool) (val interface{}) {
+	return FastjsonGetUint[uint64](p.value.Get(key), nullable, math.MaxUint64)
 }
 
-func (c *FastjsonMetric) GetUint64(key string, nullable bool) (val interface{}) {
-	return FastjsonGetUint[uint64](c.value.Get(key), nullable, math.MaxUint64)
+func (p *FastjsonMetric) GetFloat32(key string, nullable bool) (val interface{}) {
+	return FastjsonGetFloat[float32](p.value.Get(key), nullable, math.MaxFloat32)
 }
 
-func (c *FastjsonMetric) GetFloat32(key string, nullable bool) (val interface{}) {
-	return FastjsonGetFloat[float32](c.value.Get(key), nullable, math.MaxFloat32)
+func (p *FastjsonMetric) GetFloat64(key string, nullable bool) (val interface{}) {
+	return FastjsonGetFloat[float64](p.value.Get(key), nullable, math.MaxFloat64)
 }
 
-func (c *FastjsonMetric) GetFloat64(key string, nullable bool) (val interface{}) {
-	return FastjsonGetFloat[float64](c.value.Get(key), nullable, math.MaxFloat64)
+func (p *FastjsonMetric) GetIPv4(key string, nullable bool) (val interface{}) {
+	return getIPv4(p.value.Get(key), nullable)
 }
 
-func (c *FastjsonMetric) GetIPv4(key string, nullable bool) (val interface{}) {
-	return getIPv4(c.value.Get(key), nullable)
+func (p *FastjsonMetric) GetIPv6(key string, nullable bool) (val interface{}) {
+	return getIPv6(p.value.Get(key), nullable)
 }
 
-func (c *FastjsonMetric) GetIPv6(key string, nullable bool) (val interface{}) {
-	return getIPv6(c.value.Get(key), nullable)
+func (p *FastjsonMetric) Range(f func(key []byte, v *fastjson.Value)) {
+	p.value.Range(f)
 }
 
 func FastjsonGetInt[T constraints.Signed](v *fastjson.Value, nullable bool, min, max int64) (val interface{}) {
@@ -168,25 +217,25 @@ func FastjsonGetFloat[T constraints.Float](v *fastjson.Value, nullable bool, max
 	return
 }
 
-func (c *FastjsonMetric) GetDateTime(key string, nullable bool) (val interface{}) {
-	return getDateTime(c, key, c.value.Get(key), nullable)
+func (p *FastjsonMetric) GetDateTime(key string, nullable bool) (val interface{}) {
+	return getDateTime(p, key, p.value.Get(key), nullable)
 }
 
-func (c *FastjsonMetric) GetObject(key string, nullable bool) (val interface{}) {
-	v := c.value.Get(key)
+func (p *FastjsonMetric) GetObject(key string, nullable bool) (val interface{}) {
+	v := p.value.Get(key)
 	val = val2map(v)
 	return
 }
 
-func (c *FastjsonMetric) GetArray(key string, typ int) (val interface{}) {
-	return getArray(c, key, c.value.Get(key), typ)
+func (p *FastjsonMetric) GetArray(key string, typ int) (val interface{}) {
+	return getArray(p, key, p.value.Get(key), typ)
 }
 
-func (c *FastjsonMetric) GetMap(key string, typeinfo *TypeInfo) (val interface{}) {
-	return getMap(c, c.value.Get(key), typeinfo)
+func (p *FastjsonMetric) GetMap(key string, typeinfo *TypeInfo) (val interface{}) {
+	return getMap(p, p.value.Get(key), typeinfo)
 }
 
-func (c *FastjsonMetric) val2OrderedMap(v *fastjson.Value, typeinfo *TypeInfo) (m *OrderedMap) {
+func (p *FastjsonMetric) val2OrderedMap(v *fastjson.Value, typeinfo *TypeInfo) (m *OrderedMap) {
 	var err error
 	var obj *fastjson.Object
 	m = NewOrderedMap()
@@ -197,8 +246,8 @@ func (c *FastjsonMetric) val2OrderedMap(v *fastjson.Value, typeinfo *TypeInfo) (
 		return
 	}
 	obj.Visit(func(key []byte, v *fastjson.Value) {
-		rawKey := c.castMapKeyByType(key, typeinfo.MapKey)
-		m.Put(rawKey, c.castMapValueByType(string(key), v, typeinfo.MapValue))
+		rawKey := p.castMapKeyByType(key, typeinfo.MapKey)
+		m.Put(rawKey, p.castMapValueByType(string(key), v, typeinfo.MapValue))
 	})
 	return
 }
@@ -322,7 +371,7 @@ func getDecimal(v *fastjson.Value, nullable bool) (val interface{}) {
 	return
 }
 
-func getDateTime(c *FastjsonMetric, sourcename string, v *fastjson.Value, nullable bool) (val interface{}) {
+func getDateTime(p *FastjsonMetric, sourcename string, v *fastjson.Value, nullable bool) (val interface{}) {
 	if !fjCompatibleDateTime(v) {
 		val = getDefaultDateTime(nullable)
 		return
@@ -343,7 +392,7 @@ func getDateTime(c *FastjsonMetric, sourcename string, v *fastjson.Value, nullab
 			val = getDefaultDateTime(nullable)
 			return
 		}
-		if val, err = c.ParseDateTime(sourcename, string(b)); err != nil {
+		if val, err = p.ParseDateTime(sourcename, string(b)); err != nil {
 			val = getDefaultDateTime(nullable)
 		}
 	default:
@@ -355,7 +404,7 @@ func getDateTime(c *FastjsonMetric, sourcename string, v *fastjson.Value, nullab
 // Assuming that all values of a field of kafka message has the same layout, and layouts of each field are unrelated.
 // Automatically detect the layout from till the first successful detection and reuse that layout forever.
 // Return time in UTC.
-func (c *FastjsonMetric) ParseDateTime(key string, val string) (t time.Time, err error) {
+func (p *FastjsonMetric) ParseDateTime(key string, val string) (t time.Time, err error) {
 	var layout string
 	var lay interface{}
 	var ok bool
@@ -364,14 +413,14 @@ func (c *FastjsonMetric) ParseDateTime(key string, val string) (t time.Time, err
 		err = ErrParseDateTime
 		return
 	}
-	if lay, ok = c.pp.knownLayouts.Load(key); !ok {
+	if lay, ok = p.parser.knownLayouts.Load(key); !ok {
 		t2, layout = parseInLocation(val, time.Local)
 		if layout == "" {
 			err = ErrParseDateTime
 			return
 		}
 		t = t2
-		c.pp.knownLayouts.Store(key, layout)
+		p.parser.knownLayouts.Store(key, layout)
 		return
 	}
 	if layout, ok = lay.(string); !ok {
@@ -399,7 +448,7 @@ func parseInLocation(val string, loc *time.Location) (t time.Time, layout string
 	return
 }
 
-func getArray(c *FastjsonMetric, sourcename string, v *fastjson.Value, typ int) (val interface{}) {
+func getArray(p *FastjsonMetric, sourcename string, v *fastjson.Value, typ int) (val interface{}) {
 	var array []*fastjson.Value
 	if v != nil {
 		array, _ = v.Array()
@@ -464,14 +513,14 @@ func getArray(c *FastjsonMetric, sourcename string, v *fastjson.Value, typ int) 
 				if f, err := e.Float64(); err != nil {
 					t = Epoch
 				} else {
-					t = UnixFloat(f, c.pp.timeUnit)
+					t = UnixFloat(f, p.parser.timeUnit)
 				}
 			case fastjson.TypeString:
 				if b, err := e.StringBytes(); err != nil || len(b) == 0 {
 					t = Epoch
 				} else {
 					var err error
-					if t, err = c.pp.ParseDateTime(sourcename, string(b)); err != nil {
+					if t, err = ParseDateTime(sourcename, string(b), p.parser.knownLayouts, p.parser.local); err != nil {
 						t = Epoch
 					}
 				}
@@ -505,75 +554,75 @@ func getArray(c *FastjsonMetric, sourcename string, v *fastjson.Value, typ int) 
 		}
 		val = arr
 	default:
-		c.pp.logger.Fatal(fmt.Sprintf("LOGIC ERROR: unsupported array type %v", typ))
+		p.parser.logger.Fatal(fmt.Sprintf("LOGIC ERROR: unsupported array type %v", typ))
 	}
 	return
 }
 
-func getMap(c *FastjsonMetric, v *fastjson.Value, typeinfo *TypeInfo) (val interface{}) {
+func getMap(p *FastjsonMetric, v *fastjson.Value, typeinfo *TypeInfo) (val interface{}) {
 	if v == nil || v.Type() == fastjson.TypeObject {
-		val = c.val2OrderedMap(v, typeinfo)
+		val = p.val2OrderedMap(v, typeinfo)
 	} else {
-		c.pp.logger.Fatal(fmt.Sprintf("SOURCE ERROR: unsupported map type: %v", v.Type()))
+		p.parser.logger.Fatal(fmt.Sprintf("SOURCE ERROR: unsupported map type: %v", v.Type()))
 	}
 	return
 }
 
-func (c *FastjsonMetric) castMapKeyByType(key []byte, typeinfo *TypeInfo) (val interface{}) {
+func (p *FastjsonMetric) castMapKeyByType(key []byte, typeinfo *TypeInfo) (val interface{}) {
 	switch typeinfo.Type {
 	case Int8:
 		if res, err := strconv.ParseInt(string(key), 10, 8); err == nil {
 			return int8(res)
 		} else {
-			c.pp.logger.Error("failed to parse map key", zap.Error(err))
+			p.parser.logger.Error("failed to parse map key", zap.Error(err))
 		}
 	case Int16:
 		if res, err := strconv.ParseInt(string(key), 10, 16); err == nil {
 			return int16(res)
 		} else {
-			c.pp.logger.Error("failed to parse map key", zap.Error(err))
+			p.parser.logger.Error("failed to parse map key", zap.Error(err))
 		}
 	case Int32:
 		if res, err := strconv.ParseInt(string(key), 10, 32); err == nil {
 			return int32(res)
 		} else {
-			c.pp.logger.Error("failed to parse map key", zap.Error(err))
+			p.parser.logger.Error("failed to parse map key", zap.Error(err))
 		}
 	case Int64:
 		if res, err := strconv.ParseInt(string(key), 10, 64); err == nil {
 			return int64(res)
 		} else {
-			c.pp.logger.Error("failed to parse map key", zap.Error(err))
+			p.parser.logger.Error("failed to parse map key", zap.Error(err))
 		}
 	case UInt8:
 		if res, err := strconv.ParseUint(string(key), 10, 8); err == nil {
 			return uint8(res)
 		} else {
-			c.pp.logger.Error("failed to parse map key", zap.Error(err))
+			p.parser.logger.Error("failed to parse map key", zap.Error(err))
 		}
 	case UInt16:
 		if res, err := strconv.ParseUint(string(key), 10, 16); err == nil {
 			return uint16(res)
 		} else {
-			c.pp.logger.Error("failed to parse map key", zap.Error(err))
+			p.parser.logger.Error("failed to parse map key", zap.Error(err))
 		}
 	case UInt32:
 		if res, err := strconv.ParseUint(string(key), 10, 32); err == nil {
 			return uint32(res)
 		} else {
-			c.pp.logger.Error("failed to parse map key", zap.Error(err))
+			p.parser.logger.Error("failed to parse map key", zap.Error(err))
 		}
 	case UInt64:
 		if res, err := strconv.ParseUint(string(key), 10, 64); err == nil {
 			return uint64(res)
 		} else {
-			c.pp.logger.Error("failed to parse map key", zap.Error(err))
+			p.parser.logger.Error("failed to parse map key", zap.Error(err))
 		}
 	case DateTime:
-		if res, err := c.pp.ParseDateTime(string(key), string(key)); err == nil {
+		if res, err := ParseDateTime(string(key), string(key), p.parser.knownLayouts, p.parser.local); err == nil {
 			return res
 		} else {
-			c.pp.logger.Error("failed to parse map key", zap.Error(err))
+			p.parser.logger.Error("failed to parse map key", zap.Error(err))
 		}
 		val = getDefaultDateTime(typeinfo.Nullable)
 	case String:
@@ -583,17 +632,17 @@ func (c *FastjsonMetric) castMapKeyByType(key []byte, typeinfo *TypeInfo) (val i
 	case Float64:
 		fallthrough
 	case Bool:
-		c.pp.logger.Fatal("unsupported map key type")
+		p.parser.logger.Fatal("unsupported map key type")
 	default:
-		c.pp.logger.Fatal("LOGIC ERROR: reached switch default condition")
+		p.parser.logger.Fatal("LOGIC ERROR: reached switch default condition")
 	}
 
 	return
 }
 
-func (c *FastjsonMetric) castMapValueByType(sourcename string, value *fastjson.Value, typeinfo *TypeInfo) (val interface{}) {
+func (p *FastjsonMetric) castMapValueByType(sourcename string, value *fastjson.Value, typeinfo *TypeInfo) (val interface{}) {
 	if typeinfo.Array {
-		val = getArray(c, sourcename, value, typeinfo.Type)
+		val = getArray(p, sourcename, value, typeinfo.Type)
 		return
 	} else {
 		switch typeinfo.Type {
@@ -626,15 +675,15 @@ func (c *FastjsonMetric) castMapValueByType(sourcename string, value *fastjson.V
 		case Decimal:
 			val = getDecimal(value, typeinfo.Nullable)
 		case DateTime:
-			val = getDateTime(c, sourcename, value, typeinfo.Nullable)
+			val = getDateTime(p, sourcename, value, typeinfo.Nullable)
 		case String:
 			val = getString(value, typeinfo.Nullable)
 		case Map:
-			val = getMap(c, value, typeinfo)
+			val = getMap(p, value, typeinfo)
 		case Object:
 			val = val2map(value)
 		default:
-			c.pp.logger.Fatal("LOGIC ERROR: reached switch default condition")
+			p.parser.logger.Fatal("LOGIC ERROR: reached switch default condition")
 		}
 	}
 	return
@@ -692,32 +741,6 @@ func FastjsonFloatArray[T constraints.Float](a []*fastjson.Value, max float64) (
 		}
 		arr = append(arr, val)
 	}
-	return
-}
-
-func (c *FastjsonMetric) GetNewKeys(knownKeys, newKeys, warnKeys *sync.Map, white, black *regexp.Regexp, partition int, offset int64) (foundNew bool) {
-	var obj *fastjson.Object
-	var err error
-	if obj, err = c.value.Object(); err != nil {
-		return
-	}
-	obj.Visit(func(key []byte, v *fastjson.Value) {
-		strKey := string(key)
-		if _, loaded := knownKeys.LoadOrStore(strKey, nil); !loaded {
-			if (white == nil || white.MatchString(strKey)) &&
-				(black == nil || !black.MatchString(strKey)) {
-				if typ, arr := fjDetectType(v, 0); typ != Unknown && typ != Object && !arr {
-					newKeys.Store(strKey, typ)
-					foundNew = true
-				} else if _, loaded = warnKeys.LoadOrStore(strKey, nil); !loaded {
-					c.pp.logger.Warn("FastjsonMetric.GetNewKeys ignored new key due to unsupported type of dynamic column", zap.Int("partition", partition), zap.Int64("offset", offset), zap.String("key", strKey), zap.String("value", v.String()))
-				}
-			} else if _, loaded = warnKeys.LoadOrStore(strKey, nil); !loaded {
-				c.pp.logger.Warn("FastjsonMetric.GetNewKeys ignored new key due to white/black list setting", zap.Int("partition", partition), zap.Int64("offset", offset), zap.String("key", strKey), zap.String("value", v.String()))
-				knownKeys.Store(strKey, nil)
-			}
-		}
-	})
 	return
 }
 

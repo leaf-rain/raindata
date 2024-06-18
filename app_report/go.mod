@@ -9,7 +9,7 @@ replace github.com/leaf-rain/raindata/app_basicsdata => ../app_basicsdata
 require (
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/google/wire v0.6.0
-	github.com/leaf-rain/fastjson v0.0.0-20240605084444-e45ca8b5db75
+	github.com/leaf-rain/fastjson v1.0.0
 	github.com/leaf-rain/raindata/app_basicsdata v0.0.0-00010101000000-000000000000
 	github.com/leaf-rain/raindata/common v0.0.0-00010101000000-000000000000
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible

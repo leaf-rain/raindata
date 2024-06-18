@@ -8,7 +8,6 @@ import (
 	"golang.org/x/exp/constraints"
 	"math"
 	"net"
-	"regexp"
 	"strconv"
 	"sync"
 	"time"
@@ -17,21 +16,48 @@ import (
 var _ Parser = (*GjsonParser)(nil)
 
 type GjsonParser struct {
-	pp *Pool
+	knownLayouts *sync.Map
+	pool         sync.Pool
+	timeUnit     float64
+	local        *time.Location
+	logger       *zap.Logger
+}
+
+func NewGjsonParser(timeUnit float64, local *time.Location, logger *zap.Logger) *GjsonParser {
+	buf := new(GjsonParser)
+	buf.knownLayouts = &sync.Map{}
+	buf.logger = logger
+	buf.timeUnit = 1
+	if timeUnit != 0 {
+		buf.timeUnit = timeUnit
+	}
+	if local != nil {
+		buf.local = local
+	} else {
+		buf.local = time.Local
+	}
+	buf.pool = sync.Pool{
+		New: func() interface{} {
+			return &GjsonMetric{
+				parser: buf,
+			}
+		},
+	}
+	return buf
 }
 
 func (p *GjsonParser) Parse(bs []byte) (metric Metric, err error) {
-	metric = &GjsonMetric{p.pp, string(bs)}
+	metric = &GjsonMetric{p, string(bs)}
 	return
 }
 
 type GjsonMetric struct {
-	pp  *Pool
-	raw string
+	parser *GjsonParser
+	raw    string
 }
 
 func (c *GjsonMetric) getField(key string) gjson.Result {
-	ret := gjson.Get(c.pp.fields, key)
+	ret := gjson.Get(c.raw, key)
 	if !ret.Exists() {
 		ret = gjson.Get(c.raw, key)
 	}
@@ -260,32 +286,6 @@ func GjsonFloatArray[T constraints.Float](a []gjson.Result, max float64) (arr []
 	return
 }
 
-func (c *GjsonMetric) GetNewKeys(knownKeys, newKeys, warnKeys *sync.Map, white, black *regexp.Regexp, partition int, offset int64) (foundNew bool) {
-	ite := func(k, v gjson.Result) bool {
-		strKey := k.Str
-		if _, loaded := knownKeys.LoadOrStore(strKey, nil); !loaded {
-			if (white == nil || white.MatchString(strKey)) &&
-				(black == nil || !black.MatchString(strKey)) {
-				if typ, array := gjDetectType(v, 0); typ != Unknown && typ != Object && !array {
-					newKeys.Store(strKey, typ)
-					foundNew = true
-				} else if _, loaded = warnKeys.LoadOrStore(strKey, nil); !loaded {
-					c.pp.logger.Warn("GjsonMetric.GetNewKeys failed to detect field type", zap.Int("partition", partition), zap.Int64("offset", offset), zap.String("key", strKey), zap.String("value", v.String()))
-				}
-			} else if _, loaded = warnKeys.LoadOrStore(strKey, nil); !loaded {
-				c.pp.logger.Warn("GjsonMetric.GetNewKeys ignored new key due to white/black list setting", zap.Int("partition", partition), zap.Int64("offset", offset), zap.String("key", strKey), zap.String("value", v.String()))
-				knownKeys.Store(strKey, nil)
-			}
-		}
-		return true
-	}
-
-	c.pp.once.Do(func() { gjson.Parse(c.pp.fields).ForEach(ite) })
-	gjson.Parse(c.raw).ForEach(ite)
-
-	return
-}
-
 func gjCompatibleBool(r gjson.Result) (ok bool) {
 	if !r.Exists() {
 		return
@@ -411,7 +411,7 @@ func (c *GjsonMetric) castResultByType(sourcename string, value gjson.Result, ty
 		case Map:
 			val = getGJsonMap(c, value, typeinfo)
 		default:
-			c.pp.logger.Fatal("LOGIC ERROR: reached switch default condition")
+			c.parser.logger.Fatal("LOGIC ERROR: reached switch default condition")
 		}
 	}
 	return
@@ -516,10 +516,10 @@ func getGJsonDateTime(c *GjsonMetric, key string, r gjson.Result, nullable bool)
 	}
 	switch r.Type {
 	case gjson.Number:
-		val = UnixFloat(r.Num, c.pp.timeUnit)
+		val = UnixFloat(r.Num, c.parser.timeUnit)
 	case gjson.String:
 		var err error
-		if val, err = c.pp.ParseDateTime(key, r.Str); err != nil {
+		if val, err = ParseDateTime(key, r.Str, c.parser.knownLayouts, c.parser.local); err != nil {
 			val = getDefaultDateTime(nullable)
 		}
 	default:
@@ -595,10 +595,10 @@ func getGJsonArray(c *GjsonMetric, key string, r gjson.Result, typ int) (val int
 		for _, e := range array {
 			switch e.Type {
 			case gjson.Number:
-				t = UnixFloat(e.Num, c.pp.timeUnit)
+				t = UnixFloat(e.Num, c.parser.timeUnit)
 			case gjson.String:
 				var err error
-				if t, err = c.pp.ParseDateTime(key, e.Str); err != nil {
+				if t, err = ParseDateTime(key, e.Str, c.parser.knownLayouts, c.parser.local); err != nil {
 					t = Epoch
 				}
 			default:
@@ -622,7 +622,7 @@ func getGJsonArray(c *GjsonMetric, key string, r gjson.Result, typ int) (val int
 		}
 		val = arr
 	default:
-		c.pp.logger.Fatal(fmt.Sprintf("LOGIC ERROR: unsupported array type %v", typ))
+		c.parser.logger.Fatal(fmt.Sprintf("LOGIC ERROR: unsupported array type %v", typ))
 	}
 	return
 }

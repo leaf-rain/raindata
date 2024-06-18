@@ -174,7 +174,6 @@ type Metric interface {
 	GetArray(key string, t int) (val interface{})
 	GetIPv4(key string, nullable bool) (val interface{})
 	GetIPv6(key string, nullable bool) (val interface{})
-	GetNewKeys(knownKeys, newKeys, warnKeys *sync.Map, white, black *regexp.Regexp, partition int, offset int64) bool
 }
 
 // DimMetrics

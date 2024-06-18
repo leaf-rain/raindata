@@ -8,10 +8,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
+	"go.uber.org/zap"
 	"golang.org/x/exp/constraints"
 	"math"
 	"net"
-	"regexp"
 	"strconv"
 	"sync"
 	"time"
@@ -21,32 +21,74 @@ var _ Parser = (*CsvParser)(nil)
 
 // CsvParser implementation to parse input from a CSV format per RFC 4180
 type CsvParser struct {
-	pp *Pool
+	csvFormat    map[string]int
+	delimiter    string
+	knownLayouts *sync.Map
+	pool         sync.Pool
+	timeUnit     float64
+	local        *time.Location
+	logger       *zap.Logger
+}
+
+func NewCsvParser(csvFormat []string, delimiter string, timeUnit float64, local *time.Location, logger *zap.Logger) *CsvParser {
+	buf := new(CsvParser)
+	if len(csvFormat) != 0 {
+		buf.csvFormat = make(map[string]int, len(csvFormat))
+		for i, title := range csvFormat {
+			buf.csvFormat[title] = i
+		}
+	}
+	buf.delimiter = delimiter
+	buf.knownLayouts = &sync.Map{}
+	buf.logger = logger
+	buf.timeUnit = 1
+	if timeUnit != 0 {
+		buf.timeUnit = timeUnit
+	}
+	if local != nil {
+		buf.local = local
+	} else {
+		buf.local = time.Local
+	}
+	buf.pool = sync.Pool{
+		New: func() interface{} {
+			return &CsvMetric{
+				parser: buf,
+			}
+		},
+	}
+	return buf
 }
 
 // Parse extract a list of comma-separated values from the data
-func (p *CsvParser) Parse(bs []byte) (metric Metric, err error) {
+func (c *CsvParser) Parse(bs []byte) (Metric, error) {
+	var err error
 	r := csv.NewReader(bytes.NewReader(bs))
-	r.FieldsPerRecord = len(p.pp.csvFormat)
-	if len(p.pp.delimiter) > 0 {
-		r.Comma = rune(p.pp.delimiter[0])
+	r.FieldsPerRecord = len(c.csvFormat)
+	if len(c.delimiter) > 0 {
+		r.Comma = rune(c.delimiter[0])
 	}
 	var value []string
 	if value, err = r.Read(); err != nil {
 		err = errors.Wrapf(err, "")
-		return
+		return nil, err
 	}
-	if len(value) != len(p.pp.csvFormat) {
+	if len(value) != len(c.csvFormat) {
 		err = errors.New("csv value doesn't match the format")
-		return
+		return nil, err
 	}
-	metric = &CsvMetric{p.pp, value}
-	return
+	buf, _ := c.pool.Get().(*CsvMetric)
+	if buf == nil {
+		buf = new(CsvMetric)
+	}
+	buf.parser = c
+	buf.values = value
+	return buf, nil
 }
 
 // CsvMetic
 type CsvMetric struct {
-	pp     *Pool
+	parser *CsvParser
 	values []string
 }
 
@@ -54,7 +96,7 @@ type CsvMetric struct {
 func (c *CsvMetric) GetString(key string, nullable bool) (val interface{}) {
 	var idx int
 	var ok bool
-	if idx, ok = c.pp.csvFormat[key]; !ok || c.values[idx] == "null" {
+	if idx, ok = c.parser.csvFormat[key]; !ok || c.values[idx] == "null" {
 		if nullable {
 			return
 		}
@@ -69,7 +111,7 @@ func (c *CsvMetric) GetString(key string, nullable bool) (val interface{}) {
 func (c *CsvMetric) GetDecimal(key string, nullable bool) (val interface{}) {
 	var idx int
 	var ok bool
-	if idx, ok = c.pp.csvFormat[key]; !ok || c.values[idx] == "null" {
+	if idx, ok = c.parser.csvFormat[key]; !ok || c.values[idx] == "null" {
 		if nullable {
 			return
 		}
@@ -86,14 +128,14 @@ func (c *CsvMetric) GetDecimal(key string, nullable bool) (val interface{}) {
 func (c *CsvMetric) GetBool(key string, nullable bool) (val interface{}) {
 	var idx int
 	var ok bool
-	if idx, ok = c.pp.csvFormat[key]; !ok || c.values[idx] == "" || c.values[idx] == "null" {
+	if idx, ok = c.parser.csvFormat[key]; !ok || c.values[idx] == "" || c.values[idx] == "null" {
 		if nullable {
 			return
 		}
 		val = false
 		return
 	}
-	val = (c.values[idx] == "true")
+	val = c.values[idx] == "true"
 	return
 }
 
@@ -154,7 +196,7 @@ func (c *CsvMetric) GetIPv6(key string, nullable bool) (val interface{}) {
 func CsvGetInt[T constraints.Signed](c *CsvMetric, key string, nullable bool, min, max int64) (val interface{}) {
 	var idx int
 	var ok bool
-	if idx, ok = c.pp.csvFormat[key]; !ok || c.values[idx] == "null" {
+	if idx, ok = c.parser.csvFormat[key]; !ok || c.values[idx] == "null" {
 		if nullable {
 			return
 		}
@@ -179,7 +221,7 @@ func CsvGetInt[T constraints.Signed](c *CsvMetric, key string, nullable bool, mi
 func CsvGetUint[T constraints.Unsigned](c *CsvMetric, key string, nullable bool, max uint64) (val interface{}) {
 	var idx int
 	var ok bool
-	if idx, ok = c.pp.csvFormat[key]; !ok || c.values[idx] == "null" {
+	if idx, ok = c.parser.csvFormat[key]; !ok || c.values[idx] == "null" {
 		if nullable {
 			return
 		}
@@ -203,7 +245,7 @@ func CsvGetUint[T constraints.Unsigned](c *CsvMetric, key string, nullable bool,
 func CsvGetFloat[T constraints.Float](c *CsvMetric, key string, nullable bool, max float64) (val interface{}) {
 	var idx int
 	var ok bool
-	if idx, ok = c.pp.csvFormat[key]; !ok || c.values[idx] == "null" {
+	if idx, ok = c.parser.csvFormat[key]; !ok || c.values[idx] == "null" {
 		if nullable {
 			return
 		}
@@ -222,7 +264,7 @@ func CsvGetFloat[T constraints.Float](c *CsvMetric, key string, nullable bool, m
 func (c *CsvMetric) GetDateTime(key string, nullable bool) (val interface{}) {
 	var idx int
 	var ok bool
-	if idx, ok = c.pp.csvFormat[key]; !ok || c.values[idx] == "null" {
+	if idx, ok = c.parser.csvFormat[key]; !ok || c.values[idx] == "null" {
 		if nullable {
 			return
 		}
@@ -232,11 +274,11 @@ func (c *CsvMetric) GetDateTime(key string, nullable bool) (val interface{}) {
 	s := c.values[idx]
 	if dd, err := strconv.ParseFloat(s, 64); err != nil {
 		var err error
-		if val, err = c.pp.ParseDateTime(key, s); err != nil {
+		if val, err = ParseDateTime(key, s, c.parser.knownLayouts, c.parser.local); err != nil {
 			val = Epoch
 		}
 	} else {
-		val = UnixFloat(dd, c.pp.timeUnit)
+		val = UnixFloat(dd, c.parser.timeUnit)
 	}
 	return
 }
@@ -312,10 +354,10 @@ func (c *CsvMetric) GetArray(key string, typ int) (val interface{}) {
 		for _, e := range array {
 			switch e.Type {
 			case gjson.Number:
-				t = UnixFloat(e.Num, c.pp.timeUnit)
+				t = UnixFloat(e.Num, c.parser.timeUnit)
 			case gjson.String:
 				var err error
-				if t, err = c.pp.ParseDateTime(key, e.Str); err != nil {
+				if t, err = ParseDateTime(key, e.Str, c.parser.knownLayouts, c.parser.local); err != nil {
 					t = Epoch
 				}
 			default:
@@ -325,7 +367,7 @@ func (c *CsvMetric) GetArray(key string, typ int) (val interface{}) {
 		}
 		val = results
 	default:
-		c.pp.logger.Fatal(fmt.Sprintf("LOGIC ERROR: unsupported array type %v", typ))
+		c.parser.logger.Fatal(fmt.Sprintf("LOGIC ERROR: unsupported array type %v", typ))
 	}
 	return
 }
@@ -336,8 +378,4 @@ func (c *CsvMetric) GetObject(key string, nullable bool) (val interface{}) {
 
 func (c *CsvMetric) GetMap(key string, typeinfo *TypeInfo) (val interface{}) {
 	return
-}
-
-func (c *CsvMetric) GetNewKeys(knownKeys, newKeys, warnKeys *sync.Map, white, black *regexp.Regexp, partition int, offset int64) bool {
-	return false
 }
