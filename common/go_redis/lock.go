@@ -22,6 +22,11 @@ func (lock *RedisLock) TryLock(ctx context.Context) (bool, error) {
 	return lock.conn.SetNX(ctx, lock.key, lock.val, lock.timeout).Result()
 }
 
+// redis的lock没有自旋功能
+func (lock *RedisLock) Lock(ctx context.Context) error {
+	return lock.conn.Set(ctx, lock.key, lock.val, lock.timeout).Err()
+}
+
 func (lock *RedisLock) UnLock(ctx context.Context) error {
 	luaDel := redis.NewScript("if redis.call('get',KEYS[1]) == ARGV[1] then " +
 		"return redis.call('del',KEYS[1]) else return 0 end")
