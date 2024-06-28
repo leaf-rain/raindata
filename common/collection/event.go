@@ -1,8 +1,6 @@
 package collection
 
 import (
-	"github.com/zeromicro/go-zero/core/collection"
-	"github.com/zeromicro/go-zero/core/logx"
 	"go.uber.org/zap"
 	"sync"
 	"time"
@@ -38,7 +36,7 @@ type EventArg struct {
 }
 
 type delayEvent struct {
-	eventTimingWheel *collection.TimingWheel
+	eventTimingWheel *TimingWheel
 	eventMap         *sync.Map // 事件ma ，key:事件标识(string), value: EventArg
 	funcMap          *sync.Map // 处理方法map key: 方法名(string)， value: EventFunc
 	logger           *zap.Logger
@@ -52,9 +50,9 @@ func NewDelayEvent(logger *zap.Logger) *delayEvent {
 		logger:           logger,
 	}
 	// 创建公共时间轮
-	eventTimingWheel, err := collection.NewTimingWheel(time.Second/10, 1000, e.HandleEvent)
+	eventTimingWheel, err := NewTimingWheel(time.Second/10, 1000, e.HandleEvent)
 	if err != nil {
-		logx.Errorf("[NewGameServer]collection.NewTimingWheel failed, err:%v", err)
+		logger.Error("[NewGameServer]collection.NewTimingWheel failed", zap.Error(err))
 		return nil
 	}
 	e.eventTimingWheel = eventTimingWheel
@@ -63,7 +61,7 @@ func NewDelayEvent(logger *zap.Logger) *delayEvent {
 
 // RegisterFunc 注册方法
 func (ev *delayEvent) RegisterFunc(fName string, f EventFunc) {
-	logx.Infof("[RegisterFunc] RegisterFunc  fName:%v", fName)
+	ev.logger.Info("[RegisterFunc] RegisterFunc,", zap.String("funcName", fName))
 	if f != nil {
 		ev.funcMap.Store(fName, f)
 	}
@@ -73,19 +71,19 @@ func (ev *delayEvent) RegisterFunc(fName string, f EventFunc) {
 func (ev *delayEvent) HandleEvent(key, value interface{}) {
 	arg, ok := value.(EventArg)
 	if !ok {
-		logx.Errorf("[delayEvent] handleEvent arg type failed, key:%v, value:%v", key, value)
+		ev.logger.Error("[delayEvent] handleEvent arg type failed.", zap.Any("key", key))
 		return
 	}
 	var fI interface{}
 	fI, ok = ev.funcMap.Load(arg.FName)
 	if !ok {
-		logx.Errorf("[delayEvent] handle func not found, key:%v, value:%v, arg:%+v", key, value, arg)
+		ev.logger.Error("[delayEvent] handle func not found.", zap.Any("key", key), zap.String("fName", arg.FName))
 		return
 	}
 	var fc EventFunc
 	fc, ok = fI.(EventFunc)
 	if !ok {
-		logx.Errorf("[delayEvent] EventFunc type failed, key:%v, value:%v, arg:%+v", key, value, arg)
+		ev.logger.Error("[delayEvent] EventFunc type failed.", zap.Any("key", key), zap.String("fName", arg.FName))
 		return
 	}
 	arg.RunTimes += 1
@@ -101,15 +99,15 @@ func (ev *delayEvent) HandleEvent(key, value interface{}) {
 
 // StorgeEvent 存储事件
 func (ev *delayEvent) StorgeEvent(key interface{}, value EventArg, interval int64) {
-	logx.Debugf("[StorgeEvent] StorgeEvent  value:%+v, interval:%d", value, interval)
+	ev.logger.Debug("[StorgeEvent] StorgeEvent,", zap.Any("key", key), zap.Int64("interval", interval))
 	if key == "" || value.Interval == 0 || value.Surplus == 0 || value.Surplus < -1 {
-		logx.Errorf("[delayEvent] AddEvent Interval or Count is zero， key:%s, value:%+v", key, value)
+		ev.logger.Error("[delayEvent] AddEvent Interval or Count is zero.", zap.Any("key", key), zap.Int64("interval", interval))
 		return
 	}
 	value.CreteTime = time.Now().Unix()
 	_, ok := ev.funcMap.Load(value.FName)
 	if !ok { // 添加未注册方法事件
-		logx.Errorf("[delayEvent] AddEvent func name Not registered， key:%s, value:%+v", key, value)
+		ev.logger.Error("[delayEvent] AddEvent func name Not registerer.", zap.Any("key", key), zap.Int64("interval", interval))
 		return
 	}
 	if interval == 0 { // 这里是为了可以支持首次可以设置不同的事件间隔
@@ -117,7 +115,7 @@ func (ev *delayEvent) StorgeEvent(key interface{}, value EventArg, interval int6
 	}
 	err := ev.eventTimingWheel.SetTimer(key, value, time.Second/time.Duration(defaultDivisor)*time.Duration(interval))
 	if err != nil {
-		logx.Errorf("[delayEvent] SetTimer failed，err:%v, key:%s, value:%+v", err, key, value)
+		ev.logger.Error("[delayEvent] SetTimer failed.", zap.Error(err), zap.Any("key", key), zap.Int64("interval", interval))
 		return
 	}
 	ev.eventMap.Store(key, value)
@@ -125,10 +123,10 @@ func (ev *delayEvent) StorgeEvent(key interface{}, value EventArg, interval int6
 
 // DelEvent 删除事件
 func (ev *delayEvent) DelEvent(key interface{}) {
-	logx.Debugf("[DelEvent] DelEvent  fName:%+v", key)
+	ev.logger.Debug("[DelEvent] DelEvent.", zap.Any("key", key))
 	err := ev.eventTimingWheel.RemoveTimer(key)
 	if err != nil {
-		logx.Errorf("[DelEvent] RemoveTimer failed，err:%v, key:%s", err, key)
+		ev.logger.Error("[DelEvent] RemoveTimer failed.", zap.Error(err), zap.Any("key", key))
 	}
 	ev.eventMap.Delete(key)
 }
@@ -137,13 +135,13 @@ func (ev *delayEvent) DelEvent(key interface{}) {
 func (ev *delayEvent) FindOneEvent(key interface{}) *EventArg {
 	data, ok := ev.eventMap.Load(key)
 	if !ok {
-		logx.Errorf("[FindOneEvent] key not found， key:%s", key)
+		ev.logger.Error("[FindOneEvent] key not found.", zap.Any("key", key))
 		return nil
 	}
 	var ret EventArg
 	ret, ok = data.(EventArg)
 	if !ok {
-		logx.Errorf("[FindOneEvent] EventArg type failed， key:%s, value:%v", key, ret)
+		ev.logger.Error("[FindOneEvent] EventArg type failed.", zap.Any("key", key))
 		return nil
 	}
 	return &ret

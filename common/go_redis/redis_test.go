@@ -3,11 +3,9 @@ package go_redis
 import (
 	"context"
 	"fmt"
-	"github.com/zeromicro/go-zero/core/stores/redis"
+	"github.com/go-redis/redis/v8"
 	"testing"
 	"time"
-
-	"github.com/go-redis/redis/v8"
 )
 
 type testQueue struct {

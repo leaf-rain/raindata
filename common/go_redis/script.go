@@ -2,7 +2,6 @@ package go_redis
 
 import (
 	"github.com/go-redis/redis/v8"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
 var IncrScript = redis.NewScript(`if (redis.call('exists', KEYS[1]) == 1) then

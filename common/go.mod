@@ -18,7 +18,6 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/subosito/gotenv v1.6.0
 	github.com/tidwall/gjson v1.17.1
-	github.com/zeromicro/go-zero v1.6.5
 	go.etcd.io/etcd/api/v3 v3.5.13
 	go.etcd.io/etcd/client/v3 v3.5.13
 	go.uber.org/zap v1.27.0
