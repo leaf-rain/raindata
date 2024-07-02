@@ -152,8 +152,22 @@ func (p *FastjsonMetric) GetIPv6(key string, nullable bool) (val interface{}) {
 	return getIPv6(p.value.Get(key), nullable)
 }
 
-func (p *FastjsonMetric) Range(f func(key []byte, v *fastjson.Value)) {
-	p.value.Range(f)
+func (p *FastjsonMetric) GetNewKeys(knownKeys *sync.Map) map[string]string {
+	var obj *fastjson.Object
+	var err error
+	var result = make(map[string]string)
+	if obj, err = p.value.Object(); err != nil {
+		return result
+	}
+	obj.Visit(func(key []byte, v *fastjson.Value) {
+		strKey := string(key)
+		if _, loaded := knownKeys.LoadOrStore(strKey, nil); !loaded {
+			if typ, arr := fjDetectType(v, 0); typ != Unknown && typ != Object && !arr {
+				result[strKey] = GetTypeName(typ)
+			}
+		}
+	})
+	return result
 }
 
 func FastjsonGetInt[T constraints.Signed](v *fastjson.Value, nullable bool, min, max int64) (val interface{}) {

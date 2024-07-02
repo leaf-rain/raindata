@@ -15,9 +15,11 @@ EtcdConfig:
   Endpoints:
     - "192.168.31.100:2379"
 ClickhouseConfig:
-  host:
-    - "127.0.0.1:9000"
-  userName: "root"
+  hosts:
+    -
+      - "127.0.0.1:9000"
+  username: "root"
   password: "yeyangfengqi"
-  database: "test"
+  DB: "test"
   debug: "true"
+  protocol: "http"

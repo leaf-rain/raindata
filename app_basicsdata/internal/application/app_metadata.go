@@ -33,5 +33,9 @@ func (app *AppMetadata) GetMetadata(ctx context.Context, in *pb_metadata.GetMeta
 }
 
 func (app *AppMetadata) PutMetadata(ctx context.Context, in *pb_metadata.MetadataRequest) (*pb_metadata.MetadataResponse, error) {
-	return nil, nil
+	result, err := app.metadata.PutMetadata(ctx, in)
+	if err != nil {
+		app.logger.Error("[PutMetadata] app metadata.StorageMetadata failed", zap.String("fields", in.EventName), zap.Error(err))
+	}
+	return result, err
 }

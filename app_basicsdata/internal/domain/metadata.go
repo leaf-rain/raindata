@@ -21,7 +21,7 @@ type Metadata struct {
 	locks      sync.Map
 	cfg        *config.Config
 	etcdClient *clientv3.Client
-	ck         *clickhouse_sqlx.Clickhouse
+	ck         *clickhouse_sqlx.Conn
 	ttl        int64
 }
 
@@ -29,7 +29,7 @@ func (domain *Metadata) keyMetadata(app, eventName string) string {
 	return consts.ETCDKeyLockPre + "/" + app + "/" + eventName
 }
 
-func NewMetadata(logger *zap.Logger, repo *entity.Repository, cfg *config.Config, etcdClient *clientv3.Client, ck *clickhouse_sqlx.Clickhouse) (*Metadata, error) {
+func NewMetadata(logger *zap.Logger, repo *entity.Repository, cfg *config.Config, etcdClient *clientv3.Client, ck *clickhouse_sqlx.Conn) (*Metadata, error) {
 	return &Metadata{
 		logger:     logger.Named("domain.Metadata"),
 		repo:       repo,

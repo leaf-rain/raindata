@@ -124,6 +124,21 @@ func (c *GjsonMetric) GetIPv6(key string, nullable bool) (val interface{}) {
 	return getGJsonIPv6(c, c.getField(key), nullable)
 }
 
+func (c *GjsonMetric) GetNewKeys(knownKeys *sync.Map) map[string]string {
+	var result = make(map[string]string)
+	ite := func(k, v gjson.Result) bool {
+		strKey := k.Str
+		if _, loaded := knownKeys.LoadOrStore(strKey, nil); !loaded {
+			if typ, array := gjDetectType(v, 0); typ != Unknown && typ != Object && !array {
+				result[strKey] = GetTypeName(typ)
+			}
+		}
+		return true
+	}
+	gjson.Parse(c.raw).ForEach(ite)
+	return result
+}
+
 func GjsonGetInt[T constraints.Signed](c *GjsonMetric, r gjson.Result, nullable bool, min, max int64) (val interface{}) {
 	if !gjCompatibleInt(r) {
 		val = getDefaultInt[T](nullable)

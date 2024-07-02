@@ -2,7 +2,6 @@ package entity
 
 import (
 	"context"
-	"database/sql"
 	pb_metadata "github.com/leaf-rain/raindata/app_basicsdata/api/grpc"
 	"github.com/leaf-rain/raindata/app_basicsdata/internal/infrastructure/config"
 	"github.com/leaf-rain/raindata/common/clickhouse_sqlx"
@@ -18,12 +17,12 @@ type Metadata struct {
 	ctx           context.Context
 	fields        *pb_metadata.MetadataRequest
 	dynamicConfig commonConfig.ConfigInterface
-	ck            *clickhouse_sqlx.Clickhouse
+	ck            *clickhouse_sqlx.Conn
 	logger        *zap.Logger
 	cfg           *config.Config
 }
 
-func (repo *Repository) NewMetadata(ctx context.Context, logger *zap.Logger, fields *pb_metadata.MetadataRequest, ck *clickhouse_sqlx.Clickhouse) *Metadata {
+func (repo *Repository) NewMetadata(ctx context.Context, logger *zap.Logger, fields *pb_metadata.MetadataRequest, ck *clickhouse_sqlx.Conn) *Metadata {
 	metadata := &Metadata{
 		ctx:           ctx,
 		logger:        logger,
@@ -112,9 +111,9 @@ func (repo *Metadata) PutMetadata(ty int) (*pb_metadata.MetadataResponse, error)
 			return nil, err
 		}
 	}
-	var rows *sql.Rows
+	var rows *clickhouse_sqlx.Rows
 	rows, err = repo.ck.Query("DESCRIBE " + tableName)
-	if err != nil || rows.Err() != nil {
+	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
@@ -137,7 +136,7 @@ func (repo *Metadata) PutMetadata(ty int) (*pb_metadata.MetadataResponse, error)
 	var ok bool
 	for _, item := range repo.fields.Fields {
 		if _, ok = fieldsForDb[item.Field]; !ok {
-			_, err = repo.ck.Exec("ALTER TABLE " + tableName + " ADD COLUMN " + item.Field + " " + item.Type)
+			err = repo.ck.Exec("ALTER TABLE " + tableName + " ADD COLUMN " + item.Field + " " + item.Type)
 			if err != nil {
 				repo.logger.Error("[PutMetadata] add field failed.", zap.Error(err))
 			}
@@ -215,12 +214,12 @@ func IsExistByName(fields []*pb_metadata.Field, name string) bool {
 }
 
 func getEventTableName(appId string) string {
-	return "App_" + appId
+	return "app_" + appId
 }
 
 func (repo *Metadata) CreateEventTable(appId string) error {
 	tableName := getEventTableName(appId)
 	sql := `CREATE TABLE IF NOT EXISTS ` + tableName + `(event String, sort_id Int64, insert_at Int64, created_at DateTime) ENGINE = MergeTree ORDER BY (event, sort_id, created_at) PARTITION BY toYYYYMM(toMonday(created_at)) SETTINGS index_granularity = 8192;`
-	_, err := repo.ck.Exec(sql)
+	err := repo.ck.Exec(sql)
 	return err
 }

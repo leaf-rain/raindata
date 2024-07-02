@@ -92,6 +92,10 @@ type CsvMetric struct {
 	values []string
 }
 
+func (c *CsvMetric) GetNewKeys(knownKeys *sync.Map) map[string]string {
+	return nil
+}
+
 // GetString get the value as string
 func (c *CsvMetric) GetString(key string, nullable bool) (val interface{}) {
 	var idx int

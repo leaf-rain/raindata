@@ -2,6 +2,8 @@ package clickhouse_sqlx
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 	"github.com/leaf-rain/raindata/common/parser"
 	"go.uber.org/zap"
 	"sync"
@@ -16,13 +18,14 @@ type Decoder interface {
 }
 
 type SinkerTableConfig struct {
-	TableName     string
-	Database      string
-	FlushInterval int
-	BufferSize    int
-	TimeZone      string
-	TimeUnit      float64
-	Parse         string
+	TableName     string           `json:"table_name,omitempty"`
+	Database      string           `json:"database,omitempty"`
+	FlushInterval int              `json:"flush_interval,omitempty"`
+	BufferSize    int              `json:"buffer_size,omitempty"`
+	TimeZone      string           `json:"time_zone,omitempty"`
+	TimeUnit      float64          `json:"time_unit,omitempty"`
+	Parse         string           `json:"parse,omitempty"` // 选择解析方式
+	BaseColumn    []ColumnWithType `json:"base_column,omitempty"`
 }
 
 // SinkerTable object maintains number of task for each partition
@@ -39,12 +42,11 @@ type SinkerTable struct {
 	commitDone  *sync.Cond
 	state       atomic.Uint32
 	parser      parser.Parser
-	fieldMap    sync.Map
-
-	data []string
-
+	fieldMap    *sync.Map
 	// table相关
 	sinkerTableConfig *SinkerTableConfig
+	columns           Columns
+	// todo:wal功能
 }
 
 // NewSinkerTable get an instance of sinker with the task list
@@ -58,18 +60,51 @@ func NewSinkerTable(ctx context.Context, config *ClickhouseConfig, cc *Clickhous
 		exitCh:            make(chan struct{}),
 		sinkerTableConfig: sinkerTableConfig,
 		parser:            parser,
+		fieldMap:          new(sync.Map),
 	}
 	s.state.Store(StateStopped)
 	s.commitDone = sync.NewCond(&s.mux)
-	s.flushFields()
+	err := s.flushFields()
+	if err != nil {
+		return nil, err
+	}
+	err = s.wal()
+	if err != nil {
+		return nil, err
+	}
 	return s, nil
 }
 
-func (c *SinkerTable) flushFields() {
+func (c *SinkerTable) wal() error {
+	// todo:wal恢复未处理的数据
+	return nil
+}
+
+func (c *SinkerTable) flushFields() error {
 	// todo:查询表已经存在的字段信息存储到field map中
 	conn := c.clusterConn.GetShardConn(time.Now().Unix())
-	conn.NextGoodReplica()
-
+	ck, _, err := conn.NextGoodReplica(0)
+	if err != nil {
+		return err
+	}
+	var query = fmt.Sprintf(`select name, type, default_kind from system.columns where database = '%s' and table = '%s'`,
+		c.sinkerTableConfig.Database, c.sinkerTableConfig.TableName)
+	// todo:如果表不存在，则根据初始化字段or配置创建表。
+	var rs *sql.Rows
+	rs, err = ck.db.Query(query)
+	if err != nil {
+		// todo:处理没有这张表的情况，创建表&添加基础字段。
+		return err
+	}
+	defer rs.Close()
+	var name, typ, defaultKind string
+	for rs.Next() {
+		if err = rs.Scan(&name, &typ, &defaultKind); err != nil {
+			return err
+		}
+		c.columns.Put(name, &ColumnWithType{Name: name, Type: WhichType(typ)})
+	}
+	return nil
 }
 
 func (c *SinkerTable) start() {
@@ -98,62 +133,54 @@ func (c *SinkerTable) processFetch() {
 	c.processWg.Add(1)
 	defer c.processWg.Done()
 	var bufLength int
-	flushFn := func(traceId, with string) {
-		c.mux.Lock()
-		defer c.mux.Unlock()
-		bufLength = len(c.data)
+	var data []string
+	flushFn := func(data []string) {
+		bufLength = len(data)
 		if bufLength > 0 {
-			c.logger.Info(c.sinkerTableConfig.TableName+" flush msg.", zap.String("traceId", traceId), zap.String("with", with), zap.Int("bufLength", bufLength))
+			c.logger.Info(c.sinkerTableConfig.TableName+" flush msg.", zap.Int("bufLength", bufLength))
 		}
-		// todo: 校验是否有没有添加的字段
-		var err error
-		var parse parser.Metric
-		var tmp = make([][]byte, len(c.data))
-		for i := range c.data {
-			parse, err = c.parser.Parse([]byte(c.data[i]))
-			if err != nil {
-				c.logger.Error("[processFetch] parser.Parse failed.", zap.String("traceId", traceId), zap.String("with", with), zap.Error(err))
-				continue
-			}
-			tmp[i] = []byte(c.data[i])
-		}
-		c.data = c.data[:]
-		// todo:将数据写进数据库
 
 	}
 
 	ticker := time.NewTicker(time.Duration(c.sinkerTableConfig.FlushInterval) * time.Second)
 	defer ticker.Stop()
-	traceId := "NO_RECORDS_FETCHED"
-	wait := false
+	var err error
+	var parse parser.Metric
+	var newKeys map[string]string
 	for {
 		select {
 		case fetch := <-c.fetchCH:
 			if c.state.Load() == StateStopped {
 				continue
 			}
-			if wait {
-				c.logger.Info(c.sinkerTableConfig.TableName+" flush msg.", zap.String("traceId", traceId),
-					zap.String("message", "bufThreshold not reached, use old traceId"),
-					zap.String("trace_id", traceId),
-					zap.Int("records", len(fetch.Data)),
-					zap.Int("totalLength", bufLength))
-			} else {
-				traceId = fetch.TraceId
-				c.logger.Info("process fetch.", zap.String("traceId", fetch.TraceId), zap.Int("records", len(fetch.Data)))
+			// todo:wal
+			tmpData := fetch.GetData()
+			// todo: 校验是否有没有添加的字段
+			for i := range tmpData {
+				parse, err = c.parser.Parse([]byte(tmpData[i]))
+				if err != nil {
+					c.logger.Error(c.sinkerTableConfig.TableName+" parse error", zap.Error(err), zap.String("data", tmpData[i]))
+					continue
+				}
+				newKeys = parse.GetNewKeys(c.fieldMap)
+				if len(newKeys) > 0 {
+					// todo:添加表字段
+				}
 			}
-			// 将数据添加到本地
-			c.data = append(c.data, fetch.Data...)
-			bufLength = len(c.data)
+			data = append(data, tmpData...)
+			bufLength = len(data)
 			if bufLength > c.sinkerTableConfig.BufferSize {
-				flushFn(traceId, "bufLength reached")
+				tmp := make([]string, len(data))
+				copy(tmp, data)
+				data = data[:0]
+				go flushFn(tmp)
 				ticker.Reset(time.Duration(c.sinkerTableConfig.FlushInterval) * time.Second)
-				wait = false
-			} else {
-				wait = true
 			}
 		case <-ticker.C:
-			flushFn(traceId, "ticker.C triggered")
+			tmp := make([]string, len(data))
+			copy(tmp, data)
+			data = data[:0]
+			go flushFn(tmp)
 		case <-c.ctx.Done():
 			c.logger.Info("stopped processing loop", zap.String("table", c.sinkerTableConfig.Database+"."+c.sinkerTableConfig.TableName))
 			return

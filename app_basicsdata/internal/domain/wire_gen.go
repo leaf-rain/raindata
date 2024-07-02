@@ -24,7 +24,10 @@ func Initialize() (*Domain, error) {
 		return nil, err
 	}
 	logConfig := config.GetLogCfgByConfig(configConfig)
-	zapLogger := logger.InitLogger(logConfig)
+	zapLogger, err := logger.InitLogger(logConfig)
+	if err != nil {
+		return nil, err
+	}
 	context := config.GetCtx(configConfig)
 	etcdConfig := config.GetEtcdConfig(configConfig)
 	client, err := etcd.NewEtcdClient(etcdConfig, zapLogger)

@@ -13,13 +13,13 @@ import (
 
 type Repository struct {
 	etcdClient     *clientv3.Client
-	clickhouseSqlx *clickhouse_sqlx.Clickhouse
+	clickhouseSqlx *clickhouse_sqlx.Conn
 	dynamicConfig  commonConfig.ConfigInterface
 	logger         *zap.Logger
 	cfg            *config.Config
 }
 
-func NewRepository(ctx context.Context, etcdClient *clientv3.Client, clickhouseSqlx *clickhouse_sqlx.Clickhouse, logger *zap.Logger, cfg *config.Config) (*Repository, error) {
+func NewRepository(ctx context.Context, etcdClient *clientv3.Client, clickhouseSqlx *clickhouse_sqlx.Conn, logger *zap.Logger, cfg *config.Config) (*Repository, error) {
 	var repo *Repository
 	if etcdClient != nil {
 		// 初始化etcd配置中心

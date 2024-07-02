@@ -17,6 +17,99 @@ type ClickhouseCluster struct {
 	clusterConn []*ShardConn
 }
 
+// Each shard has a pool.Conn which connects to one replica inside the shard.
+// We need more control than replica single-point-failure.
+func InitClusterConn(chCfg *ClickhouseConfig) (cc *ClickhouseCluster, err error) {
+	cc = new(ClickhouseCluster)
+	cc.lock.Lock()
+	defer cc.lock.Unlock()
+	cc.freeClusterConn()
+
+	proto := clickhouse.Native
+	if chCfg.Protocol == clickhouse.HTTP.String() {
+		proto = clickhouse.HTTP
+	}
+
+	for _, replicas := range chCfg.Hosts {
+		numReplicas := len(replicas)
+		replicaAddrs := make([]string, numReplicas)
+		for i, ip := range replicas {
+			// Changing hostnames to IPs breaks TLS connections in many cases
+			if !chCfg.Secure {
+				if ips2, err := GetIP4Byname(ip); err == nil {
+					ip = ips2[0]
+				}
+			}
+			replicaAddrs[i] = fmt.Sprintf("%s", ip)
+		}
+		sc := &ShardConn{
+			replicas: replicaAddrs,
+			chCfg:    chCfg,
+			opts: clickhouse.Options{
+				Auth: clickhouse.Auth{
+					Database: chCfg.DB,
+					Username: chCfg.Username,
+					Password: chCfg.Password,
+				},
+				Protocol:    proto,
+				DialTimeout: time.Minute * 10,
+			},
+			writingPool: NewWorkerPool(chCfg.MaxOpenConns, 1),
+		}
+		if chCfg.Secure {
+			tlsConfig := &tls.Config{}
+			tlsConfig.InsecureSkipVerify = chCfg.InsecureSkipVerify
+			sc.opts.TLS = tlsConfig
+		}
+		if proto == clickhouse.Native {
+			sc.opts.MaxOpenConns = chCfg.MaxOpenConns
+			sc.opts.MaxIdleConns = chCfg.MaxOpenConns
+			sc.opts.ConnMaxLifetime = time.Minute * 10
+		}
+		sc.protocol = proto
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		idx := r.Intn(numReplicas)
+		sc.nextRep = idx
+		if _, _, err = sc.NextGoodReplica(idx); err != nil {
+			return
+		}
+		cc.clusterConn = append(cc.clusterConn, sc)
+	}
+	return
+}
+
+func (cc *ClickhouseCluster) freeClusterConn() {
+	for _, sc := range cc.clusterConn {
+		sc.Close()
+	}
+	cc.clusterConn = []*ShardConn{}
+}
+
+func (cc *ClickhouseCluster) FreeClusterConn() {
+	cc.lock.Lock()
+	defer cc.lock.Unlock()
+	cc.freeClusterConn()
+}
+
+func (cc *ClickhouseCluster) NumShard() (cnt int) {
+	cc.lock.Lock()
+	defer cc.lock.Unlock()
+	return len(cc.clusterConn)
+}
+
+// GetShardConn select a clickhouse shard based on batchNum
+func (cc *ClickhouseCluster) GetShardConn(batchNum int64) (sc *ShardConn) {
+	cc.lock.Lock()
+	defer cc.lock.Unlock()
+	sc = cc.clusterConn[batchNum%int64(len(cc.clusterConn))]
+	return
+}
+
+// CloseAll closed all connection and destroys the pool
+func (cc *ClickhouseCluster) CloseAll() {
+	cc.FreeClusterConn()
+}
+
 // ShardConn a datastructure for storing the clickhouse connection
 type ShardConn struct {
 	lock        sync.Mutex
@@ -109,97 +202,4 @@ func (sc *ShardConn) NextGoodReplica(failedVer int) (db *Conn, dbVer int, err er
 	}
 	err = ecode.Newf("no good replica among replicas %v since %d", sc.replicas, savedNextRep)
 	return nil, sc.dbVer, err
-}
-
-// Each shard has a pool.Conn which connects to one replica inside the shard.
-// We need more control than replica single-point-failure.
-func InitClusterConn(chCfg *ClickhouseConfig) (cc *ClickhouseCluster, err error) {
-	cc = new(ClickhouseCluster)
-	cc.lock.Lock()
-	defer cc.lock.Unlock()
-	cc.freeClusterConn()
-
-	proto := clickhouse.Native
-	if chCfg.Protocol == clickhouse.HTTP.String() {
-		proto = clickhouse.HTTP
-	}
-
-	for _, replicas := range chCfg.Hosts {
-		numReplicas := len(replicas)
-		replicaAddrs := make([]string, numReplicas)
-		for i, ip := range replicas {
-			// Changing hostnames to IPs breaks TLS connections in many cases
-			if !chCfg.Secure {
-				if ips2, err := GetIP4Byname(ip); err == nil {
-					ip = ips2[0]
-				}
-			}
-			replicaAddrs[i] = fmt.Sprintf("%s", ip)
-		}
-		sc := &ShardConn{
-			replicas: replicaAddrs,
-			chCfg:    chCfg,
-			opts: clickhouse.Options{
-				Auth: clickhouse.Auth{
-					Database: chCfg.DB,
-					Username: chCfg.Username,
-					Password: chCfg.Password,
-				},
-				Protocol:    proto,
-				DialTimeout: time.Minute * 10,
-			},
-			writingPool: NewWorkerPool(chCfg.MaxOpenConns, 1),
-		}
-		if chCfg.Secure {
-			tlsConfig := &tls.Config{}
-			tlsConfig.InsecureSkipVerify = chCfg.InsecureSkipVerify
-			sc.opts.TLS = tlsConfig
-		}
-		if proto == clickhouse.Native {
-			sc.opts.MaxOpenConns = chCfg.MaxOpenConns
-			sc.opts.MaxIdleConns = chCfg.MaxOpenConns
-			sc.opts.ConnMaxLifetime = time.Minute * 10
-		}
-		sc.protocol = proto
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		idx := r.Intn(numReplicas)
-		sc.nextRep = idx
-		if _, _, err = sc.NextGoodReplica(idx); err != nil {
-			return
-		}
-		cc.clusterConn = append(cc.clusterConn, sc)
-	}
-	return
-}
-
-func (cc *ClickhouseCluster) freeClusterConn() {
-	for _, sc := range cc.clusterConn {
-		sc.Close()
-	}
-	cc.clusterConn = []*ShardConn{}
-}
-
-func (cc *ClickhouseCluster) FreeClusterConn() {
-	cc.lock.Lock()
-	defer cc.lock.Unlock()
-	cc.freeClusterConn()
-}
-
-func (cc *ClickhouseCluster) NumShard() (cnt int) {
-	cc.lock.Lock()
-	defer cc.lock.Unlock()
-	return len(cc.clusterConn)
-}
-
-// GetShardConn select a clickhouse shard based on batchNum
-func (cc *ClickhouseCluster) GetShardConn(batchNum int64) (sc *ShardConn) {
-	cc.lock.Lock()
-	defer cc.lock.Unlock()
-	sc = cc.clusterConn[batchNum%int64(len(cc.clusterConn))]
-	return
-}
-
-// CloseAll closed all connection and destroys the pool
-func (cc *ClickhouseCluster) CloseAll() {
-	cc.FreeClusterConn()
 }

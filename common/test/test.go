@@ -3,25 +3,22 @@ package main
 import (
 	"fmt"
 	"runtime"
-	"time"
 )
 
 func main() {
-	var a = [][]byte{}
-	go func() {
-		for {
+	var a []int
+	for i := 0; i < 1000000; i++ {
+		a = append(a, i)
+		if len(a)%10 == 0 {
 			printAlloc()
-			time.Sleep(time.Second)
-		}
-	}()
-	for i := 0; i < 100000; i++ {
-		a = append(a, make([]byte, 1024*1024))
-		time.Sleep(time.Second)
-		if i%20 == 0 {
+			go t(a)
 			a = a[:0]
-			runtime.GC()
 		}
 	}
+}
+
+func t(list []int) {
+	fmt.Println(list)
 }
 
 func printAlloc() {

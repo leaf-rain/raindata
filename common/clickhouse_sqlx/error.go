@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+var (
+	ErrTblNotExist = Newf("table doesn't exist")
+)
+
 // base is the fundamental struct that implements the error interface and the acts as the backbone of this errors package.
 type base struct {
 	// info contains the error message passed through calls like errors.Wrap, errors.New.
