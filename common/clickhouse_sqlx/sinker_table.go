@@ -2,8 +2,6 @@ package clickhouse_sqlx
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
 	"github.com/leaf-rain/raindata/common/parser"
 	"go.uber.org/zap"
 	"sync"
@@ -26,12 +24,13 @@ type SinkerTableConfig struct {
 	TimeUnit      float64          `json:"time_unit,omitempty"`
 	Parse         string           `json:"parse,omitempty"` // 选择解析方式
 	BaseColumn    []ColumnWithType `json:"base_column,omitempty"`
+	ReplayKey     string           `json:"replay_key"`
+	OrderByKey    string           `json:"order_by_key"`
 }
 
 // SinkerTable object maintains number of task for each partition
 type SinkerTable struct {
 	logger      *zap.Logger
-	config      *ClickhouseConfig
 	clusterConn *ClickhouseCluster
 	ctx         context.Context
 	cancel      context.CancelFunc
@@ -42,28 +41,33 @@ type SinkerTable struct {
 	commitDone  *sync.Cond
 	state       atomic.Uint32
 	parser      parser.Parser
-	fieldMap    *sync.Map
+	fieldMap    *sync.Map // key:columnName, value:*ColumnWithType
 	// table相关
 	sinkerTableConfig *SinkerTableConfig
-	columns           Columns
 	// todo:wal功能
 }
 
 // NewSinkerTable get an instance of sinker with the task list
-func NewSinkerTable(ctx context.Context, config *ClickhouseConfig, cc *ClickhouseCluster, logger *zap.Logger, sinkerTableConfig *SinkerTableConfig, parser parser.Parser) (*SinkerTable, error) {
+func NewSinkerTable(ctx context.Context, cc *ClickhouseCluster, logger *zap.Logger, sinkerTableConfig *SinkerTableConfig, parserTy string) (*SinkerTable, error) {
 	s := &SinkerTable{
 		logger:            logger,
-		config:            config,
 		clusterConn:       cc,
 		ctx:               ctx,
 		fetchCH:           make(chan Fetch, 1000),
 		exitCh:            make(chan struct{}),
 		sinkerTableConfig: sinkerTableConfig,
-		parser:            parser,
 		fieldMap:          new(sync.Map),
 	}
 	s.state.Store(StateStopped)
 	s.commitDone = sync.NewCond(&s.mux)
+	s.parser, _ = parser.NewParse(parser.ParserConfig{
+		Ty:     parserTy,
+		Logger: logger,
+	})
+	// 存储默认字段信息
+	for i := range sinkerTableConfig.BaseColumn {
+		s.fieldMap.Store(sinkerTableConfig.BaseColumn[i].Name, &sinkerTableConfig.BaseColumn[i])
+	}
 	err := s.flushFields()
 	if err != nil {
 		return nil, err
@@ -81,30 +85,52 @@ func (c *SinkerTable) wal() error {
 }
 
 func (c *SinkerTable) flushFields() error {
-	// todo:查询表已经存在的字段信息存储到field map中
 	conn := c.clusterConn.GetShardConn(time.Now().Unix())
 	ck, _, err := conn.NextGoodReplica(0)
 	if err != nil {
 		return err
 	}
-	var query = fmt.Sprintf(`select name, type, default_kind from system.columns where database = '%s' and table = '%s'`,
-		c.sinkerTableConfig.Database, c.sinkerTableConfig.TableName)
-	// todo:如果表不存在，则根据初始化字段or配置创建表。
-	var rs *sql.Rows
-	rs, err = ck.db.Query(query)
-	if err != nil {
-		// todo:处理没有这张表的情况，创建表&添加基础字段。
-		return err
-	}
-	defer rs.Close()
-	var name, typ, defaultKind string
-	for rs.Next() {
-		if err = rs.Scan(&name, &typ, &defaultKind); err != nil {
-			return err
+	var query = getTableColumns(c.sinkerTableConfig.Database, c.sinkerTableConfig.TableName)
+	var rs *Rows
+	rs, err = ck.Query(query)
+	if err == nil {
+		var columns = make(map[string]*ColumnWithType)
+		defer rs.Close()
+		var name, typ, defaultKind string
+		for rs.Next() {
+			if err = rs.Scan(&name, &typ, &defaultKind); err != nil {
+				return err
+			}
+			ct := &ColumnWithType{Name: name, Type: WhichType(typ)}
+			c.fieldMap.Store(name, ct)
+			columns[name] = ct
 		}
-		c.columns.Put(name, &ColumnWithType{Name: name, Type: WhichType(typ)})
+		if len(columns) == 0 {
+			query = createTable(c.sinkerTableConfig.Database, c.sinkerTableConfig.TableName, c.sinkerTableConfig.ReplayKey, c.sinkerTableConfig.OrderByKey, c.fieldMap)
+			err = ck.Exec(query)
+			if err != nil {
+				return err
+			}
+			return c.flushFields()
+		}
+		var addColumns []string
+		c.fieldMap.Range(func(key, value any) bool {
+			if _, ok := columns[key.(string)]; !ok {
+				addColumns = append(addColumns, addTableColumns(c.sinkerTableConfig.Database, c.sinkerTableConfig.TableName, key.(string), value.(*ColumnWithType).Type.ToString()))
+			}
+			return true
+		})
+		if len(addColumns) > 0 {
+			for i := range addColumns {
+				err = ck.Exec(addColumns[i])
+				if err != nil {
+					c.logger.Error(c.sinkerTableConfig.TableName+" add table columns error", zap.Error(err), zap.String("sql", addColumns[i]))
+					return err
+				}
+			}
+		}
 	}
-	return nil
+	return err
 }
 
 func (c *SinkerTable) start() {
@@ -133,13 +159,13 @@ func (c *SinkerTable) processFetch() {
 	c.processWg.Add(1)
 	defer c.processWg.Done()
 	var bufLength int
-	var data []string
-	flushFn := func(data []string) {
-		bufLength = len(data)
+	var data FetchArray
+	flushFn := func(data Fetch) {
+		bufLength = len(data.GetData())
 		if bufLength > 0 {
 			c.logger.Info(c.sinkerTableConfig.TableName+" flush msg.", zap.Int("bufLength", bufLength))
 		}
-
+		// todo:刷新到数据库
 	}
 
 	ticker := time.NewTicker(time.Duration(c.sinkerTableConfig.FlushInterval) * time.Second)
@@ -155,7 +181,6 @@ func (c *SinkerTable) processFetch() {
 			}
 			// todo:wal
 			tmpData := fetch.GetData()
-			// todo: 校验是否有没有添加的字段
 			for i := range tmpData {
 				parse, err = c.parser.Parse([]byte(tmpData[i]))
 				if err != nil {
@@ -164,23 +189,29 @@ func (c *SinkerTable) processFetch() {
 				}
 				newKeys = parse.GetNewKeys(c.fieldMap)
 				if len(newKeys) > 0 {
-					// todo:添加表字段
+					for k, v := range newKeys {
+						c.fieldMap.Store(k, &ColumnWithType{Name: k, Type: WhichType(v)})
+					}
+					err = c.flushFields()
+					if err != nil {
+						c.logger.Error(c.sinkerTableConfig.TableName+" flush fields error", zap.Error(err))
+						continue
+					}
 				}
 			}
-			data = append(data, tmpData...)
-			bufLength = len(data)
+			data.Data = append(data.Data, fetch.GetData()...)
+			data.Callback = append(data.Callback, fetch.GetCallback()...)
+			bufLength = len(data.Data)
 			if bufLength > c.sinkerTableConfig.BufferSize {
-				tmp := make([]string, len(data))
-				copy(tmp, data)
-				data = data[:0]
+				tmp := data.Copy()
 				go flushFn(tmp)
+				data = FetchArray{}
 				ticker.Reset(time.Duration(c.sinkerTableConfig.FlushInterval) * time.Second)
 			}
 		case <-ticker.C:
-			tmp := make([]string, len(data))
-			copy(tmp, data)
-			data = data[:0]
+			tmp := data.Copy()
 			go flushFn(tmp)
+			data = FetchArray{}
 		case <-c.ctx.Done():
 			c.logger.Info("stopped processing loop", zap.String("table", c.sinkerTableConfig.Database+"."+c.sinkerTableConfig.TableName))
 			return

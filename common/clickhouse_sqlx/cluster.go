@@ -29,7 +29,9 @@ func InitClusterConn(chCfg *ClickhouseConfig) (cc *ClickhouseCluster, err error)
 	if chCfg.Protocol == clickhouse.HTTP.String() {
 		proto = clickhouse.HTTP
 	}
-
+	if chCfg.MaxOpenConns <= 0 {
+		chCfg.MaxOpenConns = defaultMaxOpenConns
+	}
 	for _, replicas := range chCfg.Hosts {
 		numReplicas := len(replicas)
 		replicaAddrs := make([]string, numReplicas)

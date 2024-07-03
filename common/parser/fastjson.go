@@ -161,7 +161,7 @@ func (p *FastjsonMetric) GetNewKeys(knownKeys *sync.Map) map[string]string {
 	}
 	obj.Visit(func(key []byte, v *fastjson.Value) {
 		strKey := string(key)
-		if _, loaded := knownKeys.LoadOrStore(strKey, nil); !loaded {
+		if _, loaded := knownKeys.Load(strKey); !loaded {
 			if typ, arr := fjDetectType(v, 0); typ != Unknown && typ != Object && !arr {
 				result[strKey] = GetTypeName(typ)
 			}

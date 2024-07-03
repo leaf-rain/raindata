@@ -128,7 +128,7 @@ func (c *GjsonMetric) GetNewKeys(knownKeys *sync.Map) map[string]string {
 	var result = make(map[string]string)
 	ite := func(k, v gjson.Result) bool {
 		strKey := k.Str
-		if _, loaded := knownKeys.LoadOrStore(strKey, nil); !loaded {
+		if _, loaded := knownKeys.Load(strKey); !loaded {
 			if typ, array := gjDetectType(v, 0); typ != Unknown && typ != Object && !array {
 				result[strKey] = GetTypeName(typ)
 			}

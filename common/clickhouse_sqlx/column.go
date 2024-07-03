@@ -67,6 +67,16 @@ type TypeInfo struct {
 	MapValue *TypeInfo `json:"map_value,omitempty"`
 }
 
+func (ty TypeInfo) ToString() string {
+	if ty.Array {
+		return fmt.Sprintf("Array(%s)", ty.MapKey.ToString())
+	}
+	if ty.MapKey != nil && ty.MapValue != nil {
+		return fmt.Sprintf("Map(%s,%s)", ty.MapKey.ToString(), ty.MapValue.ToString())
+	}
+	return GetTypeName(ty.Type)
+}
+
 type Columns struct {
 	rwLock sync.RWMutex
 	keys   []string
@@ -141,7 +151,7 @@ type Metric interface {
 	GetArray(key string, t int) (val interface{})
 	GetIPv4(key string, nullable bool) (val interface{})
 	GetIPv6(key string, nullable bool) (val interface{})
-	//GetNewKeys(knownKeys, newKeys, warnKeys *sync.Map, white, black *regexp.Regexp, partition int, offset int64) bool
+	GetNewKeys(knownKeys *sync.Map) map[string]string
 }
 
 func GetValueByType(metric Metric, cwt *ColumnWithType) (val interface{}) {
