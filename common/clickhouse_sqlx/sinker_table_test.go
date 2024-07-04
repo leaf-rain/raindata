@@ -1,7 +1,9 @@
 package clickhouse_sqlx
 
 import (
+	"fmt"
 	"testing"
+	"time"
 )
 
 func TestNewSinkerTable(t *testing.T) {
@@ -29,4 +31,25 @@ func TestNewSinkerTable(t *testing.T) {
 		t.Fatal(err)
 	}
 	st.start()
+	go func() {
+		for i := 0; i < 1000; i++ {
+			if i%10 == 0 {
+				st.fetchCH <- FetchSingle{
+					Data: fmt.Sprintf("{\"id\":%d,\"contain\":\"test\",\"t1\":\"test\"}", i),
+					Callback: func() {
+						t.Log("callback")
+					},
+				}
+			} else {
+				st.fetchCH <- FetchSingle{
+					Data: fmt.Sprintf("{\"id\":%d,\"contain\":\"test\"}", i),
+					Callback: func() {
+						t.Log("callback")
+					},
+				}
+			}
+
+		}
+	}()
+	time.Sleep(time.Minute * 30)
 }

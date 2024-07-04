@@ -214,8 +214,9 @@ func (c *SinkerTable) processFetch() {
 	var data FetchArray
 	flushFn := func(data Fetch) {
 		bufLength = len(data.GetData())
-		if bufLength > 0 {
-			c.logger.Info(c.sinkerTableConfig.TableName+" flush msg.", zap.Int("bufLength", bufLength))
+		c.logger.Info(c.sinkerTableConfig.TableName+" flush msg.", zap.Int("bufLength", bufLength))
+		if bufLength == 0 {
+			return
 		}
 		conn := c.clusterConn.GetShardConn(time.Now().Unix())
 		ck, _, err := conn.NextGoodReplica(0)
@@ -249,6 +250,7 @@ func (c *SinkerTable) processFetch() {
 	var err error
 	var parse parser.Metric
 	var newKeys map[string]string
+	var needUpdate bool
 	for {
 		select {
 		case fetch := <-c.fetchCH:
@@ -256,6 +258,7 @@ func (c *SinkerTable) processFetch() {
 				continue
 			}
 			// todo:wal
+			needUpdate = false
 			tmpData := fetch.GetData()
 			for i := range tmpData {
 				parse, err = c.parser.Parse([]byte(tmpData[i]))
@@ -273,12 +276,13 @@ func (c *SinkerTable) processFetch() {
 						c.logger.Error(c.sinkerTableConfig.TableName+" flush fields error", zap.Error(err))
 						continue
 					}
+					//needUpdate = true
 				}
 			}
 			data.Data = append(data.Data, fetch.GetData()...)
 			data.Callback = append(data.Callback, fetch.GetCallback()...)
 			bufLength = len(data.Data)
-			if bufLength > c.sinkerTableConfig.BufferSize {
+			if needUpdate || bufLength > c.sinkerTableConfig.BufferSize {
 				tmp := data.Copy()
 				go flushFn(tmp)
 				data = FetchArray{}

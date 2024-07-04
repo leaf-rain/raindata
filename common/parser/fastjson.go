@@ -89,7 +89,7 @@ func (p *FastjsonParser) Parse(bs []byte) (metric Metric, err error) {
 	}
 	buf.parser = p
 	buf.value = value
-	return
+	return buf, nil
 }
 
 func (p *FastjsonMetric) GetString(key string, nullable bool) (val interface{}) {
