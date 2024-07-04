@@ -6,15 +6,24 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"time"
 )
 
 type TypeInfo struct {
-	Type     int
-	Nullable bool
-	Array    bool
-	MapKey   *TypeInfo
-	MapValue *TypeInfo
+	Type     int       `json:"type,omitempty"`
+	Nullable bool      `json:"nullable,omitempty"`
+	Array    bool      `json:"array,omitempty"`
+	MapKey   *TypeInfo `json:"map_key,omitempty"`
+	MapValue *TypeInfo `json:"map_value,omitempty"`
+}
+
+func (ty TypeInfo) ToString() string {
+	if ty.Array {
+		return fmt.Sprintf("Array(%s)", ty.MapKey.ToString())
+	}
+	if ty.MapKey != nil && ty.MapValue != nil {
+		return fmt.Sprintf("Map(%s,%s)", ty.MapKey.ToString(), ty.MapValue.ToString())
+	}
+	return GetTypeName(ty.Type)
 }
 
 var (
@@ -232,12 +241,4 @@ func NewOrderedMap() *OrderedMap {
 	om.keys = []interface{}{}
 	om.values = map[interface{}]interface{}{}
 	return &om
-}
-
-type SeriesQuota struct {
-	sync.Mutex     `json:"-"`
-	NextResetQuota time.Time
-	BmSeries       map[int64]int64 // sid:mid
-	WrSeries       int
-	Birth          time.Time
 }

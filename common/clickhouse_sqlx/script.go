@@ -9,7 +9,7 @@ var (
 	columnsSQL     = `select name, type, default_kind from system.columns where database = '%s' and table = '%s'`
 	createTableSQL = `CREATE TABLE IF NOT EXISTS %s.%s (%s create_time DateTime) ENGINE=ReplacingMergeTree(%s) PARTITION BY toYYYYMMDD(create_time) ORDER BY (%s) SETTINGS index_granularity = 8192;`
 	dropTableSQL   = `DROP TABLE IF EXISTS %s.%s `
-	addColumnSQL   = `ALTER TABLE %s.%s ADD COLUMN %s %s`
+	addColumnSQL   = `ALTER TABLE %s.%s ADD COLUMN IF NOT EXISTS %s %s`
 )
 
 func getTableColumns(database, tablename string) string {

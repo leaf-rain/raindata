@@ -2,6 +2,7 @@ package clickhouse_sqlx
 
 import (
 	"fmt"
+	"github.com/leaf-rain/raindata/common/parser"
 	"log"
 	"regexp"
 	"strings"
@@ -31,50 +32,32 @@ const (
 )
 
 var (
-	typeInfo             map[string]*TypeInfo
+	typeInfo             map[string]*parser.TypeInfo
 	lowCardinalityRegexp = regexp.MustCompile(`^LowCardinality\((.+)\)`)
 )
 
 func init() {
-	typeInfo = make(map[string]*TypeInfo)
+	typeInfo = make(map[string]*parser.TypeInfo)
 	for _, t := range []int{Bool, Int8, Int16, Int32, Int64, UInt8, UInt16, UInt32, UInt64, Float32, Float64, DateTime, String, Object, IPv4, IPv6} {
 		tn := GetTypeName(t)
-		typeInfo[tn] = &TypeInfo{Type: t}
+		typeInfo[tn] = &parser.TypeInfo{Type: t}
 		nullTn := fmt.Sprintf("Nullable(%s)", tn)
-		typeInfo[nullTn] = &TypeInfo{Type: t, Nullable: true}
+		typeInfo[nullTn] = &parser.TypeInfo{Type: t, Nullable: true}
 		arrTn := fmt.Sprintf("Array(%s)", tn)
-		typeInfo[arrTn] = &TypeInfo{Type: t, Array: true}
+		typeInfo[arrTn] = &parser.TypeInfo{Type: t, Array: true}
 	}
-	typeInfo["UUID"] = &TypeInfo{Type: String}
-	typeInfo["Nullable(UUID)"] = &TypeInfo{Type: String, Nullable: true}
-	typeInfo["Array(UUID)"] = &TypeInfo{Type: String, Array: true}
-	typeInfo["Date"] = &TypeInfo{Type: DateTime}
-	typeInfo["Nullable(Date)"] = &TypeInfo{Type: DateTime, Nullable: true}
-	typeInfo["Array(Date)"] = &TypeInfo{Type: DateTime, Array: true}
+	typeInfo["UUID"] = &parser.TypeInfo{Type: String}
+	typeInfo["Nullable(UUID)"] = &parser.TypeInfo{Type: String, Nullable: true}
+	typeInfo["Array(UUID)"] = &parser.TypeInfo{Type: String, Array: true}
+	typeInfo["Date"] = &parser.TypeInfo{Type: DateTime}
+	typeInfo["Nullable(Date)"] = &parser.TypeInfo{Type: DateTime, Nullable: true}
+	typeInfo["Array(Date)"] = &parser.TypeInfo{Type: DateTime, Array: true}
 }
 
 // ColumnWithType
 type ColumnWithType struct {
-	Name string    `json:"name,omitempty"`
-	Type *TypeInfo `json:"type,omitempty"`
-}
-
-type TypeInfo struct {
-	Type     int       `json:"type,omitempty"`
-	Nullable bool      `json:"nullable,omitempty"`
-	Array    bool      `json:"array,omitempty"`
-	MapKey   *TypeInfo `json:"map_key,omitempty"`
-	MapValue *TypeInfo `json:"map_value,omitempty"`
-}
-
-func (ty TypeInfo) ToString() string {
-	if ty.Array {
-		return fmt.Sprintf("Array(%s)", ty.MapKey.ToString())
-	}
-	if ty.MapKey != nil && ty.MapValue != nil {
-		return fmt.Sprintf("Map(%s,%s)", ty.MapKey.ToString(), ty.MapValue.ToString())
-	}
-	return GetTypeName(ty.Type)
+	Name string           `json:"name,omitempty"`
+	Type *parser.TypeInfo `json:"type,omitempty"`
 }
 
 type Columns struct {
@@ -130,31 +113,7 @@ func NewColumns() *Columns {
 	return &om
 }
 
-// Metric interface for metric collection
-type Metric interface {
-	GetBool(key string, nullable bool) (val interface{})
-	GetInt8(key string, nullable bool) (val interface{})
-	GetInt16(key string, nullable bool) (val interface{})
-	GetInt32(key string, nullable bool) (val interface{})
-	GetInt64(key string, nullable bool) (val interface{})
-	GetUint8(key string, nullable bool) (val interface{})
-	GetUint16(key string, nullable bool) (val interface{})
-	GetUint32(key string, nullable bool) (val interface{})
-	GetUint64(key string, nullable bool) (val interface{})
-	GetFloat32(key string, nullable bool) (val interface{})
-	GetFloat64(key string, nullable bool) (val interface{})
-	GetDecimal(key string, nullable bool) (val interface{})
-	GetDateTime(key string, nullable bool) (val interface{})
-	GetString(key string, nullable bool) (val interface{})
-	GetObject(key string, nullable bool) (val interface{})
-	GetMap(key string, typeinfo *TypeInfo) (val interface{})
-	GetArray(key string, t int) (val interface{})
-	GetIPv4(key string, nullable bool) (val interface{})
-	GetIPv6(key string, nullable bool) (val interface{})
-	GetNewKeys(knownKeys *sync.Map) map[string]string
-}
-
-func GetValueByType(metric Metric, cwt *ColumnWithType) (val interface{}) {
+func GetValueByType(metric parser.Metric, cwt *ColumnWithType) (val interface{}) {
 	name := cwt.Name
 	if cwt.Type.Array {
 		val = metric.GetArray(name, cwt.Type.Type)
@@ -203,7 +162,7 @@ func GetValueByType(metric Metric, cwt *ColumnWithType) (val interface{}) {
 	return
 }
 
-func WhichType(typ string) (ti *TypeInfo) {
+func WhichType(typ string) (ti *parser.TypeInfo) {
 	typ = lowCardinalityRegexp.ReplaceAllString(typ, "$1")
 
 	ti, ok := typeInfo[typ]
@@ -232,7 +191,7 @@ func WhichType(typ string) (ti *TypeInfo) {
 	} else if strings.HasPrefix(typ, "Map") {
 		dataType = Map
 		idx := strings.Index(typ, ", ")
-		ti = &TypeInfo{
+		ti = &parser.TypeInfo{
 			Type:     dataType,
 			Nullable: nullable,
 			Array:    array,
@@ -244,7 +203,7 @@ func WhichType(typ string) (ti *TypeInfo) {
 	} else {
 		log.Fatal(fmt.Sprintf("ClickHouse column type %v is not inside supported ones(case-sensitive): %v", origTyp, typeInfo))
 	}
-	ti = &TypeInfo{Type: dataType, Nullable: nullable, Array: array}
+	ti = &parser.TypeInfo{Type: dataType, Nullable: nullable, Array: array}
 	typeInfo[origTyp] = ti
 	return ti
 }

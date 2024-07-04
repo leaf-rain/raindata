@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/leaf-rain/raindata/common/parser"
 	"go.uber.org/zap"
+	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -30,18 +32,20 @@ type SinkerTableConfig struct {
 
 // SinkerTable object maintains number of task for each partition
 type SinkerTable struct {
-	logger      *zap.Logger
-	clusterConn *ClickhouseCluster
-	ctx         context.Context
-	cancel      context.CancelFunc
-	fetchCH     chan Fetch
-	exitCh      chan struct{}
-	processWg   sync.WaitGroup
-	mux         sync.Mutex
-	commitDone  *sync.Cond
-	state       atomic.Uint32
-	parser      parser.Parser
-	fieldMap    *sync.Map // key:columnName, value:*ColumnWithType
+	logger         *zap.Logger
+	clusterConn    *ClickhouseCluster
+	ctx            context.Context
+	cancel         context.CancelFunc
+	fetchCH        chan Fetch
+	exitCh         chan struct{}
+	processWg      sync.WaitGroup
+	mux            sync.Mutex
+	commitDone     *sync.Cond
+	state          atomic.Uint32
+	parser         parser.Parser
+	prepareSQLHttp string
+	prepareSQLTcp  string
+	fieldMap       *sync.Map // key:columnName, value:*ColumnWithType
 	// table相关
 	sinkerTableConfig *SinkerTableConfig
 	// todo:wal功能
@@ -114,11 +118,16 @@ func (c *SinkerTable) flushFields() error {
 			return c.flushFields()
 		}
 		var addColumns []string
+		var allColumns []string
 		c.fieldMap.Range(func(key, value any) bool {
 			if _, ok := columns[key.(string)]; !ok {
 				addColumns = append(addColumns, addTableColumns(c.sinkerTableConfig.Database, c.sinkerTableConfig.TableName, key.(string), value.(*ColumnWithType).Type.ToString()))
 			}
+			allColumns = append(allColumns, key.(string))
 			return true
+		})
+		sort.Slice(allColumns, func(i, j int) bool {
+			return allColumns[i] < allColumns[j]
 		})
 		if len(addColumns) > 0 {
 			for i := range addColumns {
@@ -129,6 +138,15 @@ func (c *SinkerTable) flushFields() error {
 				}
 			}
 		}
+		// 拼接入库sql
+		columnsStr := strings.Join(allColumns, ",")
+		var params = make([]string, len(allColumns))
+		for i := range params {
+			params[i] = "?"
+		}
+		c.prepareSQLHttp = "INSERT INTO " + c.sinkerTableConfig.Database + "." + c.sinkerTableConfig.TableName + " (" + columnsStr + ") " +
+			"VALUES (" + strings.Join(params, ",") + ")"
+		c.prepareSQLTcp = "INSERT INTO " + c.sinkerTableConfig.Database + "." + c.sinkerTableConfig.TableName + " (" + columnsStr + ") "
 	}
 	return err
 }
@@ -155,6 +173,40 @@ func (c *SinkerTable) restart() {
 	c.start()
 }
 
+func (c *SinkerTable) Fetch2Row(fetch Fetch) ([][]any, error) {
+	var result [][]any
+	for _, item := range fetch.GetData() {
+		val, err := c.metric2Row([]byte(item))
+		if err != nil {
+			c.logger.Error(c.sinkerTableConfig.TableName+" parse msg error", zap.Error(err), zap.String("msg", item))
+			return nil, err
+		}
+		result = append(result, val)
+	}
+	return result, nil
+}
+
+func (c *SinkerTable) metric2Row(msg []byte) ([]any, error) {
+	metric, err := c.parser.Parse(msg)
+	if err != nil {
+		return nil, err
+	}
+	var rows []any
+	var allColumns []*ColumnWithType
+	c.fieldMap.Range(func(key, value any) bool {
+		allColumns = append(allColumns, value.(*ColumnWithType))
+		return true
+	})
+	sort.Slice(allColumns, func(i, j int) bool {
+		return allColumns[i].Name < allColumns[j].Name
+	})
+	for _, item := range allColumns {
+		val := GetValueByType(metric, item)
+		rows = append(rows, val)
+	}
+	return rows, err
+}
+
 func (c *SinkerTable) processFetch() {
 	c.processWg.Add(1)
 	defer c.processWg.Done()
@@ -165,7 +217,31 @@ func (c *SinkerTable) processFetch() {
 		if bufLength > 0 {
 			c.logger.Info(c.sinkerTableConfig.TableName+" flush msg.", zap.Int("bufLength", bufLength))
 		}
-		// todo:刷新到数据库
+		conn := c.clusterConn.GetShardConn(time.Now().Unix())
+		ck, _, err := conn.NextGoodReplica(0)
+		if err != nil {
+			c.logger.Error(c.sinkerTableConfig.TableName+" conn.NextGoodReplica error", zap.Error(err))
+			return
+		}
+		var parserSql string
+		if c.sinkerTableConfig.Parse == "http" {
+			parserSql = c.prepareSQLHttp
+		} else {
+			parserSql = c.prepareSQLTcp
+		}
+		var ckData [][]any
+		ckData, err = c.Fetch2Row(data)
+		if err != nil {
+			c.logger.Error(c.sinkerTableConfig.TableName+" Fetch2Row error", zap.Error(err))
+			return
+		}
+		err = ck.Write(parserSql, ckData)
+		if err != nil {
+			c.logger.Error(c.sinkerTableConfig.TableName+" conn.Write error", zap.Error(err))
+		} else {
+			c.logger.Info(c.sinkerTableConfig.TableName+" flush msg success.", zap.Int("bufLength", bufLength))
+			// todo: wal标记删除状态
+		}
 	}
 
 	ticker := time.NewTicker(time.Duration(c.sinkerTableConfig.FlushInterval) * time.Second)

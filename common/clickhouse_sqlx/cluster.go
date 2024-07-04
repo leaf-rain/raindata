@@ -154,6 +154,7 @@ func (sc *ShardConn) Close() {
 }
 
 func (sc *ShardConn) NextGoodReplica(failedVer int) (db *Conn, dbVer int, err error) {
+	// todo:支持集群单节点
 	sc.lock.Lock()
 	defer sc.lock.Unlock()
 	if sc.conn != nil {

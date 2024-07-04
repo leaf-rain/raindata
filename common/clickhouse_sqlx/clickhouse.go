@@ -157,7 +157,7 @@ func (c *Conn) Ping() error {
 	}
 }
 
-func (c *Conn) write_v1(prepareSQL string, rows [][]interface{}, idxBegin, idxEnd int) (numBad int, err error) {
+func (c *Conn) write_v1(prepareSQL string, rows [][]interface{}) (numBad int, err error) {
 	var errExec error
 
 	var stmt *sql.Stmt
@@ -176,7 +176,7 @@ func (c *Conn) write_v1(prepareSQL string, rows [][]interface{}, idxBegin, idxEn
 
 	var bmBad *roaring.Bitmap
 	for i, row := range rows {
-		if _, err = stmt.Exec((row)[idxBegin:idxEnd]...); err != nil {
+		if _, err = stmt.Exec(row...); err != nil {
 			if bmBad == nil {
 				errExec = ecode.Wrapf(err, "driver.Batch.Append")
 				bmBad = roaring.NewBitmap()
@@ -195,7 +195,7 @@ func (c *Conn) write_v1(prepareSQL string, rows [][]interface{}, idxBegin, idxEn
 		}
 		for i, row := range rows {
 			if !bmBad.ContainsInt(i) {
-				if _, err = stmt.Exec((row)[idxBegin:idxEnd]...); err != nil {
+				if _, err = stmt.Exec(row...); err != nil {
 					break
 				}
 			}
@@ -215,7 +215,7 @@ func (c *Conn) write_v1(prepareSQL string, rows [][]interface{}, idxBegin, idxEn
 	return
 }
 
-func (c *Conn) write_v2(prepareSQL string, rows [][]interface{}, idxBegin, idxEnd int) (numBad int, err error) {
+func (c *Conn) write_v2(prepareSQL string, rows [][]interface{}) (numBad int, err error) {
 	var errExec error
 	var batch driver.Batch
 	if batch, err = c.c.PrepareBatch(c.ctx, prepareSQL); err != nil {
@@ -223,7 +223,7 @@ func (c *Conn) write_v2(prepareSQL string, rows [][]interface{}, idxBegin, idxEn
 	}
 	var bmBad *roaring.Bitmap
 	for i, row := range rows {
-		if err = batch.Append((row)[idxBegin:idxEnd]...); err != nil {
+		if err = batch.Append(row...); err != nil {
 			if bmBad == nil {
 				errExec = errors.New(err.Error() + " driver.Batch.Append")
 				bmBad = roaring.NewBitmap()
@@ -242,7 +242,7 @@ func (c *Conn) write_v2(prepareSQL string, rows [][]interface{}, idxBegin, idxEn
 		}
 		for i, row := range rows {
 			if !bmBad.ContainsInt(i) {
-				if err = batch.Append((row)[idxBegin:idxEnd]...); err != nil {
+				if err = batch.Append(row...); err != nil {
 					break
 				}
 			}
@@ -262,15 +262,15 @@ func (c *Conn) write_v2(prepareSQL string, rows [][]interface{}, idxBegin, idxEn
 	return
 }
 
-func (c *Conn) Write(prepareSQL string, rows [][]interface{}, idxBegin, idxEnd int) (numBad int, err error) {
-	log.Printf("start write to ck, begin:%d, idEnd:%d", idxBegin, idxEnd)
+func (c *Conn) Write(prepareSQL string, rows [][]any) (err error) {
+	var numBad int
 	if c.protocol == clickhouse.HTTP {
-		numBad, err = c.write_v1(prepareSQL, rows, idxBegin, idxEnd)
+		numBad, err = c.write_v1(prepareSQL, rows)
 	} else {
-		numBad, err = c.write_v2(prepareSQL, rows, idxBegin, idxEnd)
+		numBad, err = c.write_v2(prepareSQL, rows)
 	}
 	log.Printf("loop write completed, numbad:%d", numBad)
-	return numBad, err
+	return err
 }
 
 func (c *Conn) Close() error {
