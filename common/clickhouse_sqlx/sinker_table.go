@@ -238,7 +238,7 @@ func (c *SinkerTable) processFetch() {
 		}
 		err = ck.Write(parserSql, ckData)
 		if err != nil {
-			c.logger.Error(c.sinkerTableConfig.TableName+" conn.Write error", zap.Error(err))
+			c.logger.Error(c.sinkerTableConfig.TableName+" conn.Write error", zap.Error(err), zap.Int("bufLength", bufLength))
 		} else {
 			c.logger.Info(c.sinkerTableConfig.TableName+" flush msg success.", zap.Int("bufLength", bufLength))
 			// todo: wal标记删除状态
@@ -250,7 +250,6 @@ func (c *SinkerTable) processFetch() {
 	var err error
 	var parse parser.Metric
 	var newKeys map[string]string
-	var needUpdate bool
 	for {
 		select {
 		case fetch := <-c.fetchCH:
@@ -258,7 +257,6 @@ func (c *SinkerTable) processFetch() {
 				continue
 			}
 			// todo:wal
-			needUpdate = false
 			tmpData := fetch.GetData()
 			for i := range tmpData {
 				parse, err = c.parser.Parse([]byte(tmpData[i]))
@@ -276,13 +274,12 @@ func (c *SinkerTable) processFetch() {
 						c.logger.Error(c.sinkerTableConfig.TableName+" flush fields error", zap.Error(err))
 						continue
 					}
-					//needUpdate = true
 				}
 			}
 			data.Data = append(data.Data, fetch.GetData()...)
 			data.Callback = append(data.Callback, fetch.GetCallback()...)
 			bufLength = len(data.Data)
-			if needUpdate || bufLength > c.sinkerTableConfig.BufferSize {
+			if bufLength > c.sinkerTableConfig.BufferSize {
 				tmp := data.Copy()
 				go flushFn(tmp)
 				data = FetchArray{}

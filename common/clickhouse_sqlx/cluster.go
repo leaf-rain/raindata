@@ -125,21 +125,6 @@ type ShardConn struct {
 	chCfg       *ClickhouseConfig
 }
 
-func (sc *ShardConn) SubmitTask(fn func()) (err error) {
-	return sc.writingPool.Submit(fn)
-}
-
-// GetReplica returns the replica to which db connects
-func (sc *ShardConn) GetReplica() (replica string) {
-	sc.lock.Lock()
-	defer sc.lock.Unlock()
-	if sc.conn != nil {
-		curRep := (len(sc.replicas) + sc.nextRep - 1) % len(sc.replicas)
-		replica = sc.replicas[curRep]
-	}
-	return
-}
-
 // Close closes the current replica connection
 func (sc *ShardConn) Close() {
 	sc.lock.Lock()
