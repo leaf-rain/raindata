@@ -6,15 +6,8 @@ import (
 )
 
 func main() {
-	var a []int
-	for i := 0; i < 1000000; i++ {
-		a = append(a, i)
-		if len(a)%10 == 0 {
-			printAlloc()
-			go t(a)
-			a = a[:0]
-		}
-	}
+	a := "中国"
+	println(len(a))
 }
 
 func t(list []int) {
