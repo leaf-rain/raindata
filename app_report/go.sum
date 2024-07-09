@@ -22,6 +22,7 @@ github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
 github.com/leaf-rain/fastjson v0.0.0-20240605084444-e45ca8b5db75 h1:1Bg8AVnPpnbqId+T8TWLhWcdeKjS8RKaMUXq41xxG7M=
 github.com/leaf-rain/fastjson v0.0.0-20240605084444-e45ca8b5db75/go.mod h1:I/08iTeddTb5HHohSrkxJ9gby9Wq1WdVopfU5IizQ28=
+github.com/leaf-rain/fastjson v1.0.0 h1:SVXwK644VOPnx2TH/jqkI/8d7G9tj/0tKMdoaAX99IY=
 github.com/leaf-rain/fastjson v1.0.0/go.mod h1:I/08iTeddTb5HHohSrkxJ9gby9Wq1WdVopfU5IizQ28=
 github.com/lestrrat-go/envload v0.0.0-20180220234015-a3eb8ddeffcc h1:RKf14vYWi2ttpEmkA4aQ3j4u9dStX2t4M8UM6qqNsG8=
 github.com/lestrrat-go/envload v0.0.0-20180220234015-a3eb8ddeffcc/go.mod h1:kopuH9ugFRkIXf3YoqHKyrJ9YfUFsckUU9S7B+XP+is=

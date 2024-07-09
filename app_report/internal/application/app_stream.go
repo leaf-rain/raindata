@@ -9,30 +9,22 @@ import (
 )
 
 type AppStream struct {
-	logger       *zap.Logger
-	config       *config.Config
-	eventManager interface_domain.InterfaceEventManager
-	ckWriter     interface_domain.InterfaceWriter
+	logger *zap.Logger
+	config *config.Config
+	writer interface_domain.InterfaceWriter
 }
 
-func NewAppStream(logger *zap.Logger, config *config.Config, eventManager interface_domain.InterfaceEventManager, ckWriter interface_domain.InterfaceWriter) *AppStream {
+func NewAppStream(logger *zap.Logger, config *config.Config, writer interface_domain.InterfaceWriter) *AppStream {
 	return &AppStream{
-		logger:       logger,
-		config:       config,
-		eventManager: eventManager,
-		ckWriter:     ckWriter,
+		logger: logger,
+		config: config,
+		writer: writer,
 	}
 }
 
 func (app *AppStream) Stream(ctx context.Context, msg string) error {
 	var err error
-	err = app.eventManager.StorageEvent(ctx, msg)
-	if err != nil {
-		app.logger.Error("[Stream] eventManager.UpdateEventManager failed", zap.String("msg", msg), zap.Error(err))
-		return err
-	}
-	// todo:直接写es
-	err = app.ckWriter.WriterMsg(ctx, msg)
+	err = app.writer.WriterMsg(ctx, msg)
 	if err != nil {
 		app.logger.Error("[Stream] writer.WriterMsg failed", zap.String("msg", msg), zap.Error(err))
 	}
