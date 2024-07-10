@@ -22,8 +22,6 @@ type SinkerTableConfig struct {
 	Database      string           `json:"database,omitempty"`
 	FlushInterval int              `json:"flush_interval,omitempty"`
 	BufferSize    int              `json:"buffer_size,omitempty"`
-	TimeZone      string           `json:"time_zone,omitempty"`
-	TimeUnit      float64          `json:"time_unit,omitempty"`
 	Parse         string           `json:"parse,omitempty"` // 选择解析方式
 	BaseColumn    []ColumnWithType `json:"base_column,omitempty"`
 	ReplayKey     string           `json:"replay_key"`
@@ -151,7 +149,7 @@ func (c *SinkerTable) flushFields() error {
 	return err
 }
 
-func (c *SinkerTable) start() {
+func (c *SinkerTable) Start() {
 	if c.state.Load() == StateRunning {
 		return
 	}
@@ -159,7 +157,7 @@ func (c *SinkerTable) start() {
 	go c.processFetch()
 }
 
-func (c *SinkerTable) stop() {
+func (c *SinkerTable) Stop() {
 	if c.state.Load() == StateStopped {
 		return
 	}
@@ -168,9 +166,13 @@ func (c *SinkerTable) stop() {
 	c.processWg.Wait()
 }
 
-func (c *SinkerTable) restart() {
-	c.stop()
-	c.start()
+func (c *SinkerTable) Restart() {
+	c.Stop()
+	c.Start()
+}
+
+func (c *SinkerTable) WriterMsg(msg FetchSingle) {
+	c.fetchCH <- msg
 }
 
 func (c *SinkerTable) Fetch2Row(fetch Fetch) ([][]any, error) {
@@ -201,8 +203,12 @@ func (c *SinkerTable) metric2Row(msg []byte) ([]any, error) {
 		return allColumns[i].Name < allColumns[j].Name
 	})
 	for _, item := range allColumns {
-		val := GetValueByType(metric, item)
-		rows = append(rows, val)
+		if item.Name == "create_time" {
+			rows = append(rows, time.Now().Unix())
+		} else {
+			val := GetValueByType(metric, item)
+			rows = append(rows, val)
+		}
 	}
 	return rows, err
 }

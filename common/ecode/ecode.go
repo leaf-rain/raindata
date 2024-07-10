@@ -10,4 +10,6 @@ var (
 	ERR_EMAIL_TYPE       = errors.New("邮件类型不支持")
 	ERR_EMAIL_Id         = errors.New("邮件ID错误")
 	ERR_APP_ROUTER       = errors.New("方法未找到")
+
+	ERR_MSG_NOT_APPID = errors.New("消息中未找到appid")
 )

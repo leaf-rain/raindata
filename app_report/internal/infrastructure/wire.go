@@ -3,17 +3,24 @@
 
 package infrastructure
 
+//go:generate wire
+
 import (
 	"github.com/google/wire"
 	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/config"
+	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/repository"
 	"github.com/leaf-rain/raindata/app_report/pkg/logger"
+	"github.com/leaf-rain/raindata/common/clickhouse_sqlx"
 )
 
 var WireInfrastructureSet = wire.NewSet(
 	config.NewCmdArgs,
 	config.InitConfig,
 	config.GetLogCfgByConfig,
+	config.GetCKCfgByConfig,
+	clickhouse_sqlx.InitClusterConn,
 	logger.InitLogger,
+	repository.NewCkWriter,
 	NewInfrastructure,
 )
 

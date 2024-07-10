@@ -1,26 +1,29 @@
 package domain
 
 import (
-	"github.com/leaf-rain/raindata/app_report/internal/application/interface_domain"
+	"github.com/leaf-rain/raindata/app_report/internal/domain/interface_repo"
 	"go.uber.org/zap"
 )
 
 //go:generate wire
 
-var _ interface_domain.InterfaceWriter = (*Domain)(nil)
-
 type Domain struct {
-	logger *zap.Logger
-	// 写ck
-	ckWriter *Writer
+	logger        *zap.Logger
+	repoMetadata  interface_repo.InterfaceMetadataRepo
+	repoWriterMsg interface_repo.InterfaceWriterRepo
+	repoId        interface_repo.InterfaceIdRepo
 }
 
 func NewDomain(
 	logger *zap.Logger,
-	ckWriter *Writer,
+	repoMetadata interface_repo.InterfaceMetadataRepo,
+	repoWriterMsg interface_repo.InterfaceWriterRepo,
+	repoId interface_repo.InterfaceIdRepo,
 ) *Domain {
 	return &Domain{
-		logger:   logger,
-		ckWriter: ckWriter,
+		logger:        logger,
+		repoMetadata:  repoMetadata,
+		repoWriterMsg: repoWriterMsg,
+		repoId:        repoId,
 	}
 }

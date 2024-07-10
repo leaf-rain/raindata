@@ -51,3 +51,11 @@ func Add(str ...string) string {
 	}
 	return builder.String()
 }
+
+func Add(str ...string) string {
+	var builder strings.Builder
+	for _, s := range str {
+		builder.WriteString(s)
+	}
+	return builder.String()
+}

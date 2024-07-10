@@ -3,5 +3,5 @@ package interface_domain
 import "context"
 
 type InterfaceWriter interface {
-	WriterMsg(ctx context.Context, msg string) error
+	WriterMsg(ctx context.Context, appid int64, msg string) error
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/leaf-rain/raindata/app_report/pkg/logger"
+	"github.com/leaf-rain/raindata/common/clickhouse_sqlx"
 	"github.com/leaf-rain/raindata/common/ecode"
 	"github.com/spf13/viper"
 	"log"
@@ -11,18 +12,23 @@ import (
 )
 
 type Config struct {
-	HttpAddr     string            `json:"HttpAddr" yaml:"HttpAddr"`
-	GrpcAddr     string            `json:"GrpcAddr" yaml:"GrpcAddr"`
-	Version      string            `json:"Version" yaml:"Version"`
-	Mode         string            `json:"Mode" yaml:"Mode"`
-	SecretKey    string            `json:"SecretKey" yaml:"SecretKey"`
-	LogConfig    *logger.LogConfig `json:"LogConfig" yaml:"LogConfig"`
-	HttpListener net.Listener      `json:"-" yaml:"-"`
-	GrpcListener net.Listener      `json:"-" yaml:"-"`
+	HttpAddr     string                            `json:"HttpAddr" yaml:"HttpAddr"`
+	GrpcAddr     string                            `json:"GrpcAddr" yaml:"GrpcAddr"`
+	Version      string                            `json:"Version" yaml:"Version"`
+	Mode         string                            `json:"Mode" yaml:"Mode"`
+	SecretKey    string                            `json:"SecretKey" yaml:"SecretKey"`
+	LogConfig    *logger.LogConfig                 `json:"LogConfig" yaml:"LogConfig"`
+	CKConfig     *clickhouse_sqlx.ClickhouseConfig `json:"CKConfig" yaml:"CKConfig"`
+	HttpListener net.Listener                      `json:"-" yaml:"-"`
+	GrpcListener net.Listener                      `json:"-" yaml:"-"`
 }
 
 func GetLogCfgByConfig(cfg *Config) *logger.LogConfig {
 	return cfg.LogConfig
+}
+
+func GetCKCfgByConfig(cfg *Config) *clickhouse_sqlx.ClickhouseConfig {
+	return cfg.CKConfig
 }
 
 func InitConfig(opt *CmdArgs) (cfg *Config, err error) {

@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+// todo:需要添加appid，否则无法识别
+
 type LogConfig struct {
 	StorageDays int    `json:"storageDays"`
 	LogDir      string `json:"logDir"`

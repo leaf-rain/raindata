@@ -30,7 +30,7 @@ func TestNewSinkerTable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st.start()
+	st.Start()
 	go func() {
 		for i := 0; i < 1000; i++ {
 			if i%10 == 0 {

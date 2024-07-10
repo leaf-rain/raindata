@@ -15,6 +15,7 @@ import (
 type ClickhouseCluster struct {
 	lock        sync.Mutex
 	clusterConn []*ShardConn
+	chCfg       *ClickhouseConfig
 }
 
 // Each shard has a pool.Conn which connects to one replica inside the shard.
@@ -24,7 +25,7 @@ func InitClusterConn(chCfg *ClickhouseConfig) (cc *ClickhouseCluster, err error)
 	cc.lock.Lock()
 	defer cc.lock.Unlock()
 	cc.freeClusterConn()
-
+	cc.chCfg = chCfg
 	proto := clickhouse.Native
 	if chCfg.Protocol == clickhouse.HTTP.String() {
 		proto = clickhouse.HTTP
@@ -110,6 +111,10 @@ func (cc *ClickhouseCluster) GetShardConn(batchNum int64) (sc *ShardConn) {
 // CloseAll closed all connection and destroys the pool
 func (cc *ClickhouseCluster) CloseAll() {
 	cc.FreeClusterConn()
+}
+
+func (cc *ClickhouseCluster) GetDb() string {
+	return cc.chCfg.DB
 }
 
 // ShardConn a datastructure for storing the clickhouse connection

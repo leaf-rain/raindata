@@ -6,7 +6,10 @@ LogConfig:
   caller: true
   writer: "console"
   encode: "json"
-  logFile:
-    maxSize: 100
-    output: 
-      - "logs"
+CKConfig:
+  hosts:
+    -
+      - "127.0.0.1:9000"
+  DB: "test"
+  username: "root"
+  password: "yeyangfengqi"

@@ -7,9 +7,10 @@
 package infrastructure
 
 import (
-	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/config"
-	"github.com/leaf-rain/raindata/app_report/pkg/logger"
 	"github.com/google/wire"
+	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/config"
+	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/repository"
+	"github.com/leaf-rain/raindata/app_report/pkg/logger"
 )
 
 // Injectors from wire.go:
@@ -21,11 +22,14 @@ func Initialize() (*Infrastructure, error) {
 		return nil, err
 	}
 	logConfig := config.GetLogCfgByConfig(configConfig)
-	zapLogger := logger.InitLogger(logConfig)
+	zapLogger, err := logger.InitLogger(logConfig)
+	if err != nil {
+		return nil, err
+	}
 	infrastructure := NewInfrastructure(zapLogger)
 	return infrastructure, nil
 }
 
 // wire.go:
 
-var WireInfrastructureSet = wire.NewSet(config.NewCmdArgs, config.InitConfig, config.GetLogCfgByConfig, logger.InitLogger, NewInfrastructure)
+var WireInfrastructureSet = wire.NewSet(config.NewCmdArgs, config.InitConfig, config.GetLogCfgByConfig, config.GetCKCfgByConfig, logger.InitLogger, repository.NewCkWriter, NewInfrastructure)
