@@ -15,7 +15,6 @@ type ParserConfig struct {
 	Ty        string
 	CsvFormat []string
 	Delimiter string
-	FieldsStr string
 	TimeUnit  float64
 	Local     *time.Location
 	Logger    *zap.Logger
@@ -30,7 +29,7 @@ func NewParse(cf ParserConfig) (Parser, error) {
 	case "fastjson":
 		fallthrough
 	default:
-		return NewFastjsonParser(cf.FieldsStr, cf.TimeUnit, cf.Local, cf.Logger)
+		return NewFastjsonParser(cf.TimeUnit, cf.Local, cf.Logger)
 	}
 }
 

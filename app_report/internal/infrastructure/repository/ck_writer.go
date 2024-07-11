@@ -49,15 +49,18 @@ func (w CKWriter) loadTable(appid int64, event string) (*clickhouse_sqlx.SinkerT
 	} else {
 		m = w.tableEventMap
 	}
+	w.lock.Lock()
+	defer w.lock.Unlock()
 	sinkerTable, ok := m[appid]
 	if !ok {
-		w.lock.Lock()
-		defer w.lock.Unlock()
 		tableName := ""
+		var engine int
 		if event == "log" {
 			tableName = "Sinker_Log_" + strconv.FormatInt(appid, 10)
+			engine = clickhouse_sqlx.EngineMergeTree
 		} else {
 			tableName = "Sinker_Event_" + strconv.FormatInt(appid, 10)
+			engine = clickhouse_sqlx.EngineReplacingMergeTree
 		}
 		sinkerTable, err = clickhouse_sqlx.NewSinkerTable(context.TODO(), w.ckCluster, w.logger, &clickhouse_sqlx.SinkerTableConfig{
 			Database:      w.ckCluster.GetDb(),
@@ -65,8 +68,8 @@ func (w CKWriter) loadTable(appid int64, event string) (*clickhouse_sqlx.SinkerT
 			BufferSize:    10000,
 			FlushInterval: 1,
 			Parse:         "tcp",
-			OrderByKey:    consts.KeyEventForMsg,
-			ReplayKey:     consts.KeyIdForMsg,
+			OrderByKey:    consts.KeyEventForMsg + "," + consts.KeyIdForMsg,
+			ReplayKey:     consts.KeyVersionForMsg,
 			BaseColumn: []clickhouse_sqlx.ColumnWithType{
 				{
 					Name: consts.KeyIdForMsg,
@@ -77,11 +80,13 @@ func (w CKWriter) loadTable(appid int64, event string) (*clickhouse_sqlx.SinkerT
 					Type: clickhouse_sqlx.WhichType("String"),
 				},
 			},
+			Engine: engine,
 		}, "fastjson")
 		if err != nil {
 			return nil, err
 		}
 		sinkerTable.Start()
+		m[appid] = sinkerTable
 	}
 	return sinkerTable, nil
 }

@@ -4,5 +4,6 @@ const (
 	KeyAppidForMsg      = "appid"
 	KeyEventForMsg      = "event"
 	KeyIdForMsg         = "_id"
-	KeyCreateTimeForMsg = "create_time"
+	KeyVersionForMsg    = "_version"
+	KeyCreateTimeForMsg = "_create_time"
 )

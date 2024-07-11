@@ -92,6 +92,11 @@ type CsvMetric struct {
 	values []string
 }
 
+func (p *CsvMetric) Close() {
+	p.parser.pool.Put(p)
+	return
+}
+
 func (c *CsvMetric) GetNewKeys(knownKeys *sync.Map) map[string]string {
 	return nil
 }

@@ -26,6 +26,7 @@ type SinkerTableConfig struct {
 	BaseColumn    []ColumnWithType `json:"base_column,omitempty"`
 	ReplayKey     string           `json:"replay_key"`
 	OrderByKey    string           `json:"order_by_key"`
+	Engine        int              `json:"engine"`
 }
 
 // SinkerTable object maintains number of task for each partition
@@ -78,6 +79,9 @@ func NewSinkerTable(ctx context.Context, cc *ClickhouseCluster, logger *zap.Logg
 	if err != nil {
 		return nil, err
 	}
+	if s.sinkerTableConfig.FlushInterval <= 0 {
+		s.sinkerTableConfig.FlushInterval = 1
+	}
 	return s, nil
 }
 
@@ -108,7 +112,7 @@ func (c *SinkerTable) flushFields() error {
 			columns[name] = ct
 		}
 		if len(columns) == 0 {
-			query = createTable(c.sinkerTableConfig.Database, c.sinkerTableConfig.TableName, c.sinkerTableConfig.ReplayKey, c.sinkerTableConfig.OrderByKey, c.fieldMap)
+			query = createTable(c.sinkerTableConfig.Engine, c.sinkerTableConfig.Database, c.sinkerTableConfig.TableName, c.sinkerTableConfig.ReplayKey, c.sinkerTableConfig.OrderByKey, c.fieldMap)
 			err = ck.Exec(query)
 			if err != nil {
 				return err
@@ -203,7 +207,7 @@ func (c *SinkerTable) metric2Row(msg []byte) ([]any, error) {
 		return allColumns[i].Name < allColumns[j].Name
 	})
 	for _, item := range allColumns {
-		if item.Name == "create_time" {
+		if item.Name == "_create_time" {
 			rows = append(rows, time.Now().Unix())
 		} else {
 			val := GetValueByType(metric, item)
@@ -216,10 +220,9 @@ func (c *SinkerTable) metric2Row(msg []byte) ([]any, error) {
 func (c *SinkerTable) processFetch() {
 	c.processWg.Add(1)
 	defer c.processWg.Done()
-	var bufLength int
 	var data FetchArray
 	flushFn := func(data Fetch) {
-		bufLength = len(data.GetData())
+		bufLength := len(data.GetData())
 		c.logger.Info(c.sinkerTableConfig.TableName+" flush msg.", zap.Int("bufLength", bufLength))
 		if bufLength == 0 {
 			return
@@ -254,7 +257,6 @@ func (c *SinkerTable) processFetch() {
 	ticker := time.NewTicker(time.Duration(c.sinkerTableConfig.FlushInterval) * time.Second)
 	defer ticker.Stop()
 	var err error
-	var parse parser.Metric
 	var newKeys map[string]string
 	for {
 		select {
@@ -265,6 +267,7 @@ func (c *SinkerTable) processFetch() {
 			// todo:wal
 			tmpData := fetch.GetData()
 			for i := range tmpData {
+				var parse parser.Metric
 				parse, err = c.parser.Parse([]byte(tmpData[i]))
 				if err != nil {
 					c.logger.Error(c.sinkerTableConfig.TableName+" parse error", zap.Error(err), zap.String("data", tmpData[i]))
@@ -282,9 +285,9 @@ func (c *SinkerTable) processFetch() {
 					}
 				}
 			}
-			data.Data = append(data.Data, fetch.GetData()...)
+			data.Data = append(data.Data, tmpData...)
 			data.Callback = append(data.Callback, fetch.GetCallback()...)
-			bufLength = len(data.Data)
+			bufLength := len(data.Data)
 			if bufLength > c.sinkerTableConfig.BufferSize {
 				tmp := data.Copy()
 				go flushFn(tmp)
@@ -292,6 +295,7 @@ func (c *SinkerTable) processFetch() {
 				ticker.Reset(time.Duration(c.sinkerTableConfig.FlushInterval) * time.Second)
 			}
 		case <-ticker.C:
+			c.logger.Info("--------------------------------------------")
 			tmp := data.Copy()
 			go flushFn(tmp)
 			data = FetchArray{}

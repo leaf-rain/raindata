@@ -15,3 +15,8 @@ const (
 	defaultRebalanceTimeout        = 120000 // 2 min
 	defaultRequestTimeoutOverhead  = 60000  // 1 min
 )
+
+const (
+	EngineMergeTree          = 1
+	EngineReplacingMergeTree = 2
+)

@@ -56,6 +56,10 @@ type GjsonMetric struct {
 	raw    string
 }
 
+func (p *GjsonMetric) Close() {
+	p.parser.pool.Put(p)
+}
+
 func (c *GjsonMetric) getField(key string) gjson.Result {
 	ret := gjson.Get(c.raw, key)
 	if !ret.Exists() {

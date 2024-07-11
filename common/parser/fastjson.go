@@ -19,34 +19,18 @@ var EmpytObject = make(map[string]interface{})
 
 // FastjsonParser, parser for get data in json format
 type FastjsonParser struct {
-	fjp          fastjson.Parser
-	fields       *fastjson.Object
-	value        *fastjson.Value
+	pp           fastjson.ParserPool
 	knownLayouts *sync.Map
-	pool         sync.Pool
-	fieldsStr    string
 	timeUnit     float64
 	local        *time.Location
 	logger       *zap.Logger
+	metricPool   *sync.Pool
 }
 
-func NewFastjsonParser(fieldsStr string, timeUnit float64, local *time.Location, logger *zap.Logger) (*FastjsonParser, error) {
+func NewFastjsonParser(timeUnit float64, local *time.Location, logger *zap.Logger) (*FastjsonParser, error) {
 	buf := new(FastjsonParser)
-	buf.fieldsStr = fieldsStr
 	buf.knownLayouts = &sync.Map{}
 	buf.logger = logger
-	if fieldsStr != "" {
-		value, err := fastjson.Parse(fieldsStr)
-		if err != nil {
-			err = errors.Wrapf(err, "failed to parse fields as a valid json object")
-			return nil, err
-		}
-		buf.fields, err = value.Object()
-		if err != nil {
-			err = errors.Wrapf(err, "failed to retrive fields member")
-			return nil, err
-		}
-	}
 	buf.timeUnit = 1
 	if timeUnit != 0 {
 		buf.timeUnit = timeUnit
@@ -56,7 +40,7 @@ func NewFastjsonParser(fieldsStr string, timeUnit float64, local *time.Location,
 	} else {
 		buf.local = time.Local
 	}
-	buf.pool = sync.Pool{
+	buf.metricPool = &sync.Pool{
 		New: func() interface{} {
 			return &FastjsonMetric{
 				parser: buf,
@@ -69,27 +53,28 @@ func NewFastjsonParser(fieldsStr string, timeUnit float64, local *time.Location,
 type FastjsonMetric struct {
 	parser *FastjsonParser
 	value  *fastjson.Value
+	ps     *fastjson.Parser
 }
 
 func (p *FastjsonParser) Parse(bs []byte) (metric Metric, err error) {
 	var value *fastjson.Value
-	if value, err = p.fjp.ParseBytes(bs); err != nil {
+	var ps = p.pp.Get()
+	value, err = ps.ParseBytes(bs)
+	if err != nil {
 		err = errors.Wrapf(err, "")
 		return
 	}
+	var result = p.metricPool.Get().(*FastjsonMetric)
+	result.parser = p
+	result.value = value
+	result.ps = ps
+	return result, nil
+}
 
-	if p.fields != nil {
-		p.fields.Visit(func(key []byte, v *fastjson.Value) {
-			value.Set(string(key), v)
-		})
-	}
-	buf, _ := p.pool.Get().(*FastjsonMetric)
-	if buf == nil {
-		buf = new(FastjsonMetric)
-	}
-	buf.parser = p
-	buf.value = value
-	return buf, nil
+func (p *FastjsonMetric) Close() {
+	p.parser.pp.Put(p.ps)
+	p.parser.metricPool.Put(p)
+	return
 }
 
 func (p *FastjsonMetric) GetString(key string, nullable bool) (val interface{}) {
