@@ -34,12 +34,12 @@ func GetCKCfgByConfig(cfg *Config) *clickhouse_sqlx.ClickhouseConfig {
 func InitConfig(opt *CmdArgs) (cfg *Config, err error) {
 	cfg = new(Config)
 	var cfPath = opt.ConfigFile
-	if cfPath == "" {
+	if *cfPath == "" {
 		log.Println("config file path is  empty")
 		return nil, ecode.ERR_CONFIG_PATH
 	}
 	vip := viper.New()
-	vip.SetConfigFile(cfPath)
+	vip.SetConfigFile(*cfPath)
 	err = vip.ReadInConfig()
 	if err != nil {
 		log.Println("config file vip.ReadInConfig err:", err)
@@ -50,7 +50,7 @@ func InitConfig(opt *CmdArgs) (cfg *Config, err error) {
 		log.Println("config file vip.Unmarshal err:", err)
 		return nil, ecode.ERR_CONFIG_UNMARSHAL
 	}
-	cfg.Mode = opt.Mode
+	cfg.Mode = *opt.Mode
 	log.Println("config file loading success.", cfg)
 	// 加载端口
 	if cfg.HttpAddr != "" {

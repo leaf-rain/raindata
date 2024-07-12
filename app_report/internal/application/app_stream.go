@@ -3,30 +3,28 @@ package application
 import (
 	"context"
 	"go.uber.org/zap"
-
-	"github.com/leaf-rain/raindata/app_report/internal/application/interface_domain"
-	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/config"
+	"strconv"
 )
 
 type AppStream struct {
-	logger *zap.Logger
-	config *config.Config
-	writer interface_domain.InterfaceWriter
+	app *Applications
 }
 
-func NewAppStream(logger *zap.Logger, config *config.Config, writer interface_domain.InterfaceWriter) *AppStream {
+func NewAppStream(app *Applications) *AppStream {
 	return &AppStream{
-		logger: logger,
-		config: config,
-		writer: writer,
+		app: app,
 	}
 }
 
 func (app *AppStream) Stream(ctx context.Context, msg string) error {
-	var err error
-	err = app.writer.WriterMsg(ctx, msg)
+	var appidStr = msg[:32]
+	appid, err := strconv.ParseInt(appidStr, 10, 64)
 	if err != nil {
-		app.logger.Error("[Stream] writer.WriterMsg failed", zap.String("msg", msg), zap.Error(err))
+		app.app.logger.Error("[Stream] parse appid failed", zap.String("msg", msg), zap.Error(err))
+	}
+	err = app.app.writer.WriterMsg(ctx, appid, msg[32:])
+	if err != nil {
+		app.app.logger.Error("[Stream] writer.WriterMsg failed", zap.String("msg", msg), zap.Error(err))
 	}
 	return err
 }

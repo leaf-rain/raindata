@@ -13,6 +13,7 @@ require (
 	github.com/leaf-rain/raindata/app_basicsdata v0.0.0-00010101000000-000000000000
 	github.com/leaf-rain/raindata/common v0.0.0-00010101000000-000000000000
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
+	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/spf13/viper v1.18.2
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.63.2
@@ -20,6 +21,7 @@ require (
 )
 
 require (
+	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/ClickHouse/ch-go v0.61.5 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.25.0 // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
@@ -61,5 +63,7 @@ require (
 	golang.org/x/text v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240227224415-6ceb2ff114de // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

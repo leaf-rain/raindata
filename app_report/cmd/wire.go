@@ -3,6 +3,8 @@
 
 package main
 
+//go:generate wire
+
 import (
 	"github.com/google/wire"
 	"github.com/leaf-rain/raindata/app_report/internal/adapter"
@@ -12,13 +14,16 @@ import (
 	"github.com/leaf-rain/raindata/app_report/internal/domain"
 	"github.com/leaf-rain/raindata/app_report/internal/domain/interface_repo"
 	"github.com/leaf-rain/raindata/app_report/internal/infrastructure"
+	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/repository"
 )
 
 func Initialize() (*adapter.Adapter, error) {
 	wire.Build(
 		wire.Bind(new(interface_app.InterfaceStream), new(*application.AppStream)),
-		wire.Bind(new(interface_repo.InterfaceEventManager), new(*domain.EventManager)),
-		wire.Bind(new(interface_domain.InterfaceWriter), new(*domain.CkWriter)),
+		wire.Bind(new(interface_domain.InterfaceWriter), new(*domain.Writer)),
+		wire.Bind(new(interface_repo.InterfaceMetadataRepo), new(*interface_repo.DefaultMetadata)),
+		wire.Bind(new(interface_repo.InterfaceWriterRepo), new(*repository.CKWriter)),
+		wire.Bind(new(interface_repo.InterfaceIdRepo), new(*interface_repo.SnowflakeId)),
 		infrastructure.WireInfrastructureSet,
 		domain.WireDomainSet,
 		application.WireApplicationSet,

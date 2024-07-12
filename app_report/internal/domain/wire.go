@@ -16,6 +16,7 @@ var WireDomainSet = wire.NewSet(
 	interface_repo.NewSnowflakeId,
 	interface_repo.NewMetadata,
 	NewDomain,
+	NewCkWriter,
 )
 
 func Initialize() (*Domain, error) {

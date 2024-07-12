@@ -1,16 +1,24 @@
 package config
 
-import "flag"
+import (
+	"flag"
+	"fmt"
+	"os"
+)
 
 type CmdArgs struct {
-	ConfigFile string
-	Mode       string
+	ConfigFile *string
+	Mode       *string
+}
+
+var Args = &CmdArgs{
+	ConfigFile: flag.String("configFile", "./configs/config.yaml", "配置文件路径"),
+	Mode:       flag.String("mode", "pro", "环境"),
 }
 
 func NewCmdArgs() *CmdArgs {
-	var result = new(CmdArgs)
-	flag.StringVar(&result.Mode, "mode", "pro", "环境")
-	flag.StringVar(&result.ConfigFile, "configFile", "../../configs/config.yaml", "配置文件路径")
+	fmt.Print("work path:")
+	fmt.Println(os.Getwd())
 	flag.Parse()
-	return result
+	return Args
 }

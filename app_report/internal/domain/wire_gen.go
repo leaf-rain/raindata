@@ -42,4 +42,6 @@ func Initialize() (*Domain, error) {
 
 // wire.go:
 
-var WireDomainSet = wire.NewSet(interface_repo.NewSnowflakeId, interface_repo.NewMetadata, NewDomain)
+var WireDomainSet = wire.NewSet(interface_repo.NewSnowflakeId, interface_repo.NewMetadata, NewDomain,
+	NewCkWriter,
+)
