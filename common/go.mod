@@ -8,6 +8,7 @@ require (
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/go-sql-driver/mysql v1.8.1
 	github.com/hashicorp/hcl v1.0.0
 	github.com/leaf-rain/fastjson v1.0.0
 	github.com/magiconair/properties v1.8.7
@@ -28,6 +29,7 @@ require (
 )
 
 require (
+	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/ClickHouse/ch-go v0.61.5 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/bits-and-blooms/bitset v1.12.0 // indirect
