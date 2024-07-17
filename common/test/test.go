@@ -2,54 +2,38 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"io"
 	"runtime"
+
+	"github.com/rosedblabs/wal"
 )
 
 func main() {
-	fileSize := 10 * 1024 // 10MB
-	fileName := "myfile.text"
-	f, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
-	if err != nil {
-		panic(err)
-	}
-	if err := os.Truncate(f.Name(), int64(fileSize)); err != nil {
-		panic(err)
-	}
-	fmt.Println(getFileSize(fileName))
-	// 可选：写入一些数据到文件开头
-	if _, err := f.Write([]byte("Hello, World!\n")); err != nil {
-		panic(err)
-	}
-	if _, err := f.Write([]byte("Hello, World!\n")); err != nil {
-		panic(err)
-	}
-	if _, err := f.Write([]byte("Hello, World!\n")); err != nil {
-		panic(err)
-	}
-	f.Close()
-	fmt.Println(getFileSize(fileName))
+	var opt = wal.DefaultOptions
+	opt.DirPath = "./"
+	wal, _ := wal.Open(opt)
+	// write some data
+	chunkPosition, _ := wal.Write([]byte("some data 1"))
+	// read by the position
+	val, _ := wal.Read(chunkPosition)
+	fmt.Println(string(val))
 
-	f, err = os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		panic(err)
+	wal.Write([]byte("some data 2"))
+	wal.Write([]byte("some data 3"))
+
+	// iterate all data in wal
+	reader := wal.NewReader()
+	for {
+		val, pos, err := reader.Next()
+		if err == io.EOF {
+			break
+		}
+		fmt.Println(string(val))
+		fmt.Println(pos) // get position of the data for next read
+		fmt.Println(reader.CurrentChunkPosition())
+		fmt.Println(reader.CurrentSegmentId())
+		fmt.Println("-----------------")
 	}
-	if err := os.Truncate(f.Name(), int64(fileSize)); err != nil {
-		panic(err)
-	}
-	fmt.Println(getFileSize(fileName))
-	// 可选：写入一些数据到文件开头
-	if _, err := f.Write([]byte("Hello, World!\n")); err != nil {
-		panic(err)
-	}
-	if _, err := f.Write([]byte("Hello, World!\n")); err != nil {
-		panic(err)
-	}
-	if _, err := f.Write([]byte("Hello, World!\n")); err != nil {
-		panic(err)
-	}
-	f.Close()
-	fmt.Println(getFileSize(fileName))
 }
 
 func printAlloc() {
@@ -60,29 +44,4 @@ func printAlloc() {
 	fmt.Printf("Sys = %v MiB\n", m.Sys/1024/1024)               // 系统为Go分配的物理内存
 	fmt.Printf("NumGC = %v\n", m.NumGC)
 	fmt.Printf("--------------------------------------------------------------------\n")
-}
-
-func getFileSize(filePath string) (string, error) {
-	fileInfo, err := os.Stat(filePath)
-	if err != nil {
-		return "", err
-	}
-	fileSize := fileInfo.Size()
-	return humanReadableByteCount(fileSize, false), nil
-}
-
-func humanReadableByteCount(b int64, si bool) string {
-	var unit string = "iB"
-	if si {
-		unit = "B"
-	}
-	units := []string{"K" + unit, "M" + unit, "G" + unit, "T" + unit, "P" + unit, "E" + unit, "Z" + unit}
-	if b < 1024 {
-		return fmt.Sprintf("%d B", b)
-	}
-	magnitude := int64(0)
-	for ; b >= 1024; b /= 1024 {
-		magnitude++
-	}
-	return fmt.Sprintf("%.1f %s", float64(b)/1024.0, units[magnitude-1])
 }

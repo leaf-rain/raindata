@@ -14,6 +14,7 @@ require (
 	github.com/magiconair/properties v1.8.7
 	github.com/pelletier/go-toml/v2 v2.2.2
 	github.com/pkg/errors v0.9.1
+	github.com/rosedblabs/wal v1.3.8
 	github.com/shopspring/decimal v1.4.0
 	github.com/spf13/cast v1.6.0
 	github.com/spf13/viper v1.18.2
@@ -58,6 +59,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
+	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.13 // indirect
 	go.opentelemetry.io/otel v1.26.0 // indirect
 	go.opentelemetry.io/otel/trace v1.26.0 // indirect

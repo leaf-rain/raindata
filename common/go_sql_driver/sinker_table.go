@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"github.com/leaf-rain/raindata/common/parser"
 	"go.uber.org/zap"
+	"os"
 	"sort"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -43,14 +45,14 @@ type SinkerTable struct {
 	fetchCH    chan Fetch
 	exitCh     chan struct{}
 	processWg  sync.WaitGroup
-	mux        sync.Mutex
+	mux        sync.RWMutex
 	commitDone *sync.Cond
 	state      atomic.Uint32
 	parser     parser.Parser
 	fieldMap   *sync.Map // key:columnName, value:*ColumnWithType
 	// table相关
 	sinkerTableConfig *SinkerTableConfig
-	// todo:wal功能
+	fd                *os.File
 }
 
 // NewSinkerTable get an instance of sinker with the task list
@@ -84,6 +86,10 @@ func NewSinkerTable(ctx context.Context, db *sql.DB, logger *zap.Logger, sinkerT
 	}
 	if s.sinkerTableConfig.FlushInterval <= 0 {
 		s.sinkerTableConfig.FlushInterval = 1
+	}
+	s.fd, err = os.OpenFile(sinkerTableConfig.TableName+".wal", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		return nil, err
 	}
 	return s, nil
 }
@@ -169,69 +175,32 @@ func (c *SinkerTable) WriterMsg(msg FetchSingle) {
 	c.fetchCH <- msg
 }
 
-func (c *SinkerTable) Fetch2Row(fetch Fetch) ([][]any, error) {
-	var result [][]any
-	for _, item := range fetch.GetData() {
-		val, err := c.metric2Row([]byte(item))
-		if err != nil {
-			c.logger.Error(c.sinkerTableConfig.TableName+" parse msg error", zap.Error(err), zap.String("msg", item))
-			return nil, err
-		}
-		result = append(result, val)
-	}
-	return result, nil
-}
-
-func (c *SinkerTable) metric2Row(msg []byte) ([]any, error) {
-	metric, err := c.parser.Parse(msg)
-	if err != nil {
-		return nil, err
-	}
-	var rows []any
-	var allColumns []*ColumnWithType
-	c.fieldMap.Range(func(key, value any) bool {
-		allColumns = append(allColumns, value.(*ColumnWithType))
-		return true
-	})
-	sort.Slice(allColumns, func(i, j int) bool {
-		return allColumns[i].Name < allColumns[j].Name
-	})
-	for _, item := range allColumns {
-		if item.Name == "_create_time" {
-			rows = append(rows, time.Now().Unix())
-		} else {
-			val := GetValueByType(metric, item)
-			rows = append(rows, val)
-		}
-	}
-	return rows, err
-}
-
 func (c *SinkerTable) processFetch() {
 	c.processWg.Add(1)
 	defer c.processWg.Done()
 	var data FetchArray
 	var err error
 	flushFn := func(data Fetch) {
+		c.mux.Lock()
 		bufLength := len(data.GetData())
 		c.logger.Info(c.sinkerTableConfig.TableName+" flush msg.", zap.Int("bufLength", bufLength))
 		if bufLength == 0 {
+			c.mux.Unlock()
 			return
 		}
-		var ckData [][]any
-		ckData, err = c.Fetch2Row(data)
+		c.fd.Close()
+		var newFileName = c.sinkerTableConfig.TableName + "." + strconv.FormatInt(time.Now().UnixNano(), 10) + ".wal.pending"
+		err = os.Rename(c.sinkerTableConfig.TableName+".wal", newFileName)
 		if err != nil {
-			c.logger.Error(c.sinkerTableConfig.TableName+" Fetch2Row error", zap.Error(err))
+			c.logger.Error(c.sinkerTableConfig.TableName+" rename wal error", zap.Error(err))
 			return
 		}
-		// todo:写文件
-		err = c.db.Write(c.prepareSQL, ckData)
+		c.fd, err = os.OpenFile(c.sinkerTableConfig.TableName+".wal", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
-			c.logger.Error(c.sinkerTableConfig.TableName+" conn.Write error", zap.Error(err), zap.Int("bufLength", bufLength))
-		} else {
-			c.logger.Info(c.sinkerTableConfig.TableName+" flush msg success.", zap.Int("bufLength", bufLength))
-			// todo: wal标记删除状态
+			c.logger.Error(c.sinkerTableConfig.TableName+" open wal error", zap.Error(err))
 		}
+		c.mux.Unlock()
+		// todo:发送到数据库
 	}
 
 	ticker := time.NewTicker(time.Duration(c.sinkerTableConfig.FlushInterval) * time.Second)
@@ -240,6 +209,7 @@ func (c *SinkerTable) processFetch() {
 	for {
 		select {
 		case fetch := <-c.fetchCH:
+			c.mux.RLock()
 			if c.state.Load() == StateStopped {
 				continue
 			}
@@ -262,8 +232,16 @@ func (c *SinkerTable) processFetch() {
 						continue
 					}
 				}
-				// todo:写入文件
+				_, err = c.fd.Write([]byte(tmpData[i]))
+				if err != nil {
+					c.logger.Error(c.sinkerTableConfig.TableName+" conn.Write error", zap.Error(err), zap.String("data", tmpData[i]))
+				}
 			}
+			err = c.fd.Sync()
+			if err != nil {
+				c.logger.Error(c.sinkerTableConfig.TableName+" conn.Sync error", zap.Error(err))
+			}
+			c.mux.RUnlock()
 			data.Data = append(data.Data, tmpData...)
 			data.Callback = append(data.Callback, fetch.GetCallback()...)
 			bufLength := len(data.Data)
@@ -274,7 +252,7 @@ func (c *SinkerTable) processFetch() {
 				ticker.Reset(time.Duration(c.sinkerTableConfig.FlushInterval) * time.Second)
 			}
 		case <-ticker.C:
-			c.logger.Info("--------------------------------------------")
+			c.logger.Debug("--------------------------------------------")
 			tmp := data.Copy()
 			go flushFn(tmp)
 			data = FetchArray{}
