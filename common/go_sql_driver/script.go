@@ -12,10 +12,10 @@ const (
 )
 
 var (
-	columnsSQL                 = `select name, type, default_kind from system.columns where database = '%s' and table = '%s'`
-	createTableSQLForPrimary   = `CREATE TABLE IF NOT EXISTS %s.%s (%s _create_time DateTime DEFAULT NOW()) PRIMARY KEY (%s,_create_time) PARTITION BY date_trunc('month', _create_time) DISTRIBUTED BY HASH (%s) ORDER BY (%s) PROPERTIES ("enable_persistent_index" = "true");`
-	createTableSQLForDuplicate = `CREATE TABLE IF NOT EXISTS %s.%s (%s _create_time DateTime DEFAULT NOW()) PARTITION BY date_trunc('month', _create_time) ORDER BY (%s) PROPERTIES ("enable_persistent_index" = "true");`
-	createTableSQLForAggregate = `CREATE TABLE IF NOT EXISTS %s.%s (%s _create_time DateTime DEFAULT NOW()) PARTITION BY date_trunc('month', _create_time) AGGREGATE KEY(%s) DISTRIBUTED BY HASH (%s) ORDER BY (%s) PROPERTIES ("enable_persistent_index" = "true");`
+	columnsSQL                 = `show columns from %s.%s;`
+	createTableSQLForPrimary   = `CREATE TABLE IF NOT EXISTS %s.%s (%s _create_time datetime DEFAULT CURRENT_TIMESTAMP) PRIMARY KEY (%s,_create_time) PARTITION BY date_trunc('month', _create_time) DISTRIBUTED BY HASH (%s) ORDER BY (%s) PROPERTIES ("enable_persistent_index" = "true");`
+	createTableSQLForDuplicate = `CREATE TABLE IF NOT EXISTS %s.%s (%s _create_time datetime DEFAULT CURRENT_TIMESTAMP) PARTITION BY date_trunc('month', _create_time) ORDER BY (%s) PROPERTIES ("enable_persistent_index" = "true");`
+	createTableSQLForAggregate = `CREATE TABLE IF NOT EXISTS %s.%s (%s _create_time datetime DEFAULT CURRENT_TIMESTAMP) PARTITION BY date_trunc('month', _create_time) AGGREGATE KEY(%s) DISTRIBUTED BY HASH (%s) ORDER BY (%s) PROPERTIES ("enable_persistent_index" = "true");`
 	dropTableSQL               = `DROP TABLE IF EXISTS %s.%s `
 	addColumnSQL               = `ALTER TABLE %s.%s ADD COLUMN IF NOT EXISTS %s %s`
 )
@@ -32,7 +32,11 @@ func createTable(engine int, database, tablename, primaryKey, distributedKey, or
 			return true
 		}
 		cwt := value.(*ColumnWithType)
-		columns += fmt.Sprintf("%s %s, ", cwt.Name, cwt.Type.ToString())
+		if !cwt.Type.Nullable {
+			columns += fmt.Sprintf("%s %s NOT NULL, ", cwt.Name, cwt.Type.ToString())
+		} else {
+			columns += fmt.Sprintf("%s %s, ", cwt.Name, cwt.Type.ToString())
+		}
 		return true
 	})
 	query := ""
