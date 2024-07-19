@@ -17,7 +17,7 @@ var (
 	createTableSQLForDuplicate = `CREATE TABLE IF NOT EXISTS %s.%s (%s _create_time datetime DEFAULT CURRENT_TIMESTAMP) PARTITION BY date_trunc('month', _create_time) ORDER BY (%s) PROPERTIES ("enable_persistent_index" = "true");`
 	createTableSQLForAggregate = `CREATE TABLE IF NOT EXISTS %s.%s (%s _create_time datetime DEFAULT CURRENT_TIMESTAMP) PARTITION BY date_trunc('month', _create_time) AGGREGATE KEY(%s) DISTRIBUTED BY HASH (%s) ORDER BY (%s) PROPERTIES ("enable_persistent_index" = "true");`
 	dropTableSQL               = `DROP TABLE IF EXISTS %s.%s `
-	addColumnSQL               = `ALTER TABLE %s.%s ADD COLUMN IF NOT EXISTS %s %s`
+	addColumnSQL               = `ALTER TABLE %s.%s ADD COLUMN %s %s`
 )
 
 func getTableColumns(database, tablename string) string {

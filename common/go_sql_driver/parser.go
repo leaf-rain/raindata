@@ -1,9 +1,7 @@
-package parser
+package go_sql_driver
 
 import (
 	"errors"
-	"github.com/leaf-rain/raindata/common/go_sql_driver"
-	"go.uber.org/zap"
 	"math"
 	"time"
 )
@@ -58,30 +56,46 @@ func UnixFloat(sec, unit float64) (t time.Time) {
 	return time.Unix(int64(i), int64(f*1e9))
 }
 
-// Parse is the Parser interface
-type Parser interface {
-	Parse(bs []byte) (metric go_sql_driver.Metric, err error)
+// struct for ingesting a clickhouse Map type value
+type OrderedMap struct {
+	keys   []interface{}
+	values map[interface{}]interface{}
 }
 
-type ParserConfig struct {
-	Ty        string
-	CsvFormat []string
-	Delimiter string
-	TimeUnit  float64
-	Local     *time.Location
-	Logger    *zap.Logger
-}
-
-func NewParse(cf ParserConfig) (Parser, error) {
-	switch cf.Ty {
-	//case "gjson":
-	//	return NewGjsonParser(cf.TimeUnit, cf.Local, cf.Logger), nil
-	//case "csv":
-	//	return NewCsvParser(cf.CsvFormat, cf.Delimiter, cf.TimeUnit, cf.Local, cf.Logger), nil
-	//case "fastjson":
-	//	fallthrough
-	//default:
-	//	return NewFastjsonParser(cf.TimeUnit, cf.Local, cf.Logger)
+func (om *OrderedMap) Get(key interface{}) (interface{}, bool) {
+	if value, present := om.values[key]; present {
+		return value, present
 	}
-	return nil, nil
+	return nil, false
+}
+
+func (om *OrderedMap) Put(key interface{}, value interface{}) {
+	if _, present := om.values[key]; present {
+		om.values[key] = value
+		return
+	}
+	om.keys = append(om.keys, key)
+	om.values[key] = value
+}
+
+func (om *OrderedMap) Keys() <-chan interface{} {
+	ch := make(chan interface{})
+	go func() {
+		defer close(ch)
+		for _, key := range om.keys {
+			ch <- key
+		}
+	}()
+	return ch
+}
+
+func (om *OrderedMap) GetValues() map[interface{}]interface{} {
+	return om.values
+}
+
+func NewOrderedMap() *OrderedMap {
+	om := OrderedMap{}
+	om.keys = []interface{}{}
+	om.values = map[interface{}]interface{}{}
+	return &om
 }

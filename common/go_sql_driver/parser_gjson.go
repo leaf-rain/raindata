@@ -1,4 +1,4 @@
-package parser
+package go_sql_driver
 
 //
 //var _ Parser = (*GjsonParser)(nil)

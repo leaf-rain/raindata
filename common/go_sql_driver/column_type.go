@@ -29,12 +29,11 @@ func NewParse(cf ParserConfig) (Parser, error) {
 	//	return NewGjsonParser(cf.TimeUnit, cf.Local, cf.Logger), nil
 	//case "csv":
 	//	return NewCsvParser(cf.CsvFormat, cf.Delimiter, cf.TimeUnit, cf.Local, cf.Logger), nil
-	//case "fastjson":
-	//	fallthrough
-	//default:
-	//	return NewFastjsonParser(cf.TimeUnit, cf.Local, cf.Logger)
+	case "fastjson":
+		fallthrough
+	default:
+		return NewFastjsonParser(cf.TimeUnit, cf.Local, cf.Logger)
 	}
-	return nil, nil
 }
 
 type TypeInfo struct {
@@ -270,9 +269,9 @@ type Metric interface {
 	GetBINARY(key string, nullable bool) (val interface{})
 	GetDATE(key string, nullable bool) (val interface{})
 	GetDATETIME(key string, nullable bool) (val interface{})
-	GetARRAY(key string, typeinfo *TypeInfo) (val interface{})
+	GetARRAY(key string, ty int) (val interface{})
 	GetJSON(key string, t int) (val interface{})
-	GetMAP(key string, nullable bool) (val interface{})
+	GetMAP(key string, typeinfo *TypeInfo) (val interface{})
 	GetBITMAP(key string, nullable bool) (val interface{})
 	GetHLL(key string, nullable bool) (val interface{})
 	GetSTRUCT(key string, nullable bool) (val interface{})
@@ -290,48 +289,4 @@ type DimMetrics struct {
 type ColumnWithType struct {
 	Name string
 	Type *TypeInfo
-}
-
-// struct for ingesting a clickhouse Map type value
-type OrderedMap struct {
-	keys   []interface{}
-	values map[interface{}]interface{}
-}
-
-func (om *OrderedMap) Get(key interface{}) (interface{}, bool) {
-	if value, present := om.values[key]; present {
-		return value, present
-	}
-	return nil, false
-}
-
-func (om *OrderedMap) Put(key interface{}, value interface{}) {
-	if _, present := om.values[key]; present {
-		om.values[key] = value
-		return
-	}
-	om.keys = append(om.keys, key)
-	om.values[key] = value
-}
-
-func (om *OrderedMap) Keys() <-chan interface{} {
-	ch := make(chan interface{})
-	go func() {
-		defer close(ch)
-		for _, key := range om.keys {
-			ch <- key
-		}
-	}()
-	return ch
-}
-
-func (om *OrderedMap) GetValues() map[interface{}]interface{} {
-	return om.values
-}
-
-func NewOrderedMap() *OrderedMap {
-	om := OrderedMap{}
-	om.keys = []interface{}{}
-	om.values = map[interface{}]interface{}{}
-	return &om
 }

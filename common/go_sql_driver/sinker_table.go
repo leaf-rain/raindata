@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"go.uber.org/zap"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -100,6 +101,11 @@ func NewSinkerTable(ctx context.Context, db *sql.DB, logger *zap.Logger, sinkerT
 	if err != nil {
 		return nil, err
 	}
+	var tail = make([]byte, 1)
+	tailCount, _ := s.fd.Read(tail)
+	if tailCount == 0 {
+		s.fd.Write([]byte("["))
+	}
 	return s, nil
 }
 
@@ -159,7 +165,7 @@ func (c *SinkerTable) flushFields() error {
 		if len(addColumns) > 0 {
 			for i := range addColumns {
 				_, err = c.db.Exec(addColumns[i])
-				if err != nil {
+				if err != nil && !strings.Contains(err.Error(), "already exists") {
 					c.logger.Error(c.sinkerTableConfig.TableName+" add table columns error", zap.Error(err), zap.String("sql", addColumns[i]))
 					return err
 				}
@@ -211,9 +217,9 @@ func (c *SinkerTable) processFetch() {
 		bufLength := len(data.GetData())
 		c.logger.Info(c.sinkerTableConfig.TableName+" flush msg.", zap.Int("bufLength", bufLength))
 		if bufLength == 0 {
-			c.mux.Unlock()
 			return
 		}
+		c.fd.Write([]byte("]"))
 		c.fd.Close()
 		var newFileName = c.sinkerTableConfig.TableName + "." + strconv.FormatInt(time.Now().UnixNano(), 10) + ".wal.pending"
 		err = os.Rename(c.sinkerTableConfig.TableName+".wal", newFileName)
@@ -224,6 +230,11 @@ func (c *SinkerTable) processFetch() {
 		c.fd, err = os.OpenFile(c.sinkerTableConfig.TableName+".wal", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			c.logger.Error(c.sinkerTableConfig.TableName+" open wal error", zap.Error(err))
+		}
+		var tail = make([]byte, 1)
+		tailCount, _ := c.fd.Read(tail)
+		if tailCount == 0 {
+			c.fd.Write([]byte("["))
 		}
 		// todo:发送到数据库
 	}
@@ -303,11 +314,8 @@ func (c *SinkerTable) sendStarRocks(fileName string) {
 
 	// Set the request headers
 	req.Header.Set("label", "weather-0")
-	req.Header.Set("column_separator", ",")
-	req.Header.Set("skip_header", "1")
-	req.Header.Set("enclose", "\"")
-	req.Header.Set("max_filter_ratio", "1")
-	req.Header.Set("Content-Type", "text/csv") // Assuming the file is a CSV
+	req.Header.Set("format", "json")
+	req.Header.Set("Expect", "100-continue")
 
 	// Set additional headers with column names (this part might need adjustment based on the API requirements)
 	columns := c.getAllFields()
@@ -327,7 +335,8 @@ func (c *SinkerTable) sendStarRocks(fileName string) {
 		return
 	}
 	defer resp.Body.Close()
-
+	respBody, _ := io.ReadAll(resp.Body)
 	// Print response status code
 	fmt.Println("Response Status Code:", resp.StatusCode)
+	fmt.Println("Response:", string(respBody))
 }

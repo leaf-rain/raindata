@@ -14,7 +14,7 @@ var defaultConfig = &SinkerTableConfig{
 	BufferSize:    100,
 	Database:      "test",
 	FeHost:        "127.0.0.1",
-	FeHttpPort:    "9030",
+	FeHttpPort:    "8030",
 	FlushInterval: 100,
 	OrderByKey:    "_id",
 	PrimaryKey:    "",
@@ -26,11 +26,13 @@ var defaultConfig = &SinkerTableConfig{
 		{
 			Name: "_id",
 			Type: &TypeInfo{
-				Type:     INT,
-				Nullable: false,
-				Array:    false,
-				MapKey:   nil,
-				MapValue: nil,
+				Type: INT,
+			},
+		},
+		{
+			Name: "name",
+			Type: &TypeInfo{
+				Type: STRING,
 			},
 		},
 	},
@@ -64,4 +66,13 @@ func TestNewSinkerTable(t *testing.T) {
 		}
 	}()
 	time.Sleep(time.Minute * 30)
+}
+
+func TestSinkerTable_sendStarRocks(t *testing.T) {
+	var err error
+	st, err = NewSinkerTable(context.Background(), db, logger, defaultConfig, "fastjson")
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.sendStarRocks("test.1721381830668446143.wal.pending")
 }
