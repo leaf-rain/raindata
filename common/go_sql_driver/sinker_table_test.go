@@ -15,7 +15,7 @@ var defaultConfig = &SinkerTableConfig{
 	Database:      "test",
 	FeHost:        "127.0.0.1",
 	FeHttpPort:    "8030",
-	FlushInterval: 100,
+	FlushInterval: 3,
 	OrderByKey:    "_id",
 	PrimaryKey:    "",
 	TableName:     "test",
@@ -46,17 +46,17 @@ func TestNewSinkerTable(t *testing.T) {
 	}
 	st.Start()
 	go func() {
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 200; i++ {
 			if i%10 == 0 {
 				st.fetchCH <- FetchSingle{
-					Data: fmt.Sprintf("{\"id\":%d,\"contain\":\"test\",\"t1\":\"test\"}", i),
+					Data: fmt.Sprintf("{\"_id\":%d,\"contain\":\"test\",\"t1\":\"test\"}", i),
 					Callback: func() {
 						t.Log("callback")
 					},
 				}
 			} else {
 				st.fetchCH <- FetchSingle{
-					Data: fmt.Sprintf("{\"id\":%d,\"contain\":\"test\"}", i),
+					Data: fmt.Sprintf("{\"_id\":%d,\"contain\":\"test\"}", i),
 					Callback: func() {
 						t.Log("callback")
 					},
@@ -74,5 +74,5 @@ func TestSinkerTable_sendStarRocks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st.sendStarRocks("test.1721381830668446143.wal.pending")
+	st.sendStarRocks("test.1721383633397286365.wal.pending", "1")
 }

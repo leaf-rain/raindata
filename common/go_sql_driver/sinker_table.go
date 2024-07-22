@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"go.uber.org/zap"
+	"go.uber.org/zap/buffer"
 	"io"
 	"net/http"
 	"net/url"
@@ -22,6 +23,8 @@ const (
 	StateRunning uint32 = 0
 	StateStopped uint32 = 1
 )
+
+var bufferPool = buffer.NewPool()
 
 // Decoder decodes the contents of b into v.
 // It's primarily used for decoding contents of a file into a map[string]any.
@@ -63,6 +66,7 @@ type SinkerTable struct {
 	// table相关
 	sinkerTableConfig *SinkerTableConfig
 	fd                *os.File
+	needComma         bool // 需要逗号
 }
 
 // NewSinkerTable get an instance of sinker with the task list
@@ -97,16 +101,26 @@ func NewSinkerTable(ctx context.Context, db *sql.DB, logger *zap.Logger, sinkerT
 	if s.sinkerTableConfig.FlushInterval <= 0 {
 		s.sinkerTableConfig.FlushInterval = 1
 	}
-	s.fd, err = os.OpenFile(sinkerTableConfig.TableName+".wal", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	s.fd, err = os.OpenFile(sinkerTableConfig.TableName+".wal", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 	if err != nil {
 		return nil, err
 	}
-	var tail = make([]byte, 1)
-	tailCount, _ := s.fd.Read(tail)
-	if tailCount == 0 {
+	var tail = getTailChar(s.fd)
+	if tail == "" {
 		s.fd.Write([]byte("["))
+	} else if tail == "}" {
+		s.fd.Write([]byte(","))
 	}
 	return s, nil
+}
+
+func getTailChar(fd *os.File) string {
+	var tail = make([]byte, 1)
+	tailCount, _ := fd.Read(tail)
+	if tailCount == 0 {
+		return ""
+	}
+	return string(tail)
 }
 
 func (c *SinkerTable) wal() error {
@@ -219,6 +233,7 @@ func (c *SinkerTable) processFetch() {
 		if bufLength == 0 {
 			return
 		}
+		c.mux.Lock()
 		c.fd.Write([]byte("]"))
 		c.fd.Close()
 		var newFileName = c.sinkerTableConfig.TableName + "." + strconv.FormatInt(time.Now().UnixNano(), 10) + ".wal.pending"
@@ -227,21 +242,22 @@ func (c *SinkerTable) processFetch() {
 			c.logger.Error(c.sinkerTableConfig.TableName+" rename wal error", zap.Error(err))
 			return
 		}
-		c.fd, err = os.OpenFile(c.sinkerTableConfig.TableName+".wal", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		c.needComma = false
+		c.fd, err = os.OpenFile(c.sinkerTableConfig.TableName+".wal", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 		if err != nil {
 			c.logger.Error(c.sinkerTableConfig.TableName+" open wal error", zap.Error(err))
 		}
-		var tail = make([]byte, 1)
-		tailCount, _ := c.fd.Read(tail)
-		if tailCount == 0 {
+		if getTailChar(c.fd) == "" {
 			c.fd.Write([]byte("["))
 		}
+		c.mux.Unlock()
 		// todo:发送到数据库
 	}
 
 	ticker := time.NewTicker(time.Duration(c.sinkerTableConfig.FlushInterval) * time.Second)
 	defer ticker.Stop()
 	var newKeys map[string]string
+	var count int
 	for {
 		select {
 		case fetch := <-c.fetchCH:
@@ -249,7 +265,10 @@ func (c *SinkerTable) processFetch() {
 				continue
 			}
 			tmpData := fetch.GetData()
+			count = 0
+			var tmpBuffer = bufferPool.Get()
 			for i := range tmpData {
+				count++
 				var parse Metric
 				parse, err = c.parser.Parse([]byte(tmpData[i]))
 				if err != nil {
@@ -267,15 +286,26 @@ func (c *SinkerTable) processFetch() {
 						continue
 					}
 				}
-				_, err = c.fd.Write([]byte(tmpData[i]))
-				if err != nil {
-					c.logger.Error(c.sinkerTableConfig.TableName+" conn.Write error", zap.Error(err), zap.String("data", tmpData[i]))
+				tmpBuffer.AppendBytes([]byte(tmpData[i]))
+				if i != len(tmpData)-1 {
+					tmpBuffer.AppendByte(44)
 				}
+			}
+			c.mux.Lock()
+			if c.needComma {
+				c.fd.Write([]byte(","))
+			}
+			c.needComma = true
+			_, err = c.fd.Write(tmpBuffer.Bytes())
+			if err != nil {
+				c.logger.Error(c.sinkerTableConfig.TableName+" conn.Write error", zap.Error(err))
 			}
 			err = c.fd.Sync()
 			if err != nil {
 				c.logger.Error(c.sinkerTableConfig.TableName+" conn.Sync error", zap.Error(err))
 			}
+			c.mux.Unlock()
+			tmpBuffer.Free()
 			data.Data = append(data.Data, tmpData...)
 			data.Callback = append(data.Callback, fetch.GetCallback()...)
 			bufLength := len(data.Data)
@@ -297,7 +327,7 @@ func (c *SinkerTable) processFetch() {
 	}
 }
 
-func (c *SinkerTable) sendStarRocks(fileName string) {
+func (c *SinkerTable) sendStarRocks(fileName, label string) {
 	urlStr := fmt.Sprintf("http://%s:%s/api/%s/%s/_stream_load", c.sinkerTableConfig.FeHost, c.sinkerTableConfig.FeHttpPort, c.sinkerTableConfig.Database, c.sinkerTableConfig.TableName)
 	targetURL, _ := url.Parse(urlStr)
 
@@ -313,7 +343,7 @@ func (c *SinkerTable) sendStarRocks(fileName string) {
 	}
 
 	// Set the request headers
-	req.Header.Set("label", "weather-0")
+	req.Header.Set("label", label)
 	req.Header.Set("format", "json")
 	req.Header.Set("Expect", "100-continue")
 
