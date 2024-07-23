@@ -185,8 +185,12 @@ func GetTypeName(typ int) (name string) {
 
 func WhichType(typ string, nullable bool) (ti *TypeInfo) {
 	typ = lowCardinalityRegexp.ReplaceAllString(typ, "$1")
-
-	ti, ok := typeInfo[typ]
+	var ok bool
+	if nullable {
+		ti, ok = typeInfo[typ+" null"]
+	} else {
+		ti, ok = typeInfo[typ]
+	}
 	if ok {
 		return ti
 	}
@@ -276,6 +280,8 @@ type Metric interface {
 	GetHLL(key string, nullable bool) (val interface{})
 	GetSTRUCT(key string, nullable bool) (val interface{})
 	GetNewKeys(knownKeys *sync.Map) map[string]string
+	Set(key string, val interface{})
+	Value() string
 	Close()
 }
 

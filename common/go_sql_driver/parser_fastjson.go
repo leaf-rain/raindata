@@ -1,6 +1,7 @@
 package go_sql_driver
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/leaf-rain/fastjson"
 	"github.com/pkg/errors"
@@ -72,6 +73,16 @@ type FastjsonMetric struct {
 	parser *FastjsonParser
 	value  *fastjson.Value
 	ps     *fastjson.Parser
+}
+
+func (p *FastjsonMetric) Set(key string, val interface{}) {
+	js, _ := json.Marshal(val)
+	obj, _ := fastjson.ParseBytes(js)
+	p.value.Set(key, obj)
+}
+
+func (p *FastjsonMetric) Value() string {
+	return p.value.String()
 }
 
 func (p *FastjsonMetric) GetTINYINT(key string, nullable bool) (val interface{}) {

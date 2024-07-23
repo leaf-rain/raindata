@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
 	"go.uber.org/zap/buffer"
 	"io"
@@ -168,7 +169,7 @@ func (c *SinkerTable) flushFields() error {
 		var allColumns []string
 		c.fieldMap.Range(func(key, value any) bool {
 			if _, ok := columns[key.(string)]; !ok {
-				addColumns = append(addColumns, addTableColumns(c.sinkerTableConfig.Database, c.sinkerTableConfig.TableName, key.(string), value.(*ColumnWithType).Type.ToString()))
+				addColumns = append(addColumns, addTableColumns(c.sinkerTableConfig.Database, c.sinkerTableConfig.TableName, key.(string), value.(*ColumnWithType).Type.ToString(), value.(*ColumnWithType).Type.Nullable))
 			}
 			allColumns = append(allColumns, key.(string))
 			return true
@@ -236,7 +237,8 @@ func (c *SinkerTable) processFetch() {
 		c.mux.Lock()
 		c.fd.Write([]byte("]"))
 		c.fd.Close()
-		var newFileName = c.sinkerTableConfig.TableName + "." + strconv.FormatInt(time.Now().UnixNano(), 10) + ".wal.pending"
+		var label = strconv.FormatInt(time.Now().UnixNano(), 10)
+		var newFileName = c.sinkerTableConfig.TableName + "." + label + ".wal.pending"
 		err = os.Rename(c.sinkerTableConfig.TableName+".wal", newFileName)
 		if err != nil {
 			c.logger.Error(c.sinkerTableConfig.TableName+" rename wal error", zap.Error(err))
@@ -251,7 +253,7 @@ func (c *SinkerTable) processFetch() {
 			c.fd.Write([]byte("["))
 		}
 		c.mux.Unlock()
-		// todo:发送到数据库
+		c.sendStarRocks(newFileName, label)
 	}
 
 	ticker := time.NewTicker(time.Duration(c.sinkerTableConfig.FlushInterval) * time.Second)
@@ -278,7 +280,7 @@ func (c *SinkerTable) processFetch() {
 				newKeys = parse.GetNewKeys(c.fieldMap)
 				if len(newKeys) > 0 {
 					for k, v := range newKeys {
-						c.fieldMap.Store(k, &ColumnWithType{Name: k, Type: WhichType(v, false)})
+						c.fieldMap.Store(k, &ColumnWithType{Name: k, Type: WhichType(v, true)})
 					}
 					err = c.flushFields()
 					if err != nil {
@@ -286,10 +288,39 @@ func (c *SinkerTable) processFetch() {
 						continue
 					}
 				}
-				tmpBuffer.AppendBytes([]byte(tmpData[i]))
+				// todo:修改原json添加not null字段的默认值
+				c.fieldMap.Range(func(key, value any) bool {
+					if !value.(*ColumnWithType).Type.Nullable {
+						var obj any
+						switch value.(*ColumnWithType).Type.Type {
+						case TINYINT,
+							SMALLINT,
+							INT,
+							BIGINT,
+							LARGEINT,
+							DECIMAL,
+							DOUBLE,
+							FLOAT,
+							BOOLEAN:
+							obj = 0
+						case CHAR,
+							STRING,
+							VARCHAR,
+							BINARY:
+							obj = ""
+						case DATE, DATETIME:
+							obj = time.Now()
+						default:
+						}
+						parse.Set(key.(string), obj)
+					}
+					return true
+				})
+				tmpBuffer.AppendBytes([]byte(parse.Value()))
 				if i != len(tmpData)-1 {
 					tmpBuffer.AppendByte(44)
 				}
+				parse.Close()
 			}
 			c.mux.Lock()
 			if c.needComma {
@@ -309,7 +340,7 @@ func (c *SinkerTable) processFetch() {
 			data.Data = append(data.Data, tmpData...)
 			data.Callback = append(data.Callback, fetch.GetCallback()...)
 			bufLength := len(data.Data)
-			if bufLength > c.sinkerTableConfig.BufferSize {
+			if bufLength >= c.sinkerTableConfig.BufferSize {
 				tmp := data.Copy()
 				go flushFn(tmp, c.getAllFields())
 				data = FetchArray{}
@@ -346,6 +377,7 @@ func (c *SinkerTable) sendStarRocks(fileName, label string) {
 	req.Header.Set("label", label)
 	req.Header.Set("format", "json")
 	req.Header.Set("Expect", "100-continue")
+	req.Header.Set("strip_outer_array", "true")
 
 	// Set additional headers with column names (this part might need adjustment based on the API requirements)
 	columns := c.getAllFields()
@@ -369,4 +401,12 @@ func (c *SinkerTable) sendStarRocks(fileName, label string) {
 	// Print response status code
 	fmt.Println("Response Status Code:", resp.StatusCode)
 	fmt.Println("Response:", string(respBody))
+	if gjson.GetBytes(respBody, "Status").String() == "Success" {
+		c.logger.Info(c.sinkerTableConfig.TableName+" send starrocks success", zap.String("fileName", fileName))
+		// todo:后续这里可以根据配置删除策略来删除文件，目前觉得不需要
+		// Delete the file
+		os.Remove(fileName)
+	} else {
+		c.logger.Error(c.sinkerTableConfig.TableName+" send starrocks error", zap.String("fileName", fileName), zap.String("respBody", string(respBody)))
+	}
 }

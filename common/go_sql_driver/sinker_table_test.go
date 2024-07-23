@@ -26,13 +26,15 @@ var defaultConfig = &SinkerTableConfig{
 		{
 			Name: "_id",
 			Type: &TypeInfo{
-				Type: INT,
+				Type:     INT,
+				Nullable: true,
 			},
 		},
 		{
 			Name: "name",
 			Type: &TypeInfo{
-				Type: STRING,
+				Type:     STRING,
+				Nullable: true,
 			},
 		},
 	},
@@ -74,5 +76,5 @@ func TestSinkerTable_sendStarRocks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st.sendStarRocks("test.1721383633397286365.wal.pending", "1")
+	st.sendStarRocks("test.1721626504096587526.wal.pending", "8")
 }
