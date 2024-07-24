@@ -22,7 +22,7 @@ var WireDomainSet = wire.NewSet(
 func Initialize() (*Domain, error) {
 	wire.Build(
 		wire.Bind(new(interface_repo.InterfaceMetadataRepo), new(*interface_repo.DefaultMetadata)),
-		wire.Bind(new(interface_repo.InterfaceWriterRepo), new(*repository.CKWriter)),
+		wire.Bind(new(interface_repo.InterfaceWriterRepo), new(*repository.SRWriter)),
 		wire.Bind(new(interface_repo.InterfaceIdRepo), new(*interface_repo.SnowflakeId)),
 		infrastructure.WireInfrastructureSet,
 		WireDomainSet,

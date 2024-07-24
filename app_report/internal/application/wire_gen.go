@@ -13,7 +13,7 @@ import (
 	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/config"
 	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/repository"
 	"github.com/leaf-rain/raindata/app_report/pkg/logger"
-	"github.com/leaf-rain/raindata/common/clickhouse_sqlx"
+	"github.com/leaf-rain/raindata/common/go_sql_driver"
 )
 
 // Injectors from wire.go:
@@ -30,14 +30,14 @@ func Initialize() (*Applications, error) {
 		return nil, err
 	}
 	defaultMetadata := interface_repo.NewMetadata()
-	clickhouseConfig := config.GetCKCfgByConfig(configConfig)
-	clickhouseCluster, err := clickhouse_sqlx.InitClusterConn(clickhouseConfig)
+	sqlConfig := config.GetSqlCfgByConfig(configConfig)
+	db, err := go_sql_driver.NewSql(sqlConfig)
 	if err != nil {
 		return nil, err
 	}
-	ckWriter := repository.NewCkWriter(zapLogger, clickhouseCluster)
+	srWriter := repository.NewSRWriter(zapLogger, db, sqlConfig)
 	snowflakeId := interface_repo.NewSnowflakeId()
-	domainDomain := domain.NewDomain(zapLogger, defaultMetadata, ckWriter, snowflakeId)
+	domainDomain := domain.NewDomain(zapLogger, defaultMetadata, srWriter, snowflakeId)
 	writer := domain.NewCkWriter(domainDomain)
 	applications := NewApplications(configConfig, zapLogger, writer)
 	return applications, nil
