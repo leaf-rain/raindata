@@ -13,8 +13,8 @@ import (
 	"github.com/leaf-rain/raindata/app_basicsdata/internal/infrastructure/config"
 	"github.com/leaf-rain/raindata/app_basicsdata/internal/infrastructure/entity"
 	"github.com/leaf-rain/raindata/app_report/pkg/logger"
-	"github.com/leaf-rain/raindata/common/clickhouse_sqlx"
-	"github.com/leaf-rain/raindata/common/etcd"
+	"github.com/leaf-rain/raindata/common/rclickhouse"
+	"github.com/leaf-rain/raindata/common/retcd"
 )
 
 // Injectors from wire.go:
@@ -29,12 +29,12 @@ func Initialize() (*Adapter, error) {
 	zapLogger := logger.InitLogger(logConfig)
 	context := config.GetCtx(configConfig)
 	etcdConfig := config.GetEtcdConfig(configConfig)
-	client, err := etcd.NewEtcdClient(etcdConfig, zapLogger)
+	client, err := retcd.NewEtcdClient(etcdConfig, zapLogger)
 	if err != nil {
 		return nil, err
 	}
 	clickhouseConfig := config.GetClickhouseConfig(configConfig)
-	clickhouse, err := clickhouse_sqlx.NewClickhouse(clickhouseConfig)
+	clickhouse, err := rclickhouse.NewClickhouse(clickhouseConfig)
 	if err != nil {
 		return nil, err
 	}

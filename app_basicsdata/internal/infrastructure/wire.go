@@ -8,8 +8,8 @@ import (
 	"github.com/leaf-rain/raindata/app_basicsdata/internal/infrastructure/config"
 	"github.com/leaf-rain/raindata/app_basicsdata/internal/infrastructure/entity"
 	"github.com/leaf-rain/raindata/app_report/pkg/logger"
-	"github.com/leaf-rain/raindata/common/clickhouse_sqlx"
-	"github.com/leaf-rain/raindata/common/etcd"
+	"github.com/leaf-rain/raindata/common/rclickhouse"
+	"github.com/leaf-rain/raindata/common/retcd"
 )
 
 var WireInfrastructureSet = wire.NewSet(
@@ -20,8 +20,8 @@ var WireInfrastructureSet = wire.NewSet(
 	config.GetEtcdConfig,
 	config.GetClickhouseConfig,
 	logger.InitLogger,
-	etcd.NewEtcdClient,
-	clickhouse_sqlx.NewClickhouse,
+	retcd.NewEtcdClient,
+	rclickhouse.NewClickhouse,
 	entity.NewRepository,
 	NewInfrastructure,
 )

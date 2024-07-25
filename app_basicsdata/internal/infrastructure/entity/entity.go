@@ -4,26 +4,26 @@ import (
 	"context"
 	pb_metadata "github.com/leaf-rain/raindata/app_basicsdata/api/grpc"
 	"github.com/leaf-rain/raindata/app_basicsdata/internal/infrastructure/config"
-	"github.com/leaf-rain/raindata/common/clickhouse_sqlx"
 	commonConfig "github.com/leaf-rain/raindata/common/config"
-	"github.com/leaf-rain/raindata/common/etcd"
-	clientv3 "go.etcd.io/etcd/client/v3"
+	"github.com/leaf-rain/raindata/common/rclickhouse"
+	"github.com/leaf-rain/raindata/common/retcd"
+	clientv3 "go.retcd.io/retcd/client/v3"
 	"go.uber.org/zap"
 )
 
 type Repository struct {
 	etcdClient     *clientv3.Client
-	clickhouseSqlx *clickhouse_sqlx.Conn
+	clickhouseSqlx *rclickhouse.Conn
 	dynamicConfig  commonConfig.ConfigInterface
 	logger         *zap.Logger
 	cfg            *config.Config
 }
 
-func NewRepository(ctx context.Context, etcdClient *clientv3.Client, clickhouseSqlx *clickhouse_sqlx.Conn, logger *zap.Logger, cfg *config.Config) (*Repository, error) {
+func NewRepository(ctx context.Context, etcdClient *clientv3.Client, clickhouseSqlx *rclickhouse.Conn, logger *zap.Logger, cfg *config.Config) (*Repository, error) {
 	var repo *Repository
 	if etcdClient != nil {
 		// 初始化etcd配置中心
-		metadataCache, _, _ := etcd.NewFileConfigByCatalogue(ctx, logger, etcdClient, cfg.MetadataPath, marshal)
+		metadataCache, _, _ := retcd.NewFileConfigByCatalogue(ctx, logger, etcdClient, cfg.MetadataPath, marshal)
 		repo = &Repository{
 			etcdClient:     etcdClient,
 			clickhouseSqlx: clickhouseSqlx,

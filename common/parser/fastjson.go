@@ -400,7 +400,7 @@ func getDateTime(p *FastjsonMetric, sourcename string, v *fastjson.Value, nullab
 	return
 }
 
-// Assuming that all values of a field of kafka message has the same layout, and layouts of each field are unrelated.
+// Assuming that all values of a field of rkafka message has the same layout, and layouts of each field are unrelated.
 // Automatically detect the layout from till the first successful detection and reuse that layout forever.
 // Return time in UTC.
 func (p *FastjsonMetric) ParseDateTime(key string, val string) (t time.Time, err error) {

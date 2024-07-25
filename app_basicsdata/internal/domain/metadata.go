@@ -5,11 +5,11 @@ import (
 	pb_metadata "github.com/leaf-rain/raindata/app_basicsdata/api/grpc"
 	"github.com/leaf-rain/raindata/app_basicsdata/internal/infrastructure/config"
 	"github.com/leaf-rain/raindata/app_basicsdata/internal/infrastructure/entity"
-	"github.com/leaf-rain/raindata/common/clickhouse_sqlx"
 	"github.com/leaf-rain/raindata/common/consts"
 	"github.com/leaf-rain/raindata/common/ecode"
-	"github.com/leaf-rain/raindata/common/etcd"
-	clientv3 "go.etcd.io/etcd/client/v3"
+	"github.com/leaf-rain/raindata/common/rclickhouse"
+	"github.com/leaf-rain/raindata/common/retcd"
+	clientv3 "go.retcd.io/retcd/client/v3"
 	"go.uber.org/zap"
 	"sync"
 	"time"
@@ -21,7 +21,7 @@ type Metadata struct {
 	locks      sync.Map
 	cfg        *config.Config
 	etcdClient *clientv3.Client
-	ck         *clickhouse_sqlx.Conn
+	ck         *rclickhouse.Conn
 	ttl        int64
 }
 
@@ -29,7 +29,7 @@ func (domain *Metadata) keyMetadata(app, eventName string) string {
 	return consts.ETCDKeyLockPre + "/" + app + "/" + eventName
 }
 
-func NewMetadata(logger *zap.Logger, repo *entity.Repository, cfg *config.Config, etcdClient *clientv3.Client, ck *clickhouse_sqlx.Conn) (*Metadata, error) {
+func NewMetadata(logger *zap.Logger, repo *entity.Repository, cfg *config.Config, etcdClient *clientv3.Client, ck *rclickhouse.Conn) (*Metadata, error) {
 	return &Metadata{
 		logger:     logger.Named("domain.Metadata"),
 		repo:       repo,
@@ -62,8 +62,8 @@ func (domain *Metadata) PutMetadata(ctx context.Context, in *pb_metadata.Metadat
 	entityBody := domain.repo.NewMetadata(ctx, domain.logger, in, domain.ck)
 	// 存在修改在获取分布式锁
 	if domain.etcdClient != nil {
-		var lock *etcd.Lock
-		lock, err = etcd.NewLock(ctx, domain.etcdClient, lockKey, domain.ttl)
+		var lock *retcd.Lock
+		lock, err = retcd.NewLock(ctx, domain.etcdClient, lockKey, domain.ttl)
 		if err != nil {
 			domain.logger.Error("[StorageMetadata] init lock error", zap.Error(err))
 			return nil, err

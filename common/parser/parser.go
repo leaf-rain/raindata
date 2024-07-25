@@ -33,7 +33,7 @@ func NewParse(cf ParserConfig) (Parser, error) {
 	}
 }
 
-// Assuming that all values of a field of kafka message has the same layout, and layouts of each field are unrelated.
+// Assuming that all values of a field of rkafka message has the same layout, and layouts of each field are unrelated.
 // Automatically detect the layout from till the first successful detection and reuse that layout forever.
 // Return time in UTC.
 func ParseDateTime(key string, val string, knownLayouts *sync.Map, timeLocation *time.Location) (t time.Time, err error) {

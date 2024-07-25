@@ -4,7 +4,32 @@ import (
 	"github.com/leaf-rain/fastjson"
 	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/consts"
 	"strconv"
+	"sync"
 )
+
+type msgPool struct {
+	sync.Pool
+}
+
+var defaultMsgPool = &msgPool{
+	sync.Pool{
+		New: func() interface{} {
+			return &EntityMsg{}
+		},
+	},
+}
+
+func (p *msgPool) GetItem() *EntityMsg {
+	m := defaultMsgPool.Pool.Get().(*EntityMsg)
+	m.id = 0
+	m.base = ""
+	m.hook = nil
+	m.value = nil
+	m.appid = 0
+	m.event = ""
+	m.pool = p
+	return m
+}
 
 type EntityMsg struct {
 	id    int64
@@ -13,13 +38,13 @@ type EntityMsg struct {
 	value *fastjson.Value
 	appid int64
 	event string
+	pool  *msgPool
 }
 
 func NewEntityMsg(id, appid int64, msg string) (*EntityMsg, error) {
-	result := &EntityMsg{
-		id:   id,
-		base: msg,
-	}
+	result := defaultMsgPool.GetItem()
+	result.id = id
+	result.base = msg
 	var err error
 	result.value, err = fastjson.Parse(msg)
 	result.value.Del(consts.KeyAppidForMsg)
@@ -43,14 +68,28 @@ func (msg *EntityMsg) getKeys() []string {
 	return keys
 }
 
-func (msg *EntityMsg) getEvent() []string {
-	var keys []string
-	msg.value.Range(func(key []byte, v *fastjson.Value) {
-		keys = append(keys, string(key))
-	})
-	return keys
-}
-
 func (msg *EntityMsg) getString() string {
 	return msg.value.String()
+}
+
+func (msg *EntityMsg) putFields(fields map[string]string) bool {
+	newValue := fastjson.MustParse("{}")
+	var ok bool
+	result := true
+	msg.value.Range(func(key []byte, v *fastjson.Value) {
+		if !result {
+			return
+		}
+		_, ok = fields[string(key)]
+		if !ok {
+			result = false
+		}
+		newValue.Set(fields[string(key)], v)
+	})
+	msg.value = newValue
+	return result
+}
+
+func (msg *EntityMsg) put() {
+	msg.pool.Put(msg)
 }

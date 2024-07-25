@@ -14,7 +14,7 @@ import (
 	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/config"
 	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/repository"
 	"github.com/leaf-rain/raindata/app_report/pkg/logger"
-	"github.com/leaf-rain/raindata/common/go_sql_driver"
+	"github.com/leaf-rain/raindata/common/rsql"
 )
 
 // Injectors from wire.go:
@@ -32,7 +32,7 @@ func Initialize() (*Adapter, error) {
 	}
 	defaultMetadata := interface_repo.NewMetadata()
 	sqlConfig := config.GetSqlCfgByConfig(configConfig)
-	db, err := go_sql_driver.NewSql(sqlConfig)
+	db, err := rsql.NewSql(sqlConfig)
 	if err != nil {
 		return nil, err
 	}

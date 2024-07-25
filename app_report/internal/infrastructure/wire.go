@@ -10,7 +10,7 @@ import (
 	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/config"
 	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/repository"
 	"github.com/leaf-rain/raindata/app_report/pkg/logger"
-	"github.com/leaf-rain/raindata/common/go_sql_driver"
+	"github.com/leaf-rain/raindata/common/rsql"
 )
 
 var WireInfrastructureSet = wire.NewSet(
@@ -18,9 +18,9 @@ var WireInfrastructureSet = wire.NewSet(
 	config.InitConfig,
 	config.GetLogCfgByConfig,
 	//config.GetCKCfgByConfig,
-	//clickhouse_sqlx.InitClusterConn,
+	//rclickhouse.InitClusterConn,
 	config.GetSqlCfgByConfig,
-	go_sql_driver.NewSql,
+	rsql.NewSql,
 	logger.InitLogger,
 	//repository.NewCkWriter,
 	repository.NewSRWriter,

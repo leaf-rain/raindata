@@ -11,7 +11,7 @@ import (
 	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/config"
 	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/repository"
 	"github.com/leaf-rain/raindata/app_report/pkg/logger"
-	"github.com/leaf-rain/raindata/common/go_sql_driver"
+	"github.com/leaf-rain/raindata/common/rsql"
 )
 
 // Injectors from wire.go:
@@ -33,4 +33,4 @@ func Initialize() (*Infrastructure, error) {
 
 // wire.go:
 
-var WireInfrastructureSet = wire.NewSet(config.NewCmdArgs, config.InitConfig, config.GetLogCfgByConfig, config.GetSqlCfgByConfig, go_sql_driver.NewSql, logger.InitLogger, repository.NewCkWriter, NewInfrastructure)
+var WireInfrastructureSet = wire.NewSet(config.NewCmdArgs, config.InitConfig, config.GetLogCfgByConfig, config.GetSqlCfgByConfig, rsql.NewSql, logger.InitLogger, repository.NewCkWriter, NewInfrastructure)

@@ -5,27 +5,27 @@ import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/leaf-rain/raindata/app_report/pkg/logger"
-	"github.com/leaf-rain/raindata/common/clickhouse_sqlx"
 	"github.com/leaf-rain/raindata/common/ecode"
-	"github.com/leaf-rain/raindata/common/etcd"
+	"github.com/leaf-rain/raindata/common/rclickhouse"
+	"github.com/leaf-rain/raindata/common/retcd"
 	"github.com/spf13/viper"
 	"log"
 	"net"
 )
 
 type Config struct {
-	Ctx              context.Context                   `json:"-" yaml:"-"`
-	HttpAddr         string                            `json:"HttpAddr" yaml:"HttpAddr"`
-	GrpcAddr         string                            `json:"GrpcAddr" yaml:"GrpcAddr"`
-	Version          string                            `json:"Version" yaml:"Version"`
-	Mode             string                            `json:"Mode" yaml:"Mode"`
-	SecretKey        string                            `json:"SecretKey" yaml:"SecretKey"`
-	LogConfig        *logger.LogConfig                 `json:"LogConfig" yaml:"LogConfig"`
-	MetadataPath     string                            `json:"MetadataPath" yaml:"MetadataPath"`
-	EtcdConfig       *etcd.Config                      `json:"EtcdConfig" yaml:"EtcdConfig"`
-	ClickhouseConfig *clickhouse_sqlx.ClickhouseConfig `json:"ClickhouseConfig" yaml:"ClickhouseConfig"`
-	HttpListener     net.Listener                      `json:"-" yaml:"-"`
-	GrpcListener     net.Listener                      `json:"-" yaml:"-"`
+	Ctx              context.Context               `json:"-" yaml:"-"`
+	HttpAddr         string                        `json:"HttpAddr" yaml:"HttpAddr"`
+	GrpcAddr         string                        `json:"GrpcAddr" yaml:"GrpcAddr"`
+	Version          string                        `json:"Version" yaml:"Version"`
+	Mode             string                        `json:"Mode" yaml:"Mode"`
+	SecretKey        string                        `json:"SecretKey" yaml:"SecretKey"`
+	LogConfig        *logger.LogConfig             `json:"LogConfig" yaml:"LogConfig"`
+	MetadataPath     string                        `json:"MetadataPath" yaml:"MetadataPath"`
+	EtcdConfig       *retcd.Config                 `json:"EtcdConfig" yaml:"EtcdConfig"`
+	ClickhouseConfig *rclickhouse.ClickhouseConfig `json:"ClickhouseConfig" yaml:"ClickhouseConfig"`
+	HttpListener     net.Listener                  `json:"-" yaml:"-"`
+	GrpcListener     net.Listener                  `json:"-" yaml:"-"`
 }
 
 func GetLogCfgByConfig(cfg *Config) *logger.LogConfig {
@@ -36,11 +36,11 @@ func GetCtx(cfg *Config) context.Context {
 	return cfg.Ctx
 }
 
-func GetEtcdConfig(cfg *Config) *etcd.Config {
+func GetEtcdConfig(cfg *Config) *retcd.Config {
 	return cfg.EtcdConfig
 }
 
-func GetClickhouseConfig(cfg *Config) *clickhouse_sqlx.ClickhouseConfig {
+func GetClickhouseConfig(cfg *Config) *rclickhouse.ClickhouseConfig {
 	return cfg.ClickhouseConfig
 }
 

@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 )
 
-// todo:需要添加appid，否则无法识别
 const DefaultLogPath = "logs" // 默认输出日志文件路径
 
 var logLevel = map[string]zapcore.Level{

@@ -4,9 +4,9 @@ import (
 	"context"
 	pb_metadata "github.com/leaf-rain/raindata/app_basicsdata/api/grpc"
 	"github.com/leaf-rain/raindata/app_basicsdata/internal/infrastructure/config"
-	"github.com/leaf-rain/raindata/common/clickhouse_sqlx"
 	commonConfig "github.com/leaf-rain/raindata/common/config"
 	"github.com/leaf-rain/raindata/common/consts"
+	"github.com/leaf-rain/raindata/common/rclickhouse"
 	"go.uber.org/zap"
 	"sort"
 	"strconv"
@@ -17,12 +17,12 @@ type Metadata struct {
 	ctx           context.Context
 	fields        *pb_metadata.MetadataRequest
 	dynamicConfig commonConfig.ConfigInterface
-	ck            *clickhouse_sqlx.Conn
+	ck            *rclickhouse.Conn
 	logger        *zap.Logger
 	cfg           *config.Config
 }
 
-func (repo *Repository) NewMetadata(ctx context.Context, logger *zap.Logger, fields *pb_metadata.MetadataRequest, ck *clickhouse_sqlx.Conn) *Metadata {
+func (repo *Repository) NewMetadata(ctx context.Context, logger *zap.Logger, fields *pb_metadata.MetadataRequest, ck *rclickhouse.Conn) *Metadata {
 	metadata := &Metadata{
 		ctx:           ctx,
 		logger:        logger,
@@ -111,7 +111,7 @@ func (repo *Metadata) PutMetadata(ty int) (*pb_metadata.MetadataResponse, error)
 			return nil, err
 		}
 	}
-	var rows *clickhouse_sqlx.Rows
+	var rows *rclickhouse.Rows
 	rows, err = repo.ck.Query("DESCRIBE " + tableName)
 	if err != nil {
 		return nil, err

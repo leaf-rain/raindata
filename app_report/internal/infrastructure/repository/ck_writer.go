@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/leaf-rain/raindata/app_report/internal/domain/interface_repo"
 	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/consts"
-	"github.com/leaf-rain/raindata/common/clickhouse_sqlx"
+	"github.com/leaf-rain/raindata/common/rclickhouse"
 	"go.uber.org/zap"
 	"strconv"
 	"sync"
@@ -12,21 +12,21 @@ import (
 
 var _ interface_repo.InterfaceWriterRepo = (*CKWriter)(nil)
 
-func NewCkWriter(logger *zap.Logger, ckCluster *clickhouse_sqlx.ClickhouseCluster) *CKWriter {
+func NewCkWriter(logger *zap.Logger, ckCluster *rclickhouse.ClickhouseCluster) *CKWriter {
 	return &CKWriter{
 		logger:        logger,
 		ckCluster:     ckCluster,
-		tableEventMap: make(map[int64]*clickhouse_sqlx.SinkerTable),
-		tableLogMap:   make(map[int64]*clickhouse_sqlx.SinkerTable),
+		tableEventMap: make(map[int64]*rclickhouse.SinkerTable),
+		tableLogMap:   make(map[int64]*rclickhouse.SinkerTable),
 		lock:          &sync.Mutex{},
 	}
 }
 
 type CKWriter struct {
 	logger        *zap.Logger
-	ckCluster     *clickhouse_sqlx.ClickhouseCluster
-	tableEventMap map[int64]*clickhouse_sqlx.SinkerTable
-	tableLogMap   map[int64]*clickhouse_sqlx.SinkerTable
+	ckCluster     *rclickhouse.ClickhouseCluster
+	tableEventMap map[int64]*rclickhouse.SinkerTable
+	tableLogMap   map[int64]*rclickhouse.SinkerTable
 	lock          *sync.Mutex
 }
 
@@ -35,15 +35,15 @@ func (w CKWriter) WriterMsg(ctx context.Context, appid int64, event, msg string)
 	if err != nil {
 		return err
 	}
-	tableInfo.WriterMsg(clickhouse_sqlx.FetchSingle{
+	tableInfo.WriterMsg(rclickhouse.FetchSingle{
 		Data: msg,
 	})
 	return nil
 }
 
-func (w CKWriter) loadTable(appid int64, event string) (*clickhouse_sqlx.SinkerTable, error) {
+func (w CKWriter) loadTable(appid int64, event string) (*rclickhouse.SinkerTable, error) {
 	var err error
-	var m map[int64]*clickhouse_sqlx.SinkerTable
+	var m map[int64]*rclickhouse.SinkerTable
 	if event == "log" {
 		m = w.tableLogMap
 	} else {
@@ -57,12 +57,12 @@ func (w CKWriter) loadTable(appid int64, event string) (*clickhouse_sqlx.SinkerT
 		var engine int
 		if event == "log" {
 			tableName = "Sinker_Log_" + strconv.FormatInt(appid, 10)
-			engine = clickhouse_sqlx.EngineMergeTree
+			engine = rclickhouse.EngineMergeTree
 		} else {
 			tableName = "Sinker_Event_" + strconv.FormatInt(appid, 10)
-			engine = clickhouse_sqlx.EngineReplacingMergeTree
+			engine = rclickhouse.EngineReplacingMergeTree
 		}
-		sinkerTable, err = clickhouse_sqlx.NewSinkerTable(context.TODO(), w.ckCluster, w.logger, &clickhouse_sqlx.SinkerTableConfig{
+		sinkerTable, err = rclickhouse.NewSinkerTable(context.TODO(), w.ckCluster, w.logger, &rclickhouse.SinkerTableConfig{
 			Database:      w.ckCluster.GetDb(),
 			TableName:     tableName,
 			BufferSize:    10000,
@@ -70,14 +70,14 @@ func (w CKWriter) loadTable(appid int64, event string) (*clickhouse_sqlx.SinkerT
 			Parse:         "tcp",
 			OrderByKey:    consts.KeyEventForMsg + "," + consts.KeyIdForMsg,
 			ReplayKey:     consts.KeyVersionForMsg,
-			BaseColumn: []clickhouse_sqlx.ColumnWithType{
+			BaseColumn: []rclickhouse.ColumnWithType{
 				{
 					Name: consts.KeyIdForMsg,
-					Type: clickhouse_sqlx.WhichType("Int64"),
+					Type: rclickhouse.WhichType("Int64"),
 				},
 				{
 					Name: consts.KeyEventForMsg,
-					Type: clickhouse_sqlx.WhichType("String"),
+					Type: rclickhouse.WhichType("String"),
 				},
 			},
 			Engine: engine,

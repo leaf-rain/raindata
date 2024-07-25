@@ -1,18 +1,18 @@
 package repository
 
 import (
-	"github.com/leaf-rain/raindata/common/clickhouse_sqlx"
+	"github.com/leaf-rain/raindata/common/rclickhouse"
 	"go.uber.org/zap"
 )
 
 type Repository struct {
 	logger    *zap.Logger
-	ckCluster *clickhouse_sqlx.ClickhouseCluster
+	ckCluster *rclickhouse.ClickhouseCluster
 }
 
 func NewRepository(
 	logger *zap.Logger,
-	ckCluster *clickhouse_sqlx.ClickhouseCluster,
+	ckCluster *rclickhouse.ClickhouseCluster,
 ) *Repository {
 	return &Repository{
 		logger:    logger,
