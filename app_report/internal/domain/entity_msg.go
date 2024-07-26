@@ -3,6 +3,7 @@ package domain
 import (
 	"github.com/leaf-rain/fastjson"
 	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/consts"
+	"github.com/leaf-rain/raindata/common/rsql"
 	"strconv"
 	"sync"
 )
@@ -60,12 +61,19 @@ func NewEntityMsg(id, appid int64, msg string) (*EntityMsg, error) {
 	return result, err
 }
 
-func (msg *EntityMsg) getKeys() []string {
-	var keys []string
+func (msg *EntityMsg) getKeys() []rsql.FieldInfo {
+	var fields []rsql.FieldInfo
 	msg.value.Range(func(key []byte, v *fastjson.Value) {
-		keys = append(keys, string(key))
+		fields = append(fields, rsql.FieldInfo{
+			Key:  string(key),
+			Type: v.Type(),
+		})
 	})
-	return keys
+	return fields
+}
+
+func (msg *EntityMsg) getEvent() string {
+	return msg.event
 }
 
 func (msg *EntityMsg) getString() string {

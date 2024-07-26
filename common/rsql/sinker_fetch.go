@@ -1,5 +1,7 @@
 package rsql
 
+import "github.com/leaf-rain/fastjson"
+
 type Fetch interface {
 	GetData() []string
 	GetCallback() []func()
@@ -48,4 +50,9 @@ func (f FetchArray) GetData() []string {
 
 func (f FetchArray) GetCallback() []func() {
 	return f.Callback
+}
+
+type FieldInfo struct {
+	Key  string
+	Type fastjson.Type
 }

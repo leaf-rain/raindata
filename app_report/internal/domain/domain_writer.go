@@ -41,7 +41,7 @@ func (logic *Writer) WriterMsg(ctx context.Context, msg string) error {
 	// 获取元数据
 	keys := entityMsg.getKeys()
 	var newKeys map[string]string
-	newKeys, err = logic.domain.repoMetadata.MetadataPut(keys)
+	newKeys, err = logic.domain.repoMetadata.MetadataPut(appid, entityMsg.getEvent(), keys)
 	if err != nil || len(newKeys) != len(keys) {
 		logic.domain.logger.Error("[WriterMsg] logic.repoMetadata.MetadataPut failed", zap.String("msg", msg), zap.Error(err))
 		return err
