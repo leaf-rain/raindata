@@ -3,7 +3,7 @@ package domain
 import (
 	"context"
 	"github.com/leaf-rain/raindata/app_report/internal/application/interface_domain"
-	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/consts"
+	"github.com/leaf-rain/raindata/common/consts"
 	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
 )

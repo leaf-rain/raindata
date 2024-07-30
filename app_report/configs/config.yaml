@@ -1,4 +1,4 @@
-GrpcAddr: 192.168.31.100:8090
+GrpcAddr: 192.168.10.28:8090
 Version: "v0.0.1"
 Mode: "test"
 LogConfig:
@@ -13,3 +13,10 @@ CKConfig:
   DB: "test"
   username: "root"
   password: "yeyangfengqi"
+SqlConfig:
+  db: test
+  host: 127.0.0.1
+  port: 9030
+  httpPort: 8030
+  username: root
+

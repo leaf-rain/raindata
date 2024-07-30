@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/leaf-rain/raindata/app_report/internal/domain/interface_repo"
-	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/consts"
+	"github.com/leaf-rain/raindata/common/consts"
 	"github.com/leaf-rain/raindata/common/rsql"
 	"go.uber.org/zap"
 	"strconv"
@@ -91,7 +91,7 @@ func (w SRWriter) loadTable(appid int64, event string) (*rsql.SinkerTable, error
 			Username:       w.dbCfg.Username,
 			Password:       w.dbCfg.Password,
 			FeHost:         w.dbCfg.Host,
-			FeHttpPort:     w.dbCfg.Port,
+			FeHttpPort:     w.dbCfg.HttpPort,
 		}, "fastjson")
 		if err != nil {
 			return nil, err

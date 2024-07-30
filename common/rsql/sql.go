@@ -14,6 +14,7 @@ type SqlConfig struct {
 	DB           string `json:"db,omitempty" yaml:"db"`
 	Host         string `json:"host,omitempty" yaml:"host"`
 	Port         string `json:"port,omitempty" yaml:"port"`
+	HttpPort     string `json:"httpPort,omitempty" yaml:"httpPort"`
 	Username     string `json:"username,omitempty" yaml:"username"`
 	Password     string `json:"password,omitempty" yaml:"password"`
 	MaxOpenConns int    `json:"maxOpenConns,omitempty" yaml:"maxOpenConns"`

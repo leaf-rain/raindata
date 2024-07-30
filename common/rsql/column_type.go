@@ -258,29 +258,9 @@ func WhichType(typ string, nullable bool) (ti *TypeInfo) {
 
 // Metric interface for metric collection
 type Metric interface {
-	GetTINYINT(key string, nullable bool) (val interface{})
-	GetSMALLINT(key string, nullable bool) (val interface{})
-	GetINT(key string, nullable bool) (val interface{})
-	GetBIGINT(key string, nullable bool) (val interface{})
-	GetLARGEINT(key string, nullable bool) (val interface{})
-	GetDECIMAL(key string, nullable bool) (val interface{})
-	GetDOUBLE(key string, nullable bool) (val interface{})
-	GetFLOAT(key string, nullable bool) (val interface{})
-	GetBOOLEAN(key string, nullable bool) (val interface{})
-	GetCHAR(key string, nullable bool) (val interface{})
-	GetSTRING(key string, nullable bool) (val interface{})
-	GetVARCHAR(key string, nullable bool) (val interface{})
-	GetBINARY(key string, nullable bool) (val interface{})
-	GetDATE(key string, nullable bool) (val interface{})
-	GetDATETIME(key string, nullable bool) (val interface{})
-	GetARRAY(key string, ty int) (val interface{})
-	GetJSON(key string, t int) (val interface{})
-	GetMAP(key string, typeinfo *TypeInfo) (val interface{})
-	GetBITMAP(key string, nullable bool) (val interface{})
-	GetHLL(key string, nullable bool) (val interface{})
-	GetSTRUCT(key string, nullable bool) (val interface{})
 	GetNewKeys(knownKeys *sync.Map) map[string]string
 	Set(key string, val interface{})
+	Get(key string, nullable bool, ty int) interface{}
 	Value() string
 	Close()
 }

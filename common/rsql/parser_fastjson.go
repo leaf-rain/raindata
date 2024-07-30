@@ -75,6 +75,55 @@ type FastjsonMetric struct {
 	ps     *fastjson.Parser
 }
 
+func (p *FastjsonMetric) Get(key string, nullable bool, ty int) interface{} {
+	switch ty {
+	case TINYINT:
+		return p.GetTINYINT(key, nullable)
+	case SMALLINT:
+		return p.GetSMALLINT(key, nullable)
+	case INT:
+		return p.GetINT(key, nullable)
+	case BIGINT:
+		return p.GetBIGINT(key, nullable)
+	case LARGEINT:
+		return p.GetLARGEINT(key, nullable)
+	case DECIMAL:
+		return p.GetDECIMAL(key, nullable)
+	case DOUBLE:
+		return p.GetDOUBLE(key, nullable)
+	case BOOLEAN:
+		return p.GetBOOLEAN(key, nullable)
+	case FLOAT:
+		return p.GetFLOAT(key, nullable)
+	case CHAR:
+		return p.GetCHAR(key, nullable)
+	case VARCHAR:
+		return p.GetVARCHAR(key, nullable)
+	case BINARY:
+		return p.GetBINARY(key, nullable)
+	case DATE:
+		return p.GetDATE(key, nullable)
+	case DATETIME:
+		return p.GetDATETIME(key, nullable)
+	case ARRAY:
+		return p.GetARRAY(key, ty)
+	case JSON:
+		return p.GetJSON(key, ty)
+	case MAP:
+		return p.GetMAP(key, &TypeInfo{
+			Type: ty,
+		})
+	case STRUCT:
+		return p.GetSTRUCT(key, true)
+	case HLL:
+		return p.GetHLL(key, true)
+	case BITMAP:
+		return p.GetBITMAP(key, true)
+	default:
+		return nil
+	}
+}
+
 func (p *FastjsonMetric) Set(key string, val interface{}) {
 	js, _ := json.Marshal(val)
 	obj, _ := fastjson.ParseBytes(js)

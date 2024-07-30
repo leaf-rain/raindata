@@ -76,5 +76,5 @@ func TestSinkerTable_sendStarRocks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st.sendStarRocks("test.1721626504096587526.wal.pending", "8")
+	st.sendStarRocks("Sinker_Log_0.1722231973241517155.wal.pending", "10")
 }

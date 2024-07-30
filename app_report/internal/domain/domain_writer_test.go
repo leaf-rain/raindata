@@ -8,7 +8,6 @@ import (
 
 func TestWriter_WriterMsg(t *testing.T) {
 	wm := NewCkWriter(d)
-
 	//for i := 0; i < 100; i++ {
 	//	var js, _ = json.Marshal(map[string]interface{}{
 	//		"a":  i,
@@ -23,7 +22,7 @@ func TestWriter_WriterMsg(t *testing.T) {
 	//		t.Error(err)
 	//	}
 	//}
-	for num := 0; num < 8; num++ {
+	for num := 0; num < 1; num++ {
 		go func() {
 			for i := 0; i < 1000000; i++ {
 				var js, _ = json.Marshal(map[string]interface{}{
@@ -34,7 +33,7 @@ func TestWriter_WriterMsg(t *testing.T) {
 					"a2": "2",
 					"a3": "3",
 				})
-				err := wm.WriterMsg(ctx, 1, string(js))
+				err := wm.WriterMsg(ctx, string(js))
 				if err != nil {
 					t.Error(err)
 				}
@@ -55,7 +54,7 @@ func BenchmarkWriterMsg(b *testing.B) {
 			"a2": "2",
 			"a3": "3",
 		})
-		err := wm.WriterMsg(ctx, 1, string(js))
+		err := wm.WriterMsg(ctx, string(js))
 		if err != nil {
 			b.Error(err)
 		}

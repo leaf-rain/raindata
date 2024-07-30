@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/leaf-rain/raindata/common/consts"
 	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
 	"go.uber.org/zap/buffer"
@@ -67,7 +68,6 @@ type SinkerTable struct {
 	// table相关
 	sinkerTableConfig *SinkerTableConfig
 	fd                *os.File
-	needComma         bool // 需要逗号
 }
 
 // NewSinkerTable get an instance of sinker with the task list
@@ -106,12 +106,6 @@ func NewSinkerTable(ctx context.Context, db *sql.DB, logger *zap.Logger, sinkerT
 	if err != nil {
 		return nil, err
 	}
-	var tail = getTailChar(s.fd)
-	if tail == "" {
-		s.fd.Write([]byte("["))
-	} else if tail == "}" {
-		s.fd.Write([]byte(","))
-	}
 	return s, nil
 }
 
@@ -139,12 +133,6 @@ func (c *SinkerTable) getAllFields() []string {
 		return allColumns[i] < allColumns[j]
 	})
 	return allColumns
-}
-
-type sqlFields struct {
-	Field string `db:"Field"`
-	Type  string `db:"Type"`
-	Null  string `db:"Null"`
 }
 
 func (c *SinkerTable) flushFields() error {
@@ -235,7 +223,6 @@ func (c *SinkerTable) processFetch() {
 			return
 		}
 		c.mux.Lock()
-		c.fd.Write([]byte("]"))
 		c.fd.Close()
 		var label = strconv.FormatInt(time.Now().UnixNano(), 10)
 		var newFileName = c.sinkerTableConfig.TableName + "." + label + ".wal.pending"
@@ -244,16 +231,13 @@ func (c *SinkerTable) processFetch() {
 			c.logger.Error(c.sinkerTableConfig.TableName+" rename wal error", zap.Error(err))
 			return
 		}
-		c.needComma = false
 		c.fd, err = os.OpenFile(c.sinkerTableConfig.TableName+".wal", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 		if err != nil {
 			c.logger.Error(c.sinkerTableConfig.TableName+" open wal error", zap.Error(err))
 		}
-		if getTailChar(c.fd) == "" {
-			c.fd.Write([]byte("["))
-		}
 		c.mux.Unlock()
-		c.sendStarRocks(newFileName, label)
+		// todo:
+		//c.sendStarRocks(newFileName, label)
 	}
 
 	ticker := time.NewTicker(time.Duration(c.sinkerTableConfig.FlushInterval) * time.Second)
@@ -277,6 +261,7 @@ func (c *SinkerTable) processFetch() {
 					c.logger.Error(c.sinkerTableConfig.TableName+" parse error", zap.Error(err), zap.String("data", tmpData[i]))
 					continue
 				}
+				parse.Set(consts.KeyCreateTimeForMsg, time.Now())
 				newKeys = parse.GetNewKeys(c.fieldMap)
 				if len(newKeys) > 0 {
 					for k, v := range newKeys {
@@ -288,9 +273,10 @@ func (c *SinkerTable) processFetch() {
 						continue
 					}
 				}
-				// todo:修改原json添加not null字段的默认值
+				// 修改原json添加not null字段的默认值
 				c.fieldMap.Range(func(key, value any) bool {
-					if !value.(*ColumnWithType).Type.Nullable {
+					ty := value.(*ColumnWithType).Type
+					if !ty.Nullable && parse.Get(key.(string), true, ty.Type) == nil {
 						var obj any
 						switch value.(*ColumnWithType).Type.Type {
 						case TINYINT,
@@ -317,16 +303,10 @@ func (c *SinkerTable) processFetch() {
 					return true
 				})
 				tmpBuffer.AppendBytes([]byte(parse.Value()))
-				if i != len(tmpData)-1 {
-					tmpBuffer.AppendByte(44)
-				}
+				tmpBuffer.AppendByte(13)
 				parse.Close()
 			}
 			c.mux.Lock()
-			if c.needComma {
-				c.fd.Write([]byte(","))
-			}
-			c.needComma = true
 			_, err = c.fd.Write(tmpBuffer.Bytes())
 			if err != nil {
 				c.logger.Error(c.sinkerTableConfig.TableName+" conn.Write error", zap.Error(err))
@@ -405,7 +385,7 @@ func (c *SinkerTable) sendStarRocks(fileName, label string) {
 		c.logger.Info(c.sinkerTableConfig.TableName+" send starrocks success", zap.String("fileName", fileName))
 		// todo:后续这里可以根据配置删除策略来删除文件，目前觉得不需要
 		// Delete the file
-		os.Remove(fileName)
+		//os.Remove(fileName)
 	} else {
 		c.logger.Error(c.sinkerTableConfig.TableName+" send starrocks error", zap.String("fileName", fileName), zap.String("respBody", string(respBody)))
 	}

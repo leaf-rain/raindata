@@ -2,7 +2,7 @@ package domain
 
 import (
 	"github.com/leaf-rain/fastjson"
-	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/consts"
+	"github.com/leaf-rain/raindata/common/consts"
 	"github.com/leaf-rain/raindata/common/rsql"
 	"strconv"
 	"sync"

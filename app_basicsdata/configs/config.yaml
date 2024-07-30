@@ -1,4 +1,4 @@
-GrpcAddr: 192.168.31.100:8090
+GrpcAddr: 192.168.10.28:8090
 Version: "v0.0.1"
 Mode: "test"
 MetadataPath: "/raindata/metadata"
@@ -13,7 +13,7 @@ LogConfig:
       - "logs"
 EtcdConfig:
   Endpoints:
-    - "192.168.31.100:2379"
+    - "192.168.10.28:2379"
 ClickhouseConfig:
   hosts:
     -

@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"github.com/leaf-rain/raindata/app_report/internal/domain/interface_repo"
-	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/consts"
+	"github.com/leaf-rain/raindata/common/consts"
 	"github.com/leaf-rain/raindata/common/rclickhouse"
 	"go.uber.org/zap"
 	"strconv"
