@@ -11,14 +11,14 @@ import (
 var st *SinkerTable
 var logger = zap.NewExample()
 var defaultConfig = &SinkerTableConfig{
-	BufferSize:    100,
+	BufferSize:    10000,
 	Database:      "test",
 	FeHost:        "127.0.0.1",
 	FeHttpPort:    "8030",
 	FlushInterval: 3,
 	OrderByKey:    "_id",
 	PrimaryKey:    "",
-	TableName:     "test",
+	TableName:     "Sinker_Log_0",
 	TableType:     TableType_Duplicate,
 	Username:      "root",
 	Password:      "",
@@ -27,7 +27,7 @@ var defaultConfig = &SinkerTableConfig{
 			Name: "_id",
 			Type: &TypeInfo{
 				Type:     INT,
-				Nullable: true,
+				Nullable: false,
 			},
 		},
 		{
@@ -48,7 +48,8 @@ func TestNewSinkerTable(t *testing.T) {
 	}
 	st.Start()
 	go func() {
-		for i := 0; i < 200; i++ {
+		var now = time.Now()
+		for i := 0; i < 1000; i++ {
 			if i%10 == 0 {
 				st.fetchCH <- FetchSingle{
 					Data: fmt.Sprintf("{\"_id\":%d,\"contain\":\"test\",\"t1\":\"test\"}", i),
@@ -64,8 +65,8 @@ func TestNewSinkerTable(t *testing.T) {
 					},
 				}
 			}
-
 		}
+		t.Log("---------------------------------->", time.Since(now))
 	}()
 	time.Sleep(time.Minute * 30)
 }
@@ -76,5 +77,5 @@ func TestSinkerTable_sendStarRocks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st.sendStarRocks("Sinker_Log_0.1722231973241517155.wal.pending", "10")
+	st.sendStarRocks("Sinker_Log_0.1722395192835842589.wal.pending", "")
 }

@@ -24,7 +24,7 @@ func TestWriter_WriterMsg(t *testing.T) {
 	//}
 	for num := 0; num < 1; num++ {
 		go func() {
-			for i := 0; i < 1000000; i++ {
+			for i := 0; i < 100000; i++ {
 				var js, _ = json.Marshal(map[string]interface{}{
 					"a":  i,
 					"b":  2,

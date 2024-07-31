@@ -32,7 +32,8 @@ func TestNewSinkerTable(t *testing.T) {
 	}
 	st.Start()
 	go func() {
-		for i := 0; i < 1000; i++ {
+		var now = time.Now()
+		for i := 0; i < 1000000; i++ {
 			if i%10 == 0 {
 				st.fetchCH <- FetchSingle{
 					Data: fmt.Sprintf("{\"id\":%d,\"contain\":\"test\",\"t1\":\"test\"}", i),
@@ -50,6 +51,7 @@ func TestNewSinkerTable(t *testing.T) {
 			}
 
 		}
+		t.Log("-------------------------------->", time.Since(now))
 	}()
 	time.Sleep(time.Minute * 30)
 }

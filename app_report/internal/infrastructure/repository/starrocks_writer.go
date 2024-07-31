@@ -85,7 +85,7 @@ func (w SRWriter) loadTable(appid int64, event string) (*rsql.SinkerTable, error
 				},
 			},
 			TableType:      engine,
-			PrimaryKey:     consts.KeyIdForMsg,
+			PrimaryKey:     consts.KeyEventForMsg + "," + consts.KeyIdForMsg,
 			DistributedKey: consts.KeyCreateTimeForMsg,
 			OrderByKey:     consts.KeyEventForMsg + "," + consts.KeyIdForMsg,
 			Username:       w.dbCfg.Username,

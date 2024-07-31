@@ -176,6 +176,7 @@ func (c *SinkerTable) flushFields() error {
 		}
 	} else if err != nil && strings.Contains(err.Error(), "Unknown table") {
 		query = createTable(c.sinkerTableConfig.TableType, c.sinkerTableConfig.Database, c.sinkerTableConfig.TableName, c.sinkerTableConfig.PrimaryKey, c.sinkerTableConfig.DistributedKey, c.sinkerTableConfig.OrderByKey, c.fieldMap)
+		c.logger.Info(c.sinkerTableConfig.TableName+" create table", zap.String("sql", query))
 		_, err = c.db.Exec(query)
 		if err != nil {
 			return err
@@ -236,14 +237,12 @@ func (c *SinkerTable) processFetch() {
 			c.logger.Error(c.sinkerTableConfig.TableName+" open wal error", zap.Error(err))
 		}
 		c.mux.Unlock()
-		// todo:
-		//c.sendStarRocks(newFileName, label)
+		c.sendStarRocks(newFileName, label)
 	}
 
 	ticker := time.NewTicker(time.Duration(c.sinkerTableConfig.FlushInterval) * time.Second)
 	defer ticker.Stop()
 	var newKeys map[string]string
-	var count int
 	for {
 		select {
 		case fetch := <-c.fetchCH:
@@ -251,10 +250,8 @@ func (c *SinkerTable) processFetch() {
 				continue
 			}
 			tmpData := fetch.GetData()
-			count = 0
 			var tmpBuffer = bufferPool.Get()
 			for i := range tmpData {
-				count++
 				var parse Metric
 				parse, err = c.parser.Parse([]byte(tmpData[i]))
 				if err != nil {
@@ -357,7 +354,6 @@ func (c *SinkerTable) sendStarRocks(fileName, label string) {
 	req.Header.Set("label", label)
 	req.Header.Set("format", "json")
 	req.Header.Set("Expect", "100-continue")
-	req.Header.Set("strip_outer_array", "true")
 
 	// Set additional headers with column names (this part might need adjustment based on the API requirements)
 	columns := c.getAllFields()
@@ -385,7 +381,7 @@ func (c *SinkerTable) sendStarRocks(fileName, label string) {
 		c.logger.Info(c.sinkerTableConfig.TableName+" send starrocks success", zap.String("fileName", fileName))
 		// todo:后续这里可以根据配置删除策略来删除文件，目前觉得不需要
 		// Delete the file
-		//os.Remove(fileName)
+		os.Remove(fileName)
 	} else {
 		c.logger.Error(c.sinkerTableConfig.TableName+" send starrocks error", zap.String("fileName", fileName), zap.String("respBody", string(respBody)))
 	}
