@@ -14,7 +14,7 @@ const (
 
 var (
 	columnsSQL                 = `show columns from %s.%s;`
-	createTableSQLForPrimary   = `CREATE TABLE IF NOT EXISTS %s.%s (%s _create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP) DUPLICATE KEY (%s)  PRIMARY KEY (%s,_create_time) PARTITION BY date_trunc('month', _create_time) DISTRIBUTED BY HASH (%s) ORDER BY (%s) PROPERTIES ("enable_persistent_index" = "true");`
+	createTableSQLForPrimary   = `CREATE TABLE IF NOT EXISTS %s.%s (%s _create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP) PRIMARY KEY (%s,_create_time) PARTITION BY date_trunc('month', _create_time) DISTRIBUTED BY HASH (%s) ORDER BY (%s) PROPERTIES ("enable_persistent_index" = "true");`
 	createTableSQLForDuplicate = `CREATE TABLE IF NOT EXISTS %s.%s (%s _create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP) DUPLICATE KEY (%s) PARTITION BY date_trunc('month', _create_time) ORDER BY (%s) PROPERTIES ("enable_persistent_index" = "true");`
 	createTableSQLForAggregate = `CREATE TABLE IF NOT EXISTS %s.%s (%s _create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP) PARTITION BY date_trunc('month', _create_time) AGGREGATE KEY(%s) DISTRIBUTED BY HASH (%s) ORDER BY (%s) PROPERTIES ("enable_persistent_index" = "true");`
 	dropTableSQL               = `DROP TABLE IF EXISTS %s.%s `
@@ -57,7 +57,7 @@ func createTable(engine int, database, tablename, primaryKey, distributedKey, or
 	})
 	query := ""
 	if engine == TableType_Primary {
-		query = fmt.Sprintf(createTableSQLForPrimary, database, tablename, columns, orderByKey, primaryKey, distributedKey, orderByKey)
+		query = fmt.Sprintf(createTableSQLForPrimary, database, tablename, columns, primaryKey, distributedKey, orderByKey)
 	} else if engine == TableType_Aggregate {
 		query = fmt.Sprintf(createTableSQLForAggregate, database, tablename, columns, primaryKey, distributedKey, orderByKey)
 	} else {

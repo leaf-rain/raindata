@@ -224,6 +224,12 @@ func (c *SinkerTable) processFetch() {
 			return
 		}
 		c.mux.Lock()
+		//var now = time.Now()
+		err = c.fd.Sync()
+		if err != nil {
+			c.logger.Error(c.sinkerTableConfig.TableName+" conn.Sync error", zap.Error(err))
+		}
+		//fmt.Println("-------------------------->", time.Since(now))
 		c.fd.Close()
 		var label = strconv.FormatInt(time.Now().UnixNano(), 10)
 		var newFileName = c.sinkerTableConfig.TableName + "." + label + ".wal.pending"
@@ -307,10 +313,6 @@ func (c *SinkerTable) processFetch() {
 			_, err = c.fd.Write(tmpBuffer.Bytes())
 			if err != nil {
 				c.logger.Error(c.sinkerTableConfig.TableName+" conn.Write error", zap.Error(err))
-			}
-			err = c.fd.Sync()
-			if err != nil {
-				c.logger.Error(c.sinkerTableConfig.TableName+" conn.Sync error", zap.Error(err))
 			}
 			c.mux.Unlock()
 			tmpBuffer.Free()
