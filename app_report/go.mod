@@ -4,13 +4,10 @@ go 1.22.0
 
 replace github.com/leaf-rain/raindata/common => ../common
 
-replace github.com/leaf-rain/raindata/app_basicsdata => ../app_basicsdata
-
 require (
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/google/wire v0.6.0
 	github.com/leaf-rain/fastjson v1.0.0
-	github.com/leaf-rain/raindata/app_basicsdata v0.0.0-00010101000000-000000000000
 	github.com/leaf-rain/raindata/common v0.0.0-20240726091459-25afc334c013
 	github.com/spf13/viper v1.18.2
 	github.com/tidwall/gjson v1.17.1

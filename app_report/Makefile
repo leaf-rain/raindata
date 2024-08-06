@@ -1,5 +1,5 @@
 OS_NAME = $(shell uname -s)
-BUILD_NAME = dxl_server_go
+BUILD_NAME = app_report
 
 # 获取当前执行的Makefile的绝对路径
 current_mkfile := $(abspath $(lastword $(MAKEFILE_LIST)))

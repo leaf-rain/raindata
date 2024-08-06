@@ -17,7 +17,7 @@ func main() {
 	recuperate.GoSafe(func() {
 		err := http.ListenAndServe(":6060", nil)
 		if err != nil {
-			log.Fatal("pprof http.ListenAndServe failed", err)
+			log.Fatal("rpprof http.ListenAndServe failed", err)
 		}
 	})
 	adapter, err := Initialize()
