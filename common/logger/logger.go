@@ -28,18 +28,18 @@ const (
 )
 
 type LogConfig struct {
-	ServerName string
-	Appid      int64
+	ServerName string `json:"server_name,omitempty" yaml:"server_name"`
+	Appid      string `json:"appid,omitempty" yaml:"appid"`
 
-	LogLevel  string // 日志打印级别 debug  info  warning  error
-	LogFormat string // 输出日志格式	logfmt, json, 默认json
+	LogLevel  string `json:"log_level,omitempty" yaml:"log_level"`   // 日志打印级别 debug  info  warning  error
+	LogFormat string `json:"log_format,omitempty" yaml:"log_format"` // 输出日志格式	logfmt, json, 默认json
 
-	LogFile           bool   // 是否输出到文件
-	LogPath           string // 输出日志文件路径
-	LogFileMaxSize    int    // 【日志分割】单个日志文件最多存储量 单位(mb)
-	LogFileMaxBackups int    // 【日志分割】日志备份文件最多数量
-	LogMaxAge         int    // 日志保留时间，单位: 天 (day)
-	LogCompress       bool   // 是否压缩日志
+	LogFile           bool   `json:"log_file,omitempty" yaml:"log_file"`                         // 是否输出到文件
+	LogPath           string `json:"log_path,omitempty" yaml:"log_path"`                         // 输出日志文件路径
+	LogFileMaxSize    int    `json:"log_file_max_size,omitempty" yaml:"log_file_max_size"`       //【日志分割】单个日志文件最多存储量 单位(mb)
+	LogFileMaxBackups int    `json:"log_file_max_backups,omitempty" yaml:"log_file_max_backups"` //【日志分割】日志备份文件最多数量
+	LogMaxAge         int    `json:"log_max_age,omitempty" yaml:"log_max_age"`                   // 日志保留时间，单位: 天 (day)
+	LogCompress       bool   `json:"log_compress,omitempty" yaml:"log_compress"`                 // 是否压缩日志
 }
 
 // 初始化日志 logger
@@ -69,8 +69,8 @@ func InitLogger(cfg *LogConfig) (*zap.Logger, error) {
 	if cfg.ServerName != "" {
 		fields = append(fields, zap.String("server_name", cfg.ServerName))
 	}
-	if cfg.Appid != 0 {
-		fields = append(fields, zap.Int64("appid", cfg.Appid))
+	if cfg.Appid != "" {
+		fields = append(fields, zap.String("appid", cfg.Appid))
 	}
 	if len(fields) > 0 {
 		logger := zap.New(core, zap.AddCaller(), zap.Development(), zap.Fields(fields...))

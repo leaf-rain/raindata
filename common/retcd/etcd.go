@@ -1,7 +1,7 @@
 package retcd
 
 import (
-	clientv3 "go.retcd.io/retcd/client/v3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 	"time"
 )

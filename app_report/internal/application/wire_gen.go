@@ -12,7 +12,7 @@ import (
 	"github.com/leaf-rain/raindata/app_report/internal/domain/interface_repo"
 	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/config"
 	"github.com/leaf-rain/raindata/app_report/internal/infrastructure/repository"
-	"github.com/leaf-rain/raindata/app_report/pkg/logger"
+	"github.com/leaf-rain/raindata/common/logger"
 	"github.com/leaf-rain/raindata/common/rsql"
 )
 

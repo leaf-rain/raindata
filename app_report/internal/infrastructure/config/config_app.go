@@ -3,8 +3,8 @@ package config
 import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
-	"github.com/leaf-rain/raindata/app_report/pkg/logger"
 	"github.com/leaf-rain/raindata/common/ecode"
+	"github.com/leaf-rain/raindata/common/logger"
 	"github.com/leaf-rain/raindata/common/rclickhouse"
 	"github.com/leaf-rain/raindata/common/rsql"
 	"github.com/spf13/viper"

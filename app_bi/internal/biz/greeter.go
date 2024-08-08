@@ -2,11 +2,11 @@ package biz
 
 import (
 	"context"
+	"go.uber.org/zap"
 
-	v1 "app_bi/api/helloworld/v1"
+	v1 "github.com/leaf-rain/raindata/app_bi/api/helloworld/v1"
 
 	"github.com/go-kratos/kratos/v2/errors"
-	"github.com/go-kratos/kratos/v2/log"
 )
 
 var (
@@ -31,16 +31,15 @@ type GreeterRepo interface {
 // GreeterUsecase is a Greeter usecase.
 type GreeterUsecase struct {
 	repo GreeterRepo
-	log  *log.Helper
+	log  *zap.Logger
 }
 
 // NewGreeterUsecase new a Greeter usecase.
-func NewGreeterUsecase(repo GreeterRepo, logger log.Logger) *GreeterUsecase {
-	return &GreeterUsecase{repo: repo, log: log.NewHelper(logger)}
+func NewGreeterUsecase(repo GreeterRepo, logger *zap.Logger) *GreeterUsecase {
+	return &GreeterUsecase{repo: repo, log: logger}
 }
 
 // CreateGreeter creates a Greeter, and returns the new Greeter.
 func (uc *GreeterUsecase) CreateGreeter(ctx context.Context, g *Greeter) (*Greeter, error) {
-	uc.log.WithContext(ctx).Infof("CreateGreeter: %v", g.Hello)
 	return uc.repo.Save(ctx, g)
 }

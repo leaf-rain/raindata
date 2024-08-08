@@ -2,8 +2,8 @@ package retcd
 
 import (
 	"context"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
-	clientv3 "go.retcd.io/retcd/client/v3"
 )
 
 // 锁的简单封装

@@ -2,15 +2,16 @@ package main
 
 import (
 	"flag"
+	"github.com/leaf-rain/raindata/app_bi/third_party/klogs"
 	"os"
 
-	"app_bi/internal/conf"
+	"github.com/leaf-rain/raindata/app_bi/internal/conf"
+	"github.com/leaf-rain/raindata/common/logger"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/go-kratos/kratos/v2/transport/http"
 
@@ -33,13 +34,13 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "../../configs", "config path, eg: -conf config.yaml")
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
+func newApp(lg log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
 	return kratos.New(
 		kratos.ID(id),
 		kratos.Name(Name),
 		kratos.Version(Version),
 		kratos.Metadata(map[string]string{}),
-		kratos.Logger(logger),
+		kratos.Logger(lg),
 		kratos.Server(
 			gs,
 			hs,
@@ -49,32 +50,37 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
 
 func main() {
 	flag.Parse()
-	logger := log.With(log.NewStdLogger(os.Stdout),
-		"ts", log.DefaultTimestamp,
-		"caller", log.DefaultCaller,
-		"service.id", id,
-		"service.name", Name,
-		"service.version", Version,
-		"trace.id", tracing.TraceID(),
-		"span.id", tracing.SpanID(),
-	)
 	c := config.New(
 		config.WithSource(
 			file.NewSource(flagconf),
 		),
 	)
 	defer c.Close()
-
 	if err := c.Load(); err != nil {
 		panic(err)
 	}
-
 	var bc conf.Bootstrap
 	if err := c.Scan(&bc); err != nil {
 		panic(err)
 	}
+	zapLogger, err := logger.InitLogger(&logger.LogConfig{
+		ServerName:        bc.Log.ServerName,
+		Appid:             bc.Log.Appid,
+		LogLevel:          bc.Log.LogLevel,
+		LogFormat:         bc.Log.LogFormat,
+		LogFile:           bc.Log.LogFile,
+		LogPath:           bc.Log.LogPath,
+		LogFileMaxSize:    int(bc.Log.LogFileMaxSize),
+		LogFileMaxBackups: int(bc.Log.LogFileMaxBackups),
+		LogMaxAge:         int(bc.Log.LogMaxAge),
+		LogCompress:       bc.Log.LogCompress,
+	})
+	if err != nil {
+		panic(err)
+	}
+	lg := klogs.NewLogger(zapLogger)
 
-	app, cleanup, err := wireApp(bc.Server, bc.Data, logger)
+	app, cleanup, err := wireApp(bc.Server, bc.Data, zapLogger, lg)
 	if err != nil {
 		panic(err)
 	}

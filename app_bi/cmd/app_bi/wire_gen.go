@@ -7,13 +7,14 @@
 package main
 
 import (
-	"app_bi/internal/biz"
-	"app_bi/internal/conf"
-	"app_bi/internal/data"
-	"app_bi/internal/server"
-	"app_bi/internal/service"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/leaf-rain/raindata/app_bi/internal/biz"
+	"github.com/leaf-rain/raindata/app_bi/internal/conf"
+	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/server"
+	"github.com/leaf-rain/raindata/app_bi/internal/service"
+	"go.uber.org/zap"
 )
 
 import (
@@ -23,17 +24,17 @@ import (
 // Injectors from wire.go:
 
 // wireApp init kratos application.
-func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*kratos.App, func(), error) {
+func wireApp(confServer *conf.Server, confData *conf.Data, logger *zap.Logger, logLogger log.Logger) (*kratos.App, func(), error) {
 	dataData, cleanup, err := data.NewData(confData, logger)
 	if err != nil {
 		return nil, nil, err
 	}
 	greeterRepo := data.NewGreeterRepo(dataData, logger)
 	greeterUsecase := biz.NewGreeterUsecase(greeterRepo, logger)
-	greeterService := service.NewGreeterService(greeterUsecase)
+	greeterService := service.NewGreeterService(greeterUsecase, logger)
 	grpcServer := server.NewGRPCServer(confServer, greeterService, logger)
-	httpServer := server.NewHTTPServer(confServer, greeterService, logger)
-	app := newApp(logger, grpcServer, httpServer)
+	httpServer := server.NewHTTPServer(confServer, logger, greeterService)
+	app := newApp(logLogger, grpcServer, httpServer)
 	return app, func() {
 		cleanup()
 	}, nil

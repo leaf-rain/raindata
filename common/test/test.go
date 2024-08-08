@@ -1,29 +1,34 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"runtime"
-	"time"
+	"log"
+	"os"
 )
 
 func main() {
-	a := make(map[int]int)
-	a[1] = 1
-	go func(a map[int]int) {
-		time.Sleep(time.Second)
-		fmt.Println(a[1])
-	}(a)
-	a = make(map[int]int)
-	a[1] = 2
-	time.Sleep(time.Second * 3)
-}
+	// 打开文件
+	file, err := os.Open("./test/FirstChargeDialog.prefab")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
 
-func printAlloc() {
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
-	fmt.Printf("Alloc = %v MiB\n", m.Alloc/1024/1024)           // 近期分配的内存
-	fmt.Printf("TotalAlloc = %v MiB\n", m.TotalAlloc/1024/1024) // 自上次调用以来分配的总内存
-	fmt.Printf("Sys = %v MiB\n", m.Sys/1024/1024)               // 系统为Go分配的物理内存
-	fmt.Printf("NumGC = %v\n", m.NumGC)
-	fmt.Printf("--------------------------------------------------------------------\n")
+	// 创建一个带缓冲的 Scanner，用于按行读取
+	scanner := bufio.NewScanner(file)
+
+	// 设置扫描器的分隔符为换行符
+	scanner.Split(bufio.ScanLines)
+
+	// 遍历文件的每一行
+	for scanner.Scan() {
+		line := scanner.Text()
+		fmt.Println(line)
+	}
+
+	// 检查读取过程中是否出现了错误
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/leaf-rain/raindata/common/str"
 	"github.com/spf13/viper"
 	"go.etcd.io/etcd/api/v3/mvccpb"
-	clientv3 "go.retcd.io/retcd/client/v3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 	"path/filepath"
 	"reflect"

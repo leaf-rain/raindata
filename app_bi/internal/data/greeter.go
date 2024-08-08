@@ -2,22 +2,21 @@ package data
 
 import (
 	"context"
+	"go.uber.org/zap"
 
-	"app_bi/internal/biz"
-
-	"github.com/go-kratos/kratos/v2/log"
+	"github.com/leaf-rain/raindata/app_bi/internal/biz"
 )
 
 type greeterRepo struct {
 	data *Data
-	log  *log.Helper
+	log  *zap.Logger
 }
 
 // NewGreeterRepo .
-func NewGreeterRepo(data *Data, logger log.Logger) biz.GreeterRepo {
+func NewGreeterRepo(data *Data, logger *zap.Logger) biz.GreeterRepo {
 	return &greeterRepo{
 		data: data,
-		log:  log.NewHelper(logger),
+		log:  logger,
 	}
 }
 

@@ -1,34 +1,66 @@
 package server
 
 import (
-	"app_bi/internal/conf"
-	"app_bi/internal/service"
-
 	"github.com/gin-gonic/gin"
 	kgin "github.com/go-kratos/gin"
-	"github.com/go-kratos/kratos/v2/errors"
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
-	"github.com/go-kratos/kratos/v2/transport/http"
+	khttp "github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/leaf-rain/raindata/app_bi/internal/conf"
+	"github.com/leaf-rain/raindata/app_bi/internal/service"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
+	"go.uber.org/zap"
+	"net/http"
 )
 
 // NewHTTPServer new an HTTP server.
-func NewHTTPServer(c *conf.Server, greeter *service.GreeterService, logger log.Logger) *http.Server {
-	router := gin.Default()
+func NewHTTPServer(c *conf.Server, logger *zap.Logger, greeter *service.GreeterService) *khttp.Server {
+	engine := gin.Default()
 	// 使用kratos中间件
-	router.Use(kgin.Middlewares(recovery.Recovery()))
+	engine.Use(kgin.Middlewares(recovery.Recovery()))
 
-	router.GET("/helloworld/:name", func(ctx *gin.Context) {
-		name := ctx.Param("name")
-		if name == "error" {
-			// 返回kratos error
-			kgin.Error(ctx, errors.Unauthorized("auth_error", "no authentication"))
-		} else {
-			ctx.JSON(200, map[string]string{"welcome": name})
-		}
-	})
+	publicGroup := engine.Group("/")
+	privateGroup := engine.Group("/")
 
-	httpSrv := http.NewServer(http.Address(":8000"))
-	httpSrv.HandlePrefix("/", router)
+	// todo: private接口校验权限
+	//privateGroup.Use()
+
+	{
+		// 健康监测
+		publicGroup.GET("/health", func(c *gin.Context) {
+			// 获取 CPU 使用率
+			cpuPercent, err := cpu.Percent(0, false)
+			if err != nil {
+				logger.Error("Error getting CPU percent.", zap.Error(err))
+			} else {
+				logger.Info("CPU Usage:", zap.Float64("percent", cpuPercent[0]))
+			}
+			// 获取内存使用情况
+			vmStat, err := mem.VirtualMemory()
+			if err != nil {
+				logger.Error("Error getting memory stats:", zap.Error(err))
+			} else {
+				logger.Info("Total Memory", zap.Uint64("total", vmStat.Total))
+				logger.Info("Available Memory", zap.Uint64("available", vmStat.Available))
+				logger.Info("Used Memory", zap.Uint64("used", vmStat.Used))
+				logger.Info("Memory Usage", zap.Float64("percent", vmStat.UsedPercent))
+			}
+			c.JSON(http.StatusOK, map[string]interface{}{
+				"status": "ok",
+			})
+		})
+	}
+
+	{
+		InitUserAuthRouter(publicGroup) // 注册基础功能路由 不做鉴权
+	}
+
+	// todo:服务注册
+	{
+		InitUserRouter(privateGroup)
+	}
+
+	httpSrv := khttp.NewServer(khttp.Address(":8000"))
+	httpSrv.HandlePrefix("/", engine)
 	return httpSrv
 }

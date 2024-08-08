@@ -2,21 +2,23 @@ package service
 
 import (
 	"context"
+	"go.uber.org/zap"
 
-	v1 "app_bi/api/helloworld/v1"
-	"app_bi/internal/biz"
+	v1 "github.com/leaf-rain/raindata/app_bi/api/helloworld/v1"
+	"github.com/leaf-rain/raindata/app_bi/internal/biz"
 )
 
 // GreeterService is a greeter service.
 type GreeterService struct {
 	v1.UnimplementedGreeterServer
 
-	uc *biz.GreeterUsecase
+	uc  *biz.GreeterUsecase
+	log *zap.Logger
 }
 
 // NewGreeterService new a greeter service.
-func NewGreeterService(uc *biz.GreeterUsecase) *GreeterService {
-	return &GreeterService{uc: uc}
+func NewGreeterService(uc *biz.GreeterUsecase, logger *zap.Logger) *GreeterService {
+	return &GreeterService{uc: uc, log: logger}
 }
 
 // SayHello implements helloworld.GreeterServer.

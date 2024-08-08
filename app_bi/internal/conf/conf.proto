@@ -1,13 +1,27 @@
 syntax = "proto3";
 package kratos.api;
 
-option go_package = "app_bi/internal/conf;conf";
+option go_package = "github.com/leaf-rain/raindata/app_bi/internal/conf;conf";
 
 import "google/protobuf/duration.proto";
 
 message Bootstrap {
   Server server = 1;
   Data data = 2;
+  Log log = 3;
+}
+
+message Log {
+  string server_name = 1;
+  string appid = 2;
+  string log_level = 3;
+  string log_format = 4;
+  bool log_file = 5;
+  string log_path = 6;
+  int64 log_file_max_size = 7;
+  int64 log_file_max_backups = 8;
+  int64 log_max_age = 9;
+  bool log_compress = 10;
 }
 
 message Server {
