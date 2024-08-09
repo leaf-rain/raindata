@@ -21,6 +21,10 @@ type LoginReq struct {
 	CaptchaId string `json:"captchaId"` // 验证码ID
 }
 
+func (req *LoginReq) Verify() error {
+	return nil
+}
+
 // Modify password structure
 type ChangePasswordReq struct {
 	ID          uint   `json:"-"`           // 从 JWT 中提取 user id，避免越权

@@ -41,14 +41,21 @@ message Server {
 
 message Data {
   message Database {
-    string driver = 1;
-    string source = 2;
+    string driverName = 1;
+    string dbSource = 2;
+    int64 maxOpenConns = 3;
+    int64 maxIdleConns = 4;
+    int64 idleTimeOut = 5;
+    bool debug = 6;
   }
   message Redis {
-    string network = 1;
-    string addr = 2;
-    google.protobuf.Duration read_timeout = 3;
-    google.protobuf.Duration write_timeout = 4;
+    int64 poolSize = 1;
+    repeated string addr = 2;
+    string pwd = 3;
+    int64 dialTimeout = 4;
+    int64 readTimeout = 5;
+    int64 writeTimeout = 6;
+    int64 db = 7;
   }
   Database database = 1;
   Redis redis = 2;

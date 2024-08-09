@@ -58,7 +58,7 @@ func NewUserApi(userSvc *service.UserService, log *zap.Logger) *UserApi {
 // @Tags     Base
 // @Summary  用户登录
 // @Produce   application/json
-// @Param    data  body      systemReq.Login                                             true  "用户名, 密码, 验证码"
+// @Param    data  body      data.LoginReq                                             true  "用户名, 密码, 验证码"
 // @Success  200   {object}  response.Response{data=systemRes.LoginResponse,msg=string}  "返回包括用户信息,token,过期时间"
 // @Router   /base/login [post]
 func (b *UserApi) Login(c *gin.Context) {
@@ -70,7 +70,7 @@ func (b *UserApi) Login(c *gin.Context) {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
-	err = utils.Verify(l, utils.LoginVerify)
+	err = l.Verify()
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
@@ -112,7 +112,7 @@ func (b *UserApi) Login(c *gin.Context) {
 }
 
 // TokenNext 登录以后签发jwt
-func (b *UserApi) TokenNext(c *gin.Context, user system.SysUser) {
+func (b *UserApi) TokenNext(c *gin.Context, user data.SysUser) {
 	token, claims, err := utils.LoginToken(&user)
 	if err != nil {
 		global.GVA_LOG.Error("获取token失败!", zap.Error(err))

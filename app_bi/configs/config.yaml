@@ -7,12 +7,19 @@ server:
     timeout: 1s
 data:
   database:
-    driver: mysql
-    source: root:root@tcp(127.0.0.1:3306)/test?parseTime=True&loc=Local
+    driverName: mysql
+    dbSource: root:root@tcp(127.0.0.1:3306)/test?parseTime=True&loc=Local
+    maxOpenConns: 6
+    maxIdleConns: 4
+    idleTimeOut: 10
+    debug: false
+
   redis:
-    addr: 127.0.0.1:6379
-    read_timeout: 0.2s
-    write_timeout: 0.2s
+    poolSize: 4
+    addr:
+      - 127.0.0.1:6379
+    read_timeout: 2
+    write_timeout: 2
 log:
   server_name: app_bi
   appid: 1
