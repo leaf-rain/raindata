@@ -6,6 +6,7 @@ import (
 	"github.com/leaf-rain/raindata/app_bi/third_party/rredis"
 	"github.com/leaf-rain/raindata/common/rgorm"
 	"go.uber.org/zap"
+	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 
 	"github.com/google/wire"
@@ -16,37 +17,40 @@ var ProviderSet = wire.NewSet(NewData, NewGreeterRepo)
 
 // Data .
 type Data struct {
-	Ctx       context.Context
-	RdClient  *rredis.Client
-	SqlClient *gorm.DB
+	Ctx               context.Context
+	RdClient          *rredis.Client
+	SqlClient         *gorm.DB
+	SingleflightGroup *singleflight.Group
+	Config            *conf.Bootstrap
 }
 
 // NewData .
-func NewData(c *conf.Data, logger *zap.Logger) (*Data, func(), error) {
+func NewData(c *conf.Bootstrap, logger *zap.Logger) (*Data, func(), error) {
 	data := &Data{}
 	var gormLogger = rgorm.NewGormZapLogger(logger)
 	data.SqlClient = rgorm.NewRGrom(rgorm.DtGromConfig{
-		DriverName:   c.Database.DriverName,
-		DbSource:     c.Database.DbSource,
-		MaxOpenConns: int(c.Database.MaxOpenConns),
-		MaxIdleConns: int(c.Database.MaxIdleConns),
-		IdleTimeOut:  int(c.Database.IdleTimeOut),
-		Debug:        c.Database.Debug,
+		DriverName:   c.Data.Database.DriverName,
+		DbSource:     c.Data.Database.DbSource,
+		MaxOpenConns: int(c.Data.Database.MaxOpenConns),
+		MaxIdleConns: int(c.Data.Database.MaxIdleConns),
+		IdleTimeOut:  int(c.Data.Database.IdleTimeOut),
+		Debug:        c.Data.Database.Debug,
 		Logger:       gormLogger,
 	})
 	var err error
 	data.RdClient, err = rredis.NewRedis(rredis.Config{
-		PoolSize:     0,
-		Addr:         nil,
-		Pwd:          "",
-		DialTimeout:  0,
-		ReadTimeout:  0,
-		WriteTimeout: 0,
-		DB:           0,
+		PoolSize:     int(c.Data.Redis.PoolSize),
+		Addr:         c.Data.Redis.Addr,
+		Pwd:          c.Data.Redis.Pwd,
+		DialTimeout:  c.Data.Redis.DialTimeout,
+		ReadTimeout:  c.Data.Redis.ReadTimeout,
+		WriteTimeout: c.Data.Redis.WriteTimeout,
+		DB:           int(c.Data.Redis.Db),
 	}, context.Background())
 	if err != nil {
 		return nil, nil, err
 	}
+	data.SingleflightGroup = &singleflight.Group{}
 	cleanup := func() {
 		err := data.RdClient.Close()
 		if err != nil {

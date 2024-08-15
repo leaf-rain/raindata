@@ -14,7 +14,7 @@ var (
 	ErrUserNotFound = errors.NotFound(v1.ErrorReason_USER_NOT_FOUND.String(), "user not found")
 )
 
-// Greeter is a Greeter model.
+// Greeter is a Greeter data.
 type Greeter struct {
 	Hello string
 }

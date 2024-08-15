@@ -43,7 +43,7 @@ func PostJson(client *http.Client, url string, data interface{}) (int, []byte, e
 		return 0, nil, err
 	}
 	//请求头设置
-	request.Header.Add("Content-Type", "application/json") //json请求
+	dto.Header.Add("Content-Type", "application/json") //json请求
 	//发送请求到服务端
 	var resp *http.Response
 	resp, err = client.Do(request)

@@ -1,0 +1,69 @@
+package source
+
+import (
+	"context"
+	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/pkg/errors"
+	"gorm.io/gorm"
+)
+
+type initApiIgnore struct{}
+
+const initOrderApiIgnore = initOrderApi + 1
+
+func (i initApiIgnore) InitializerName() string {
+	return data.SysIgnoreApi{}.TableName()
+}
+
+func (i *initApiIgnore) MigrateTable(ctx context.Context) (context.Context, error) {
+	db, ok := ctx.Value("db").(*gorm.DB)
+	if !ok {
+		return ctx, ErrMissingDBContext
+	}
+	return ctx, db.AutoMigrate(&data.SysIgnoreApi{})
+}
+
+func (i *initApiIgnore) TableCreated(ctx context.Context) bool {
+	db, ok := ctx.Value("db").(*gorm.DB)
+	if !ok {
+		return false
+	}
+	return db.Migrator().HasTable(&data.SysIgnoreApi{})
+}
+
+func (i *initApiIgnore) InitializeData(ctx context.Context) (context.Context, error) {
+	db, ok := ctx.Value("db").(*gorm.DB)
+	if !ok {
+		return ctx, ErrMissingDBContext
+	}
+	entities := []data.SysIgnoreApi{
+		{Method: "GET", Path: "/swagger/*any"},
+		{Method: "GET", Path: "/api/freshCasbin"},
+		{Method: "GET", Path: "/uploads/file/*filepath"},
+		{Method: "GET", Path: "/health"},
+		{Method: "HEAD", Path: "/uploads/file/*filepath"},
+		{Method: "POST", Path: "/autoCode/llmAuto"},
+		{Method: "POST", Path: "/system/reloadSystem"},
+		{Method: "POST", Path: "/base/login"},
+		{Method: "POST", Path: "/base/captcha"},
+		{Method: "POST", Path: "/init/initdb"},
+		{Method: "POST", Path: "/init/checkdb"},
+	}
+	if err := db.Create(&entities).Error; err != nil {
+		return ctx, errors.Wrap(err, data.SysIgnoreApi{}.TableName()+"表数据初始化失败!")
+	}
+	next := context.WithValue(ctx, i.InitializerName(), entities)
+	return next, nil
+}
+
+func (i *initApiIgnore) DataInserted(ctx context.Context) bool {
+	db, ok := ctx.Value("db").(*gorm.DB)
+	if !ok {
+		return false
+	}
+	if errors.Is(db.Where("path = ? AND method = ?", "/swagger/*any", "GET").
+		First(&data.SysIgnoreApi{}).Error, gorm.ErrRecordNotFound) {
+		return false
+	}
+	return true
+}

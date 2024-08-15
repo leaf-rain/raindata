@@ -32,15 +32,30 @@ type ChangePasswordReq struct {
 	NewPassword string `json:"newPassword"` // 新密码
 }
 
+func (req *ChangePasswordReq) Verify() error {
+	// todo: 密码校验
+	return nil
+}
+
 // Modify  user's auth structure
 type SetUserAuth struct {
 	AuthorityId uint `json:"authorityId"` // 角色ID
+}
+
+func (req *SetUserAuth) Verify() error {
+	// todo: 密码校验
+	return nil
 }
 
 // Modify  user's auth structure
 type SetUserAuthorities struct {
 	ID           uint
 	AuthorityIds []uint `json:"authorityIds"` // 角色ID
+}
+
+func (req *SetUserAuthorities) Verify() error {
+	// todo: 密码校验
+	return nil
 }
 
 type ChangeUserInfo struct {
@@ -53,4 +68,9 @@ type ChangeUserInfo struct {
 	SideMode     string         `json:"sideMode"  gorm:"comment:用户侧边主题"`                                                      // 用户侧边主题
 	Enable       int            `json:"enable" gorm:"comment:冻结用户"`                                                           //冻结用户
 	Authorities  []SysAuthority `json:"-" gorm:"many2many:sys_user_authority;"`
+}
+
+func (req *ChangeUserInfo) Verify() error {
+	// todo: 密码校验
+	return nil
 }

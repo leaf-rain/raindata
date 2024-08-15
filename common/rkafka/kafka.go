@@ -19,7 +19,7 @@ type KafkaConfig struct {
 		HeartbeatInterval      int `json:"heartbeat.interval.ms"`
 		SessionTimeout         int `json:"session.timeout.ms"`
 		RebalanceTimeout       int `json:"rebalance.timeout.ms"`
-		RequestTimeoutOverhead int `json:"request.timeout.ms"`
+		RequestTimeoutOverhead int `json:"dto.timeout.ms"`
 	}
 	ResetSaslRealm bool
 	Security       map[string]string

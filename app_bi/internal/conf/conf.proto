@@ -9,6 +9,11 @@ message Bootstrap {
   Server server = 1;
   Data data = 2;
   Log log = 3;
+  JWT jwt = 4;
+  AutoCode autoCode = 5;
+  Email email = 6;
+  Mongo mongo = 7;
+  Oss oss = 8;
 }
 
 message Log {
@@ -59,4 +64,124 @@ message Data {
   }
   Database database = 1;
   Redis redis = 2;
+}
+
+message JWT {
+  string signingKey = 1;
+  string expiresTime = 2;
+  string bufferTime = 3;
+  string issuer = 4;
+
+  bool UseMultipoint = 5;
+}
+
+message AutoCode {
+  string web = 1;
+  string root = 2;
+  string server = 3;
+  string module = 4;
+  string aiPath = 5;
+}
+
+message Email {
+  string to = 1;
+  string from = 2;
+  string host = 3;
+  string secret = 4;
+  string nickname = 5;
+  int64 port = 6;
+  bool isSSL = 7;
+}
+
+message Mongo{
+  string coll = 1;
+  string options = 2;
+  string database = 3;
+  string username = 4;
+  string password = 5;
+  string authSource = 6;
+  int64 minPoolSize = 7;
+  int64 maxPoolSize = 8;
+  int64 socketTimeoutMs = 9;
+  int64 connectTimeoutMs = 10;
+  bool isZap = 11;
+  repeated MongoHost hosts = 12;
+}
+
+message MongoHost{
+  string host = 1;
+  string port = 2;
+}
+
+message Oss {
+  string type = 1;
+  OssLocal local = 2;
+  OssQiniu qiniu = 3;
+  OssAliyun aliyun = 4;
+  OssHuaweiyun huaweiyun = 5;
+  OssTencentCOS tencentCOS = 6;
+  OssAwsS3 awsS3 = 7;
+  OssCloudflareR2 cloudflareR2 = 8;
+}
+
+message OssLocal {
+  string path = 1;
+  string storePath = 2;
+}
+
+message OssQiniu{
+  string zone = 1;
+  string bucket = 2;
+  string imgPath = 3;
+  string accessKey = 4;
+  string secretKey = 5;
+  bool useHTTPS = 6;
+  bool useCdnDomains = 7;
+}
+
+message OssAliyun{
+  string endpoint = 1;
+  string accessKeyId = 2;
+  string accessKeySecret = 3;
+  string bucketName = 4;
+  string bucketUrl = 5;
+  string basePath = 6;
+}
+
+message OssHuaweiyun{
+  string path = 1;
+  string bucket = 2;
+  string endpoint = 3;
+  string accessKey = 4;
+  string secretKey = 5;
+}
+
+message OssTencentCOS {
+  string bucket = 1;
+  string region = 2;
+  string secretID = 3;
+  string secretKey = 4;
+  string baseURL = 5;
+  string pathPrefix = 6;
+}
+
+message OssAwsS3 {
+  string bucket = 1;
+  string region = 2;
+  string endpoint = 3;
+  string secretID = 4;
+  string secretKey = 5;
+  string baseURL = 6;
+  string pathPrefix = 7;
+  bool s3ForcePathStyle = 8;
+  bool disableSSL = 9;
+}
+
+message OssCloudflareR2 {
+  string bucket = 1;
+  string baseURL = 2;
+  string path = 3;
+  string accountID = 4;
+  string accessKeyID = 5;
+  string secretAccessKey = 6;
 }

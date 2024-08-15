@@ -55,7 +55,7 @@ func (x *StreamReportRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamReportRequest.ProtoReflect.Descriptor instead.
+// Deprecated: Use StreamReportdto.ProtoReflect.Descriptor instead.
 func (*StreamReportRequest) Descriptor() ([]byte, []int) {
 	return file_log_proto_rawDescGZIP(), []int{0}
 }

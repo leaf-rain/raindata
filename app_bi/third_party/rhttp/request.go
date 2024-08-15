@@ -27,9 +27,19 @@ func (r *PageInfo) Paginate() func(db *gorm.DB) *gorm.DB {
 	}
 }
 
+func (r *PageInfo) Verify() error {
+	// todo: 密码校验
+	return nil
+}
+
 // GetById Find by id structure
 type GetById struct {
 	ID int `json:"id" form:"id"` // 主键ID
+}
+
+func (r *GetById) Verify() error {
+	// todo: 密码校验
+	return nil
 }
 
 func (r *GetById) Uint() uint {
