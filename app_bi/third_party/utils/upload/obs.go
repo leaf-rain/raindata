@@ -1,21 +1,24 @@
 package upload
 
 import (
+	"github.com/leaf-rain/raindata/app_bi/internal/conf"
+	"go.uber.org/zap"
 	"mime/multipart"
 
 	"github.com/huaweicloud/huaweicloud-sdk-go-obs/obs"
 	"github.com/pkg/errors"
 )
 
-var HuaWeiObs = new(Obs)
-
-type Obs struct{}
-
-func NewHuaWeiObsClient() (client *obs.ObsClient, err error) {
-	return obs.New(svc.conf.HuaWeiObs.AccessKey, svc.conf.HuaWeiObs.SecretKey, svc.conf.HuaWeiObs.Endpoint)
+type Obs struct {
+	conf   *conf.Bootstrap
+	logger *zap.Logger
 }
 
-func (o *Obs) UploadFile(file *multipart.FileHeader) (string, string, error) {
+func (u *Obs) NewHuaWeiObsClient() (client *obs.ObsClient, err error) {
+	return obs.New(u.conf.Oss.Huaweiyun.AccessKey, u.conf.Oss.Huaweiyun.SecretKey, u.conf.Oss.Huaweiyun.Endpoint)
+}
+
+func (u *Obs) UploadFile(file *multipart.FileHeader) (string, string, error) {
 	// var open multipart.File
 	open, err := file.Open()
 	if err != nil {
@@ -26,16 +29,18 @@ func (o *Obs) UploadFile(file *multipart.FileHeader) (string, string, error) {
 	input := &obs.PutObjectInput{
 		PutObjectBasicInput: obs.PutObjectBasicInput{
 			ObjectOperationInput: obs.ObjectOperationInput{
-				Bucket: svc.conf.HuaWeiObs.Bucket,
+				Bucket: u.conf.Oss.Huaweiyun.Bucket,
 				Key:    filename,
 			},
-			ContentType: file.Header.Get("content-type"),
+			HttpHeader: obs.HttpHeader{
+				ContentType: file.Header.Get("content-type"),
+			},
 		},
 		Body: open,
 	}
 
 	var client *obs.ObsClient
-	client, err = NewHuaWeiObsClient()
+	client, err = u.NewHuaWeiObsClient()
 	if err != nil {
 		return "", "", errors.Wrap(err, "获取华为对象存储对象失败!")
 	}
@@ -44,17 +49,17 @@ func (o *Obs) UploadFile(file *multipart.FileHeader) (string, string, error) {
 	if err != nil {
 		return "", "", errors.Wrap(err, "文件上传失败!")
 	}
-	filepath := svc.conf.HuaWeiObs.Path + "/" + filename
+	filepath := u.conf.Oss.Huaweiyun.Path + "/" + filename
 	return filepath, filename, err
 }
 
-func (o *Obs) DeleteFile(key string) error {
-	client, err := NewHuaWeiObsClient()
+func (u *Obs) DeleteFile(key string) error {
+	client, err := u.NewHuaWeiObsClient()
 	if err != nil {
 		return errors.Wrap(err, "获取华为对象存储对象失败!")
 	}
 	input := &obs.DeleteObjectInput{
-		Bucket: svc.conf.HuaWeiObs.Bucket,
+		Bucket: u.conf.Oss.Huaweiyun.Bucket,
 		Key:    key,
 	}
 	var output *obs.DeleteObjectOutput

@@ -2,6 +2,7 @@ package upload
 
 import (
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
+	"go.uber.org/zap"
 	"mime/multipart"
 )
 
@@ -12,23 +13,47 @@ type OSS interface {
 }
 
 // NewOss OSS的实例化方法
-func NewOss(conf *conf.Bootstrap) OSS {
+func NewOss(conf *conf.Bootstrap, logger *zap.Logger) OSS {
 	switch conf.Oss.Type {
 	case "local":
-		return &Local{}
+		return &Local{
+			conf:   conf,
+			logger: logger,
+		}
 	case "qiniu":
-		return &Qiniu{}
+		return &Qiniu{
+			conf:   conf,
+			logger: logger,
+		}
 	case "tencent-cos":
-		return &TencentCOS{}
+		return &TencentCOS{
+			conf:   conf,
+			logger: logger,
+		}
 	case "aliyun-oss":
-		return &AliyunOSS{}
+		return &AliyunOSS{
+			conf:   conf,
+			logger: logger,
+		}
 	case "huawei-obs":
-		return HuaWeiObs
+		return &Obs{
+			conf:   conf,
+			logger: logger,
+		}
 	case "aws-s3":
-		return &AwsS3{}
+		return &AwsS3{
+			conf:   conf,
+			logger: logger,
+		}
 	case "cloudflare-r2":
-		return &CloudflareR2{}
+		return &CloudflareR2{
+			conf:   conf,
+			logger: logger,
+		}
 	default:
-		return &Local{}
+		return &Local{
+			conf:   conf,
+			logger: logger,
+		}
 	}
 }

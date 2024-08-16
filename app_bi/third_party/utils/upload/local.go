@@ -2,6 +2,7 @@ package upload
 
 import (
 	"errors"
+	"github.com/leaf-rain/raindata/app_bi/internal/conf"
 	"github.com/leaf-rain/raindata/app_bi/third_party/utils"
 	"io"
 	"mime/multipart"
@@ -16,15 +17,18 @@ import (
 
 var mu sync.Mutex
 
-type Local struct{}
+type Local struct {
+	conf   *conf.Bootstrap
+	logger *zap.Logger
+}
 
-//@object: *Local
+//@object: u *Local
 //@function: UploadFile
 //@description: 上传文件
 //@param: file *multipart.FileHeader
 //@return: string, string, error
 
-func (*Local) UploadFile(file *multipart.FileHeader) (string, string, error) {
+func (u *Local) UploadFile(file *multipart.FileHeader) (string, string, error) {
 	// 读取文件后缀
 	ext := filepath.Ext(file.Filename)
 	// 读取文件名并加密
@@ -33,25 +37,25 @@ func (*Local) UploadFile(file *multipart.FileHeader) (string, string, error) {
 	// 拼接新文件名
 	filename := name + "_" + time.Now().Format("20060102150405") + ext
 	// 尝试创建此路径
-	mkdirErr := os.MkdirAll(svc.conf.Local.StorePath, os.ModePerm)
+	mkdirErr := os.MkdirAll(u.conf.Oss.Local.StorePath, os.ModePerm)
 	if mkdirErr != nil {
-		global.GVA_LOG.Error("function os.MkdirAll() failed", zap.Any("err", mkdirErr.Error()))
+		u.logger.Error("function os.MkdirAll() failed", zap.Any("err", mkdirErr.Error()))
 		return "", "", errors.New("function os.MkdirAll() failed, err:" + mkdirErr.Error())
 	}
 	// 拼接路径和文件名
-	p := svc.conf.Local.StorePath + "/" + filename
-	filepath := svc.conf.Local.Path + "/" + filename
+	p := u.conf.Oss.Local.StorePath + "/" + filename
+	filepath := u.conf.Oss.Local.Path + "/" + filename
 
 	f, openError := file.Open() // 读取文件
 	if openError != nil {
-		global.GVA_LOG.Error("function file.Open() failed", zap.Any("err", openError.Error()))
+		u.logger.Error("function file.Open() failed", zap.Any("err", openError.Error()))
 		return "", "", errors.New("function file.Open() failed, err:" + openError.Error())
 	}
 	defer f.Close() // 创建文件 defer 关闭
 
 	out, createErr := os.Create(p)
 	if createErr != nil {
-		global.GVA_LOG.Error("function os.Create() failed", zap.Any("err", createErr.Error()))
+		u.logger.Error("function os.Create() failed", zap.Any("err", createErr.Error()))
 
 		return "", "", errors.New("function os.Create() failed, err:" + createErr.Error())
 	}
@@ -59,19 +63,19 @@ func (*Local) UploadFile(file *multipart.FileHeader) (string, string, error) {
 
 	_, copyErr := io.Copy(out, f) // 传输（拷贝）文件
 	if copyErr != nil {
-		global.GVA_LOG.Error("function io.Copy() failed", zap.Any("err", copyErr.Error()))
+		u.logger.Error("function io.Copy() failed", zap.Any("err", copyErr.Error()))
 		return "", "", errors.New("function io.Copy() failed, err:" + copyErr.Error())
 	}
 	return filepath, filename, nil
 }
 
-//@object: *Local
+//@object: u *Local
 //@function: DeleteFile
 //@description: 删除文件
 //@param: key string
 //@return: error
 
-func (*Local) DeleteFile(key string) error {
+func (u *Local) DeleteFile(key string) error {
 	// 检查 key 是否为空
 	if key == "" {
 		return errors.New("key不能为空")
@@ -82,7 +86,7 @@ func (*Local) DeleteFile(key string) error {
 		return errors.New("非法的key")
 	}
 
-	p := filepath.Join(svc.conf.Local.StorePath, key)
+	p := filepath.Join(u.conf.Oss.Local.StorePath, key)
 
 	// 检查文件是否存在
 	if _, err := os.Stat(p); os.IsNotExist(err) {

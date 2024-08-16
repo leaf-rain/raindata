@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/leaf-rain/raindata/app_bi/internal/conf"
 	"mime/multipart"
 	"time"
 
@@ -12,26 +13,29 @@ import (
 	"go.uber.org/zap"
 )
 
-type Qiniu struct{}
+type Qiniu struct {
+	conf   *conf.Bootstrap
+	logger *zap.Logger
+}
 
-//@object: *Qiniu
+//@object: u *Qiniu
 //@function: UploadFile
 //@description: 上传文件
 //@param: file *multipart.FileHeader
 //@return: string, string, error
 
-func (*Qiniu) UploadFile(file *multipart.FileHeader) (string, string, error) {
-	putPolicy := storage.PutPolicy{Scope: svc.conf.Qiniu.Bucket}
-	mac := qbox.NewMac(svc.conf.Qiniu.AccessKey, svc.conf.Qiniu.SecretKey)
+func (u *Qiniu) UploadFile(file *multipart.FileHeader) (string, string, error) {
+	putPolicy := storage.PutPolicy{Scope: u.conf.Oss.Qiniu.Bucket}
+	mac := qbox.NewMac(u.conf.Oss.Qiniu.AccessKey, u.conf.Oss.Qiniu.SecretKey)
 	upToken := putPolicy.UploadToken(mac)
-	cfg := qiniuConfig()
+	cfg := u.qiniuConfig()
 	formUploader := storage.NewFormUploader(cfg)
 	ret := storage.PutRet{}
 	putExtra := storage.PutExtra{Params: map[string]string{"x:name": "github logo"}}
 
 	f, openError := file.Open()
 	if openError != nil {
-		global.GVA_LOG.Error("function file.Open() failed", zap.Any("err", openError.Error()))
+		u.logger.Error("function file.Open() failed", zap.Any("err", openError.Error()))
 
 		return "", "", errors.New("function file.Open() failed, err:" + openError.Error())
 	}
@@ -39,40 +43,40 @@ func (*Qiniu) UploadFile(file *multipart.FileHeader) (string, string, error) {
 	fileKey := fmt.Sprintf("%d%s", time.Now().Unix(), file.Filename) // 文件名格式 自己可以改 建议保证唯一性
 	putErr := formUploader.Put(context.Background(), &ret, upToken, fileKey, f, file.Size, &putExtra)
 	if putErr != nil {
-		global.GVA_LOG.Error("function formUploader.Put() failed", zap.Any("err", putErr.Error()))
+		u.logger.Error("function formUploader.Put() failed", zap.Any("err", putErr.Error()))
 		return "", "", errors.New("function formUploader.Put() failed, err:" + putErr.Error())
 	}
-	return svc.conf.Qiniu.ImgPath + "/" + ret.Key, ret.Key, nil
+	return u.conf.Oss.Qiniu.ImgPath + "/" + ret.Key, ret.Key, nil
 }
 
-//@object: *Qiniu
+//@object: u *Qiniu
 //@function: DeleteFile
 //@description: 删除文件
 //@param: key string
 //@return: error
 
-func (*Qiniu) DeleteFile(key string) error {
-	mac := qbox.NewMac(svc.conf.Qiniu.AccessKey, svc.conf.Qiniu.SecretKey)
-	cfg := qiniuConfig()
+func (u *Qiniu) DeleteFile(key string) error {
+	mac := qbox.NewMac(u.conf.Oss.Qiniu.AccessKey, u.conf.Oss.Qiniu.SecretKey)
+	cfg := u.qiniuConfig()
 	bucketManager := storage.NewBucketManager(mac, cfg)
-	if err := bucketManager.Delete(svc.conf.Qiniu.Bucket, key); err != nil {
-		global.GVA_LOG.Error("function bucketManager.Delete() failed", zap.Any("err", err.Error()))
+	if err := bucketManager.Delete(u.conf.Oss.Qiniu.Bucket, key); err != nil {
+		u.logger.Error("function bucketManager.Delete() failed", zap.Any("err", err.Error()))
 		return errors.New("function bucketManager.Delete() failed, err:" + err.Error())
 	}
 	return nil
 }
 
-//@object: *Qiniu
+//@object: u *Qiniu
 //@function: qiniuConfig
 //@description: 根据配置文件进行返回七牛云的配置
 //@return: *storage.Config
 
-func qiniuConfig() *storage.Config {
+func (u *Qiniu) qiniuConfig() *storage.Config {
 	cfg := storage.Config{
-		UseHTTPS:      svc.conf.Qiniu.UseHTTPS,
-		UseCdnDomains: svc.conf.Qiniu.UseCdnDomains,
+		UseHTTPS:      u.conf.Oss.Qiniu.UseHTTPS,
+		UseCdnDomains: u.conf.Oss.Qiniu.UseCdnDomains,
 	}
-	switch svc.conf.Qiniu.Zone { // 根据配置文件进行初始化空间对应的机房
+	switch u.conf.Oss.Qiniu.Zone { // 根据配置文件进行初始化空间对应的机房
 	case "ZoneHuadong":
 		cfg.Zone = &storage.ZoneHuadong
 	case "ZoneHuabei":

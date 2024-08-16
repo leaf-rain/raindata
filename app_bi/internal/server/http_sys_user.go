@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func InitUserAuthRouter(Router *gin.RouterGroup, userSvc *service.UserService, log *zap.Logger, datsvr *data.Data) {
+func InitUserAuthRouter(Router *gin.RouterGroup, userSvc *service.UserService, log *zap.Logger, data *data.Data) {
 	api := NewUserApi(userSvc, log, data)
 
 	baseRouter := Router.Group("base")
@@ -23,7 +23,7 @@ func InitUserAuthRouter(Router *gin.RouterGroup, userSvc *service.UserService, l
 	}
 }
 
-func InitUserRouter(Router *gin.RouterGroup, userSvc *service.UserService, log *zap.Logger, datsvr *data.Data) {
+func InitUserRouter(Router *gin.RouterGroup, userSvc *service.UserService, log *zap.Logger, data *data.Data) {
 	api := NewUserApi(userSvc, log, data)
 
 	//userRouter := Router.Group("user").Use(middleware.OperationRecord())
@@ -51,7 +51,7 @@ type UserApi struct {
 	data    *data.Data
 }
 
-func NewUserApi(userSvc *service.UserService, log *zap.Logger, datsvr *data.Data) *UserApi {
+func NewUserApi(userSvc *service.UserService, log *zap.Logger, data *data.Data) *UserApi {
 	return &UserApi{
 		userSvc: userSvc,
 		log:     log,
