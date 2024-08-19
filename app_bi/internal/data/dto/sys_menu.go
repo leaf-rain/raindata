@@ -1,22 +1,24 @@
 package dto
 
-import "github.com/leaf-rain/raindata/app_bi/internal/data"
+import (
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
+)
 
 // Add menu authority info structure
 type AddMenuAuthorityInfo struct {
-	Menus       []data.SysBaseMenu `json:"menus"`
-	AuthorityId uint               `json:"authorityId"` // 角色ID
+	Menus       []entity.SysBaseMenu `json:"menus"`
+	AuthorityId uint                 `json:"authorityId"` // 角色ID
 }
 
-func DefaultMenu() []data.SysBaseMenu {
-	return []data.SysBaseMenu{{
-		GVA_MODEL: data.GVA_MODEL{ID: 1},
+func DefaultMenu() []entity.SysBaseMenu {
+	return []entity.SysBaseMenu{{
+		GVA_MODEL: entity.GVA_MODEL{ID: 1},
 		ParentId:  0,
 		Path:      "dashboard",
 		Name:      "dashboard",
 		Component: "view/dashboard/index.vue",
 		Sort:      1,
-		Meta: data.Meta{
+		Meta: entity.Meta{
 			Title: "仪表盘",
 			Icon:  "setting",
 		},
@@ -24,13 +26,13 @@ func DefaultMenu() []data.SysBaseMenu {
 }
 
 type SysMenusResponse struct {
-	Menus []data.SysMenu `json:"menus"`
+	Menus []entity.SysMenu `json:"menus"`
 }
 
 type SysBaseMenusResponse struct {
-	Menus []data.SysBaseMenu `json:"menus"`
+	Menus []entity.SysBaseMenu `json:"menus"`
 }
 
 type SysBaseMenuResponse struct {
-	Menu data.SysBaseMenu `json:"menu"`
+	Menu entity.SysBaseMenu `json:"menu"`
 }

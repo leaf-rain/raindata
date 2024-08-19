@@ -2,7 +2,7 @@ package service
 
 import (
 	"errors"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
 	"github.com/leaf-rain/raindata/app_bi/third_party/utils/upload"
 	"mime/multipart"
@@ -14,7 +14,7 @@ import (
 //@param: file data.ExaFileUploadAndDownload
 //@return: error
 
-func (e *FileUploadAndDownloadService) Upload(file data.ExaFileUploadAndDownload) error {
+func (e *FileUploadAndDownloadService) Upload(file entity.ExaFileUploadAndDownload) error {
 	return e.data.SqlClient.Create(&file).Error
 }
 
@@ -23,8 +23,8 @@ func (e *FileUploadAndDownloadService) Upload(file data.ExaFileUploadAndDownload
 //@param: id uint
 //@return: data.ExaFileUploadAndDownload, error
 
-func (e *FileUploadAndDownloadService) FindFile(id uint) (data.ExaFileUploadAndDownload, error) {
-	var file data.ExaFileUploadAndDownload
+func (e *FileUploadAndDownloadService) FindFile(id uint) (entity.ExaFileUploadAndDownload, error) {
+	var file entity.ExaFileUploadAndDownload
 	err := e.data.SqlClient.Where("id = ?", id).First(&file).Error
 	return file, err
 }
@@ -34,8 +34,8 @@ func (e *FileUploadAndDownloadService) FindFile(id uint) (data.ExaFileUploadAndD
 //@param: file data.ExaFileUploadAndDownload
 //@return: err error
 
-func (e *FileUploadAndDownloadService) DeleteFile(file data.ExaFileUploadAndDownload) (err error) {
-	var fileFromDb data.ExaFileUploadAndDownload
+func (e *FileUploadAndDownloadService) DeleteFile(file entity.ExaFileUploadAndDownload) (err error) {
+	var fileFromDb entity.ExaFileUploadAndDownload
 	fileFromDb, err = e.FindFile(file.ID)
 	if err != nil {
 		return
@@ -49,8 +49,8 @@ func (e *FileUploadAndDownloadService) DeleteFile(file data.ExaFileUploadAndDown
 }
 
 // EditFileName 编辑文件名或者备注
-func (e *FileUploadAndDownloadService) EditFileName(file data.ExaFileUploadAndDownload) (err error) {
-	var fileFromDb data.ExaFileUploadAndDownload
+func (e *FileUploadAndDownloadService) EditFileName(file entity.ExaFileUploadAndDownload) (err error) {
+	var fileFromDb entity.ExaFileUploadAndDownload
 	return e.data.SqlClient.Where("id = ?", file.ID).First(&fileFromDb).Update("name", file.Name).Error
 }
 
@@ -63,8 +63,8 @@ func (e *FileUploadAndDownloadService) GetFileRecordInfoList(info rhttp.PageInfo
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	keyword := info.Keyword
-	db := e.data.SqlClient.Model(&data.ExaFileUploadAndDownload{})
-	var fileLists []data.ExaFileUploadAndDownload
+	db := e.data.SqlClient.Model(&entity.ExaFileUploadAndDownload{})
+	var fileLists []entity.ExaFileUploadAndDownload
 	if len(keyword) > 0 {
 		db = db.Where("name LIKE ?", "%"+keyword+"%")
 	}
@@ -81,14 +81,14 @@ func (e *FileUploadAndDownloadService) GetFileRecordInfoList(info rhttp.PageInfo
 //@param: header *multipart.FileHeader, noSave string
 //@return: file data.ExaFileUploadAndDownload, err error
 
-func (e *FileUploadAndDownloadService) UploadFile(header *multipart.FileHeader, noSave string) (file data.ExaFileUploadAndDownload, err error) {
+func (e *FileUploadAndDownloadService) UploadFile(header *multipart.FileHeader, noSave string) (file entity.ExaFileUploadAndDownload, err error) {
 	oss := upload.NewOss(e.conf)
 	filePath, key, uploadErr := oss.UploadFile(header)
 	if uploadErr != nil {
 		panic(uploadErr)
 	}
 	s := strings.Split(header.Filename, ".")
-	f := data.ExaFileUploadAndDownload{
+	f := entity.ExaFileUploadAndDownload{
 		Url:  filePath,
 		Name: header.Filename,
 		Tag:  s[len(s)-1],

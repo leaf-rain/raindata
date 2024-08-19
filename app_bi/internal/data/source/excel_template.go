@@ -2,7 +2,7 @@ package source
 
 import (
 	"context"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
@@ -20,7 +20,7 @@ func (i *initExcelTemplate) MigrateTable(ctx context.Context) (context.Context, 
 	if !ok {
 		return ctx, ErrMissingDBContext
 	}
-	return ctx, db.AutoMigrate(&data.SysExportTemplate{})
+	return ctx, db.AutoMigrate(&entity.SysExportTemplate{})
 }
 
 func (i *initExcelTemplate) TableCreated(ctx context.Context) bool {
@@ -28,7 +28,7 @@ func (i *initExcelTemplate) TableCreated(ctx context.Context) bool {
 	if !ok {
 		return false
 	}
-	return db.Migrator().HasTable(&data.SysExportTemplate{})
+	return db.Migrator().HasTable(&entity.SysExportTemplate{})
 }
 
 func (i *initExcelTemplate) InitializeData(ctx context.Context) (context.Context, error) {
@@ -37,7 +37,7 @@ func (i *initExcelTemplate) InitializeData(ctx context.Context) (context.Context
 		return ctx, ErrMissingDBContext
 	}
 
-	entities := []data.SysExportTemplate{
+	entities := []entity.SysExportTemplate{
 		{
 			Name:       "api",
 			TableName:  "sys_apis",
@@ -62,7 +62,7 @@ func (i *initExcelTemplate) DataInserted(ctx context.Context) bool {
 	if !ok {
 		return false
 	}
-	if errors.Is(db.First(&data.SysExportTemplate{}).Error, gorm.ErrRecordNotFound) {
+	if errors.Is(db.First(&entity.SysExportTemplate{}).Error, gorm.ErrRecordNotFound) {
 		return false
 	}
 	return true

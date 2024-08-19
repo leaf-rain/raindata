@@ -1,5 +1,5 @@
 // 自动生成模板SysExportTemplate
-package data
+package entity
 
 // 导出模板 结构体  SysExportTemplate
 type SysExportTemplate struct {

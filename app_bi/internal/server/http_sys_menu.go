@@ -2,7 +2,7 @@ package server
 
 import (
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
 	"github.com/leaf-rain/raindata/app_bi/third_party/utils"
 
@@ -11,7 +11,7 @@ import (
 )
 
 type AuthorityMenuApi struct {
-	data *data.Data
+	data *entity.Data
 	log  *zap.Logger
 	conf *conf.Bootstrap
 }

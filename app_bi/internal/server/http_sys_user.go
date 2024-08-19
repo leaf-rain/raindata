@@ -2,18 +2,18 @@ package server
 
 import (
 	"errors"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
 	"github.com/leaf-rain/raindata/app_bi/internal/service"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
 	"go.uber.org/zap"
 )
 
-func InitUserAuthRouter(Router *gin.RouterGroup, userSvc *service.UserService, log *zap.Logger, data *data.Data) {
+func InitUserAuthRouter(Router *gin.RouterGroup, userSvc *service.UserService, log *zap.Logger, data *entity.Data) {
 	api := NewUserApi(userSvc, log, data)
 
 	baseRouter := Router.Group("base")
@@ -23,7 +23,7 @@ func InitUserAuthRouter(Router *gin.RouterGroup, userSvc *service.UserService, l
 	}
 }
 
-func InitUserRouter(Router *gin.RouterGroup, userSvc *service.UserService, log *zap.Logger, data *data.Data) {
+func InitUserRouter(Router *gin.RouterGroup, userSvc *service.UserService, log *zap.Logger, data *entity.Data) {
 	api := NewUserApi(userSvc, log, data)
 
 	//userRouter := Router.Group("user").Use(middleware.OperationRecord())
@@ -48,10 +48,10 @@ func InitUserRouter(Router *gin.RouterGroup, userSvc *service.UserService, log *
 type UserApi struct {
 	userSvc *service.UserService
 	log     *zap.Logger
-	data    *data.Data
+	data    *entity.Data
 }
 
-func NewUserApi(userSvc *service.UserService, log *zap.Logger, data *data.Data) *UserApi {
+func NewUserApi(userSvc *service.UserService, log *zap.Logger, data *entity.Data) *UserApi {
 	return &UserApi{
 		userSvc: userSvc,
 		log:     log,
@@ -67,7 +67,7 @@ func NewUserApi(userSvc *service.UserService, log *zap.Logger, data *data.Data) 
 // @Success  200   {object}  rhttp.Response{data=systemRes.LoginResponse,msg=string}  "返回包括用户信息,token,过期时间"
 // @Router   /base/login [post]
 func (b *UserApi) Login(c *gin.Context) {
-	var l data.LoginReq
+	var l entity.LoginReq
 	err := c.ShouldBindJSON(&l)
 	key := c.ClientIP()
 	b.log.Info("[Login]登陆请求", zap.String("ip", key), zap.String("username", l.Username), zap.String("password", l.Password))
@@ -81,8 +81,8 @@ func (b *UserApi) Login(c *gin.Context) {
 		return
 	}
 
-	u := &data.SysUser{Username: l.Username, Password: l.Password}
-	var user *data.SysUser
+	u := &entity.SysUser{Username: l.Username, Password: l.Password}
+	var user *entity.SysUser
 	user, err = b.userSvc.Login(u)
 	if err != nil {
 		b.log.Error("[Login] 登陆失败! 用户名不存在或者密码错误!", zap.Error(err))
@@ -100,8 +100,8 @@ func (b *UserApi) Login(c *gin.Context) {
 }
 
 // TokenNext 登录以后签发jwt
-func (b *UserApi) TokenNext(c *gin.Context, user data.SysUser) {
-	jwt, token, claims, err := data.LoginToken(&user, b.data)
+func (b *UserApi) TokenNext(c *gin.Context, user entity.SysUser) {
+	jwt, token, claims, err := entity.LoginToken(&user, b.data)
 	if err != nil {
 		b.log.Error("获取token失败!", zap.Error(err))
 		rhttp.FailWithMessage("获取token失败", c)
@@ -109,7 +109,7 @@ func (b *UserApi) TokenNext(c *gin.Context, user data.SysUser) {
 	}
 	if !b.data.Config.GetJwt().GetUseMultipoint() {
 		b.SetToken(c, token, int(claims.RegisteredClaims.ExpiresAt.Unix()-time.Now().Unix()))
-		rhttp.OkWithDetailed(data.LoginResponse{
+		rhttp.OkWithDetailed(entity.LoginResponse{
 			User:      user,
 			Token:     token,
 			ExpiresAt: claims.RegisteredClaims.ExpiresAt.Unix() * 1000,
@@ -124,7 +124,7 @@ func (b *UserApi) TokenNext(c *gin.Context, user data.SysUser) {
 			return
 		}
 		b.SetToken(c, token, int(claims.RegisteredClaims.ExpiresAt.Unix()-time.Now().Unix()))
-		rhttp.OkWithDetailed(data.LoginResponse{
+		rhttp.OkWithDetailed(entity.LoginResponse{
 			User:      user,
 			Token:     token,
 			ExpiresAt: claims.RegisteredClaims.ExpiresAt.Unix() * 1000,
@@ -133,7 +133,7 @@ func (b *UserApi) TokenNext(c *gin.Context, user data.SysUser) {
 		b.log.Error("设置登录状态失败!", zap.Error(err))
 		rhttp.FailWithMessage("设置登录状态失败", c)
 	} else {
-		var blackJWT data.JwtBlacklist
+		var blackJWT entity.JwtBlacklist
 		blackJWT.Jwt = jwtStr
 		if err := jwt.JsonInBlacklist(blackJWT); err != nil {
 			rhttp.FailWithMessage("jwt作废失败", c)
@@ -144,7 +144,7 @@ func (b *UserApi) TokenNext(c *gin.Context, user data.SysUser) {
 			return
 		}
 		b.SetToken(c, token, int(claims.RegisteredClaims.ExpiresAt.Unix()-time.Now().Unix()))
-		rhttp.OkWithDetailed(data.LoginResponse{
+		rhttp.OkWithDetailed(entity.LoginResponse{
 			User:      user,
 			Token:     token,
 			ExpiresAt: claims.RegisteredClaims.ExpiresAt.Unix() * 1000,
@@ -160,26 +160,26 @@ func (b *UserApi) TokenNext(c *gin.Context, user data.SysUser) {
 // @Success  200   {object}  rhttp.Response{data=systemRes.SysUserResponse,msg=string}  "用户注册账号,返回包括用户信息"
 // @Router   /user/admin_register [post]
 func (b *UserApi) Register(c *gin.Context) {
-	var r data.Register
+	var r entity.Register
 	err := c.ShouldBindJSON(&r)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
-	var authorities []data.SysAuthority
+	var authorities []entity.SysAuthority
 	for _, v := range r.AuthorityIds {
-		authorities = append(authorities, data.SysAuthority{
+		authorities = append(authorities, entity.SysAuthority{
 			AuthorityId: v,
 		})
 	}
-	user := &data.SysUser{Username: r.Username, NickName: r.NickName, Password: r.Password, HeaderImg: r.HeaderImg, AuthorityId: r.AuthorityId, Authorities: authorities, Enable: r.Enable, Phone: r.Phone, Email: r.Email}
+	user := &entity.SysUser{Username: r.Username, NickName: r.NickName, Password: r.Password, HeaderImg: r.HeaderImg, AuthorityId: r.AuthorityId, Authorities: authorities, Enable: r.Enable, Phone: r.Phone, Email: r.Email}
 	userReturn, err := b.userSvc.Register(*user)
 	if err != nil {
 		b.log.Error("注册失败!", zap.Error(err))
-		rhttp.FailWithDetailed(data.SysUserResponse{User: userReturn}, "注册失败", c)
+		rhttp.FailWithDetailed(entity.SysUserResponse{User: userReturn}, "注册失败", c)
 		return
 	}
-	rhttp.OkWithDetailed(data.SysUserResponse{User: userReturn}, "注册成功", c)
+	rhttp.OkWithDetailed(entity.SysUserResponse{User: userReturn}, "注册成功", c)
 }
 
 // ChangePassword
@@ -191,7 +191,7 @@ func (b *UserApi) Register(c *gin.Context) {
 // @Success   200   {object}  rhttp.Response{msg=string}  "用户修改密码"
 // @Router    /user/changePassword [post]
 func (b *UserApi) ChangePassword(c *gin.Context) {
-	var req data.ChangePasswordReq
+	var req entity.ChangePasswordReq
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
@@ -204,7 +204,7 @@ func (b *UserApi) ChangePassword(c *gin.Context) {
 		return
 	}
 	uid := b.GetUserID(c)
-	u := &data.SysUser{GVA_MODEL: data.GVA_MODEL{ID: uid}, Password: req.Password}
+	u := &entity.SysUser{GVA_MODEL: entity.GVA_MODEL{ID: uid}, Password: req.Password}
 	_, err = b.userSvc.ChangePassword(u, req.NewPassword)
 	if err != nil {
 		b.log.Error("修改失败!", zap.Error(err))
@@ -259,7 +259,7 @@ func (b *UserApi) GetUserList(c *gin.Context) {
 // @Success   200   {object}  rhttp.Response{msg=string}  "设置用户权限"
 // @Router    /user/setUserAuthority [post]
 func (b *UserApi) SetUserAuthority(c *gin.Context) {
-	var sua data.SetUserAuth
+	var sua entity.SetUserAuth
 	err := c.ShouldBindJSON(&sua)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
@@ -277,7 +277,7 @@ func (b *UserApi) SetUserAuthority(c *gin.Context) {
 		return
 	}
 	claims := b.GetUserInfoByCtx(c)
-	j := data.NewJWT(b.data) // 唯一签名
+	j := entity.NewJWT(b.data) // 唯一签名
 	claims.AuthorityId = sua.AuthorityId
 	if token, err := j.CreateToken(*claims); err != nil {
 		b.log.Error("修改失败!", zap.Error(err))
@@ -300,7 +300,7 @@ func (b *UserApi) SetUserAuthority(c *gin.Context) {
 // @Success   200   {object}  rhttp.Response{msg=string}  "设置用户权限"
 // @Router    /user/setUserAuthorities [post]
 func (b *UserApi) SetUserAuthorities(c *gin.Context) {
-	var sua data.SetUserAuthorities
+	var sua entity.SetUserAuthorities
 	err := c.ShouldBindJSON(&sua)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
@@ -360,7 +360,7 @@ func (b *UserApi) DeleteUser(c *gin.Context) {
 // @Success   200   {object}  rhttp.Response{data=map[string]interface{},msg=string}  "设置用户信息"
 // @Router    /user/setUserInfo [put]
 func (b *UserApi) SetUserInfo(c *gin.Context) {
-	var user data.ChangeUserInfo
+	var user entity.ChangeUserInfo
 	err := c.ShouldBindJSON(&user)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
@@ -380,8 +380,8 @@ func (b *UserApi) SetUserInfo(c *gin.Context) {
 			return
 		}
 	}
-	err = b.userSvc.SetUserInfo(data.SysUser{
-		GVA_MODEL: data.GVA_MODEL{
+	err = b.userSvc.SetUserInfo(entity.SysUser{
+		GVA_MODEL: entity.GVA_MODEL{
 			ID: user.ID,
 		},
 		NickName:  user.NickName,
@@ -409,15 +409,15 @@ func (b *UserApi) SetUserInfo(c *gin.Context) {
 // @Success   200   {object}  rhttp.Response{data=map[string]interface{},msg=string}  "设置用户信息"
 // @Router    /user/SetSelfInfo [put]
 func (b *UserApi) SetSelfInfo(c *gin.Context) {
-	var user data.ChangeUserInfo
+	var user entity.ChangeUserInfo
 	err := c.ShouldBindJSON(&user)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
 	user.ID = b.GetUserID(c)
-	err = b.userSvc.SetSelfInfo(data.SysUser{
-		GVA_MODEL: data.GVA_MODEL{
+	err = b.userSvc.SetSelfInfo(entity.SysUser{
+		GVA_MODEL: entity.GVA_MODEL{
 			ID: user.ID,
 		},
 		NickName:  user.NickName,
@@ -463,7 +463,7 @@ func (b *UserApi) GetUserInfo(c *gin.Context) {
 // @Success   200   {object}  rhttp.Response{msg=string}  "重置用户密码"
 // @Router    /user/resetPassword [post]
 func (b *UserApi) ResetPassword(c *gin.Context) {
-	var user data.SysUser
+	var user entity.SysUser
 	err := c.ShouldBindJSON(&user)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)

@@ -1,4 +1,4 @@
-package data
+package entity
 
 // file struct, 文件结构体
 type ExaFile struct {

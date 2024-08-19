@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/leaf-rain/raindata/app_bi/third_party/hash"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
 	"github.com/leaf-rain/raindata/app_bi/third_party/utils"
@@ -15,16 +15,16 @@ import (
 
 type UserService struct {
 	log  *zap.Logger
-	data *data.Data
+	data *entity.Data
 }
 
 // NewUserService new a greeter service.
-func NewUserService(logger *zap.Logger, data *data.Data) *UserService {
+func NewUserService(logger *zap.Logger, data *entity.Data) *UserService {
 	return &UserService{log: logger}
 }
 
-func (svc *UserService) Register(u data.SysUser) (userInter data.SysUser, err error) {
-	var user data.SysUser
+func (svc *UserService) Register(u entity.SysUser) (userInter entity.SysUser, err error) {
+	var user entity.SysUser
 	if !errors.Is(svc.data.SqlClient.Where("username = ?", u.Username).First(&user).Error, gorm.ErrRecordNotFound) { // 判断用户名是否注册
 		return userInter, errors.New("用户名已注册")
 	}
@@ -40,11 +40,11 @@ func (svc *UserService) Register(u data.SysUser) (userInter data.SysUser, err er
 //@param: u *data.SysUser
 //@return: err error, userInter *data.SysUser
 
-func (svc *UserService) Login(u *data.SysUser) (userInter *data.SysUser, err error) {
+func (svc *UserService) Login(u *entity.SysUser) (userInter *entity.SysUser, err error) {
 	if nil == svc.data.SqlClient {
 		return nil, fmt.Errorf("db not init")
 	}
-	var entityUser = data.NewEntityUser(u, svc.data)
+	var entityUser = entity.NewEntityUser(u, svc.data)
 	err = entityUser.ReloadByDb()
 	if err == nil {
 		MenuServiceApp.UserAuthorityDefaultRouter(&user)
@@ -57,8 +57,8 @@ func (svc *UserService) Login(u *data.SysUser) (userInter *data.SysUser, err err
 //@param: u *data.SysUser, newPassword string
 //@return: userInter *data.SysUser,err error
 
-func (svc *UserService) ChangePassword(u *data.SysUser, newPassword string) (userInter *data.SysUser, err error) {
-	var user data.SysUser
+func (svc *UserService) ChangePassword(u *entity.SysUser, newPassword string) (userInter *entity.SysUser, err error) {
+	var user entity.SysUser
 	if err = svc.data.SqlClient.Where("id = ?", u.ID).First(&user).Error; err != nil {
 		return nil, err
 	}
@@ -79,8 +79,8 @@ func (svc *UserService) ChangePassword(u *data.SysUser, newPassword string) (use
 func (svc *UserService) GetUserInfoList(info rhttp.PageInfo) (list interface{}, total int64, err error) {
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
-	db := svc.data.SqlClient.Model(&data.SysUser{})
-	var userList []data.SysUser
+	db := svc.data.SqlClient.Model(&entity.SysUser{})
+	var userList []entity.SysUser
 	err = db.Count(&total).Error
 	if err != nil {
 		return
@@ -95,11 +95,11 @@ func (svc *UserService) GetUserInfoList(info rhttp.PageInfo) (list interface{}, 
 //@return: err error
 
 func (svc *UserService) SetUserAuthority(id uint, authorityId uint) (err error) {
-	assignErr := svc.data.SqlClient.Where("sys_user_id = ? AND sys_authority_authority_id = ?", id, authorityId).First(&data.SysUserAuthority{}).Error
+	assignErr := svc.data.SqlClient.Where("sys_user_id = ? AND sys_authority_authority_id = ?", id, authorityId).First(&entity.SysUserAuthority{}).Error
 	if errors.Is(assignErr, gorm.ErrRecordNotFound) {
 		return errors.New("该用户无此角色")
 	}
-	err = svc.data.SqlClient.Model(&data.SysUser{}).Where("id = ?", id).Update("authority_id", authorityId).Error
+	err = svc.data.SqlClient.Model(&entity.SysUser{}).Where("id = ?", id).Update("authority_id", authorityId).Error
 	return err
 }
 
@@ -110,19 +110,19 @@ func (svc *UserService) SetUserAuthority(id uint, authorityId uint) (err error) 
 
 func (svc *UserService) SetUserAuthorities(id uint, authorityIds []uint) (err error) {
 	return svc.data.SqlClient.Transaction(func(tx *gorm.DB) error {
-		var user data.SysUser
+		var user entity.SysUser
 		TxErr := tx.Where("id = ?", id).First(&user).Error
 		if TxErr != nil {
 			svc.log.Error("[SetUserAuthorities]查询用户数据失败", zap.Error(TxErr))
 			return errors.New("查询用户数据失败")
 		}
-		TxErr = tx.Delete(&[]data.SysUserAuthority{}, "sys_user_id = ?", id).Error
+		TxErr = tx.Delete(&[]entity.SysUserAuthority{}, "sys_user_id = ?", id).Error
 		if TxErr != nil {
 			return TxErr
 		}
-		var useAuthority []data.SysUserAuthority
+		var useAuthority []entity.SysUserAuthority
 		for _, v := range authorityIds {
-			useAuthority = append(useAuthority, data.SysUserAuthority{
+			useAuthority = append(useAuthority, entity.SysUserAuthority{
 				SysUserId: id, SysAuthorityAuthorityId: v,
 			})
 		}
@@ -146,10 +146,10 @@ func (svc *UserService) SetUserAuthorities(id uint, authorityIds []uint) (err er
 
 func (svc *UserService) DeleteUser(id int) (err error) {
 	return svc.data.SqlClient.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", id).Delete(&data.SysUser{}).Error; err != nil {
+		if err := tx.Where("id = ?", id).Delete(&entity.SysUser{}).Error; err != nil {
 			return err
 		}
-		if err := tx.Delete(&[]data.SysUserAuthority{}, "sys_user_id = ?", id).Error; err != nil {
+		if err := tx.Delete(&[]entity.SysUserAuthority{}, "sys_user_id = ?", id).Error; err != nil {
 			return err
 		}
 		return nil
@@ -161,8 +161,8 @@ func (svc *UserService) DeleteUser(id int) (err error) {
 //@param: reqUser data.SysUser
 //@return: err error, user data.SysUser
 
-func (svc *UserService) SetUserInfo(req data.SysUser) error {
-	return svc.data.SqlClient.Model(&data.SysUser{}).
+func (svc *UserService) SetUserInfo(req entity.SysUser) error {
+	return svc.data.SqlClient.Model(&entity.SysUser{}).
 		Select("updated_at", "nick_name", "header_img", "phone", "email", "sideMode", "enable").
 		Where("id=?", req.ID).
 		Updates(map[string]interface{}{
@@ -181,8 +181,8 @@ func (svc *UserService) SetUserInfo(req data.SysUser) error {
 //@param: reqUser data.SysUser
 //@return: err error, user data.SysUser
 
-func (svc *UserService) SetSelfInfo(req data.SysUser) error {
-	return svc.data.SqlClient.Model(&data.SysUser{}).
+func (svc *UserService) SetSelfInfo(req entity.SysUser) error {
+	return svc.data.SqlClient.Model(&entity.SysUser{}).
 		Where("id=?", req.ID).
 		Updates(req).Error
 }
@@ -192,8 +192,8 @@ func (svc *UserService) SetSelfInfo(req data.SysUser) error {
 //@param: uuid uuid.UUID
 //@return: err error, user data.SysUser
 
-func (svc *UserService) GetUserInfo(uuid uuid.UUID) (user data.SysUser, err error) {
-	var reqUser data.SysUser
+func (svc *UserService) GetUserInfo(uuid uuid.UUID) (user entity.SysUser, err error) {
+	var reqUser entity.SysUser
 	err = svc.data.SqlClient.Preload("Authorities").Preload("Authority").First(&reqUser, "uuid = ?", uuid).Error
 	if err != nil {
 		return reqUser, err
@@ -207,8 +207,8 @@ func (svc *UserService) GetUserInfo(uuid uuid.UUID) (user data.SysUser, err erro
 //@param: id int
 //@return: err error, user *data.SysUser
 
-func (svc *UserService) FindUserById(id int) (user *data.SysUser, err error) {
-	var u data.SysUser
+func (svc *UserService) FindUserById(id int) (user *entity.SysUser, err error) {
+	var u entity.SysUser
 	err = svc.data.SqlClient.Where("id = ?", id).First(&u).Error
 	return &u, err
 }
@@ -218,8 +218,8 @@ func (svc *UserService) FindUserById(id int) (user *data.SysUser, err error) {
 //@param: uuid string
 //@return: err error, user *data.SysUser
 
-func (svc *UserService) FindUserByUuid(uuid string) (user *data.SysUser, err error) {
-	var u data.SysUser
+func (svc *UserService) FindUserByUuid(uuid string) (user *entity.SysUser, err error) {
+	var u entity.SysUser
 	if err = svc.data.SqlClient.Where("uuid = ?", uuid).First(&u).Error; err != nil {
 		return &u, errors.New("用户不存在")
 	}
@@ -232,6 +232,6 @@ func (svc *UserService) FindUserByUuid(uuid string) (user *data.SysUser, err err
 //@return: err error
 
 func (svc *UserService) ResetPassword(ID uint) (err error) {
-	err = svc.data.SqlClient.Model(&data.SysUser{}).Where("id = ?", ID).Update("password", utils.BcryptHash("123456")).Error
+	err = svc.data.SqlClient.Model(&entity.SysUser{}).Where("id = ?", ID).Update("password", utils.BcryptHash("123456")).Error
 	return err
 }

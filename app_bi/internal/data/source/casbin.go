@@ -36,7 +36,7 @@ func (i initCasbin) InitializerName() string {
 func (i *initCasbin) InitializeData(ctx context.Context) (context.Context, error) {
 	db, ok := ctx.Value("db").(*gorm.DB)
 	if !ok {
-		return ctx, system.ErrMissingDBContext
+		return ctx, ErrMissingDBContext
 	}
 	entities := []adapter.CasbinRule{
 		{Ptype: "p", V0: "888", V1: "/user/admin_register", V2: "POST"},

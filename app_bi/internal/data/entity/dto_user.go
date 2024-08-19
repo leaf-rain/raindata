@@ -1,4 +1,4 @@
-package data
+package entity
 
 type SysUserResponse struct {
 	User SysUser `json:"user"`

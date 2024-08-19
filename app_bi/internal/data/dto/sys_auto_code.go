@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"go/token"
 	"strings"
 )
@@ -46,8 +46,8 @@ type DataSource struct {
 	Association int    `json:"association"` // 关联关系 1 一对一 2 一对多
 }
 
-func (r *AutoCode) Apis() []data.SysApi {
-	return []data.SysApi{
+func (r *AutoCode) Apis() []entity.SysApi {
+	return []entity.SysApi{
 		{
 			Path:        "/" + r.Abbreviation + "/" + "create" + r.StructName,
 			Description: "新增" + r.Description,
@@ -87,17 +87,17 @@ func (r *AutoCode) Apis() []data.SysApi {
 	}
 }
 
-func (r *AutoCode) Menu(template string) data.SysBaseMenu {
+func (r *AutoCode) Menu(template string) entity.SysBaseMenu {
 	component := fmt.Sprintf("view/%s/%s/%s.vue", r.Package, r.PackageName, r.PackageName)
 	if template != "package" {
 		component = fmt.Sprintf("plugin/%s/view/%s.vue", r.Package, r.PackageName)
 	}
-	return data.SysBaseMenu{
+	return entity.SysBaseMenu{
 		ParentId:  0,
 		Path:      r.Abbreviation,
 		Name:      r.Abbreviation,
 		Component: component,
-		Meta: data.Meta{
+		Meta: entity.Meta{
 			Title: r.Description,
 		},
 	}

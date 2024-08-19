@@ -3,13 +3,13 @@ package service
 import (
 	"errors"
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 type BaseMenuService struct {
-	data *data.Data
+	data *entity.Data
 	log  *zap.Logger
 	conf *conf.Bootstrap
 }
@@ -22,30 +22,30 @@ type BaseMenuService struct {
 var BaseMenuServiceApp = new(BaseMenuService)
 
 func (svc *BaseMenuService) DeleteBaseMenu(id int) (err error) {
-	err = svc.data.SqlClient.First(&data.SysBaseMenu{}, "parent_id = ?", id).Error
+	err = svc.data.SqlClient.First(&entity.SysBaseMenu{}, "parent_id = ?", id).Error
 	if err != nil {
 		return svc.data.SqlClient.Transaction(func(tx *gorm.DB) error {
 
-			err = tx.Delete(&data.SysBaseMenu{}, "id = ?", id).Error
+			err = tx.Delete(&entity.SysBaseMenu{}, "id = ?", id).Error
 			if err != nil {
 				return err
 			}
 
-			err = tx.Delete(&data.SysBaseMenuParameter{}, "sys_base_menu_id = ?", id).Error
+			err = tx.Delete(&entity.SysBaseMenuParameter{}, "sys_base_menu_id = ?", id).Error
 			if err != nil {
 				return err
 			}
 
-			err = tx.Delete(&data.SysBaseMenuBtn{}, "sys_base_menu_id = ?", id).Error
+			err = tx.Delete(&entity.SysBaseMenuBtn{}, "sys_base_menu_id = ?", id).Error
 			if err != nil {
 				return err
 			}
-			err = tx.Delete(&data.SysAuthorityBtn{}, "sys_menu_id = ?", id).Error
+			err = tx.Delete(&entity.SysAuthorityBtn{}, "sys_menu_id = ?", id).Error
 			if err != nil {
 				return err
 			}
 
-			err = tx.Delete(&data.SysAuthorityMenu{}, "sys_base_menu_id = ?", id).Error
+			err = tx.Delete(&entity.SysAuthorityMenu{}, "sys_base_menu_id = ?", id).Error
 			if err != nil {
 				return err
 			}
@@ -60,8 +60,8 @@ func (svc *BaseMenuService) DeleteBaseMenu(id int) (err error) {
 //@param: menu data.SysBaseMenu
 //@return: err error
 
-func (svc *BaseMenuService) UpdateBaseMenu(menu data.SysBaseMenu) (err error) {
-	var oldMenu data.SysBaseMenu
+func (svc *BaseMenuService) UpdateBaseMenu(menu entity.SysBaseMenu) (err error) {
+	var oldMenu entity.SysBaseMenu
 	upDateMap := make(map[string]interface{})
 	upDateMap["keep_alive"] = menu.KeepAlive
 	upDateMap["close_tab"] = menu.CloseTab
@@ -79,17 +79,17 @@ func (svc *BaseMenuService) UpdateBaseMenu(menu data.SysBaseMenu) (err error) {
 	err = svc.data.SqlClient.Transaction(func(tx *gorm.DB) error {
 		tx.Where("id = ?", menu.ID).Find(&oldMenu)
 		if oldMenu.Name != menu.Name {
-			if !errors.Is(tx.Where("id <> ? AND name = ?", menu.ID, menu.Name).First(&data.SysBaseMenu{}).Error, gorm.ErrRecordNotFound) {
+			if !errors.Is(tx.Where("id <> ? AND name = ?", menu.ID, menu.Name).First(&entity.SysBaseMenu{}).Error, gorm.ErrRecordNotFound) {
 				svc.log.Debug("存在相同name修改失败")
 				return errors.New("存在相同name修改失败")
 			}
 		}
-		txErr := tx.Unscoped().Delete(&data.SysBaseMenuParameter{}, "sys_base_menu_id = ?", menu.ID).Error
+		txErr := tx.Unscoped().Delete(&entity.SysBaseMenuParameter{}, "sys_base_menu_id = ?", menu.ID).Error
 		if txErr != nil {
 			svc.log.Debug(txErr.Error())
 			return txErr
 		}
-		txErr = tx.Unscoped().Delete(&data.SysBaseMenuBtn{}, "sys_base_menu_id = ?", menu.ID).Error
+		txErr = tx.Unscoped().Delete(&entity.SysBaseMenuBtn{}, "sys_base_menu_id = ?", menu.ID).Error
 		if txErr != nil {
 			svc.log.Debug(txErr.Error())
 			return txErr
@@ -131,7 +131,7 @@ func (svc *BaseMenuService) UpdateBaseMenu(menu data.SysBaseMenu) (err error) {
 //@param: id float64
 //@return: menu data.SysBaseMenu, err error
 
-func (svc *BaseMenuService) GetBaseMenuById(id int) (menu data.SysBaseMenu, err error) {
+func (svc *BaseMenuService) GetBaseMenuById(id int) (menu entity.SysBaseMenu, err error) {
 	err = svc.data.SqlClient.Preload("MenuBtn").Preload("Parameters").Where("id = ?", id).First(&menu).Error
 	return
 }

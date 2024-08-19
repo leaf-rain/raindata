@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
 	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"gorm.io/gorm"
 	"strconv"
 	"sync"
@@ -20,7 +21,7 @@ import (
 //@return: error
 
 type CasbinService struct {
-	data *data.Data
+	data *entity.Data
 	log  *zap.Logger
 	conf *conf.Bootstrap
 }

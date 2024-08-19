@@ -3,8 +3,8 @@ package service
 import (
 	"errors"
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/dto"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -19,16 +19,16 @@ var ErrRoleExistence = errors.New("存在相同角色id")
 //@return: authority data.SysAuthority, err error
 
 type AuthorityService struct {
-	data *data.Data
+	data *entity.Data
 	log  *zap.Logger
 	conf *conf.Bootstrap
 }
 
 var AuthorityServiceApp = new(AuthorityService)
 
-func (svc *AuthorityService) CreateAuthority(auth data.SysAuthority) (authority data.SysAuthority, err error) {
+func (svc *AuthorityService) CreateAuthority(auth entity.SysAuthority) (authority entity.SysAuthority, err error) {
 
-	if err = svc.data.SqlClient.Where("authority_id = ?", auth.AuthorityId).First(&data.SysAuthority{}).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
+	if err = svc.data.SqlClient.Where("authority_id = ?", auth.AuthorityId).First(&entity.SysAuthority{}).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
 		return auth, ErrRoleExistence
 	}
 
@@ -59,17 +59,17 @@ func (svc *AuthorityService) CreateAuthority(auth data.SysAuthority) (authority 
 //@param: copyInfo dto.SysAuthorityCopyResponse
 //@return: authority data.SysAuthority, err error
 
-func (svc *AuthorityService) CopyAuthority(copyInfo dto.SysAuthorityCopyResponse) (authority data.SysAuthority, err error) {
-	var authorityBox data.SysAuthority
+func (svc *AuthorityService) CopyAuthority(copyInfo dto.SysAuthorityCopyResponse) (authority entity.SysAuthority, err error) {
+	var authorityBox entity.SysAuthority
 	if !errors.Is(svc.data.SqlClient.Where("authority_id = ?", copyInfo.Authority.AuthorityId).First(&authorityBox).Error, gorm.ErrRecordNotFound) {
 		return authority, ErrRoleExistence
 	}
-	copyInfo.Authority.Children = []data.SysAuthority{}
+	copyInfo.Authority.Children = []entity.SysAuthority{}
 	menus, err := MenuServiceApp.GetMenuAuthority(&rhttp.GetAuthorityId{AuthorityId: copyInfo.OldAuthorityId})
 	if err != nil {
 		return
 	}
-	var baseMenu []data.SysBaseMenu
+	var baseMenu []entity.SysBaseMenu
 	for _, v := range menus {
 		intNum := v.MenuId
 		v.SysBaseMenu.ID = uint(intNum)
@@ -81,7 +81,7 @@ func (svc *AuthorityService) CopyAuthority(copyInfo dto.SysAuthorityCopyResponse
 		return
 	}
 
-	var btns []data.SysAuthorityBtn
+	var btns []entity.SysAuthorityBtn
 
 	err = svc.data.SqlClient.Find(&btns, "authority_id = ?", copyInfo.OldAuthorityId).Error
 	if err != nil {
@@ -110,12 +110,12 @@ func (svc *AuthorityService) CopyAuthority(copyInfo dto.SysAuthorityCopyResponse
 //@param: auth data.SysAuthority
 //@return: authority data.SysAuthority, err error
 
-func (svc *AuthorityService) UpdateAuthority(auth data.SysAuthority) (authority data.SysAuthority, err error) {
-	var oldAuthority data.SysAuthority
+func (svc *AuthorityService) UpdateAuthority(auth entity.SysAuthority) (authority entity.SysAuthority, err error) {
+	var oldAuthority entity.SysAuthority
 	err = svc.data.SqlClient.Where("authority_id = ?", auth.AuthorityId).First(&oldAuthority).Error
 	if err != nil {
 		svc.log.Debug(err.Error())
-		return data.SysAuthority{}, errors.New("查询角色数据失败")
+		return entity.SysAuthority{}, errors.New("查询角色数据失败")
 	}
 	err = svc.data.SqlClient.Model(&oldAuthority).Updates(&auth).Error
 	return auth, err
@@ -126,17 +126,17 @@ func (svc *AuthorityService) UpdateAuthority(auth data.SysAuthority) (authority 
 //@param: auth *data.SysAuthority
 //@return: err error
 
-func (svc *AuthorityService) DeleteAuthority(auth *data.SysAuthority) error {
+func (svc *AuthorityService) DeleteAuthority(auth *entity.SysAuthority) error {
 	if errors.Is(svc.data.SqlClient.Debug().Preload("Users").First(&auth).Error, gorm.ErrRecordNotFound) {
 		return errors.New("该角色不存在")
 	}
 	if len(auth.Users) != 0 {
 		return errors.New("此角色有用户正在使用禁止删除")
 	}
-	if !errors.Is(svc.data.SqlClient.Where("authority_id = ?", auth.AuthorityId).First(&data.SysUser{}).Error, gorm.ErrRecordNotFound) {
+	if !errors.Is(svc.data.SqlClient.Where("authority_id = ?", auth.AuthorityId).First(&entity.SysUser{}).Error, gorm.ErrRecordNotFound) {
 		return errors.New("此角色有用户正在使用禁止删除")
 	}
-	if !errors.Is(svc.data.SqlClient.Where("parent_id = ?", auth.AuthorityId).First(&data.SysAuthority{}).Error, gorm.ErrRecordNotFound) {
+	if !errors.Is(svc.data.SqlClient.Where("parent_id = ?", auth.AuthorityId).First(&entity.SysAuthority{}).Error, gorm.ErrRecordNotFound) {
 		return errors.New("此角色存在子角色不允许删除")
 	}
 
@@ -158,10 +158,10 @@ func (svc *AuthorityService) DeleteAuthority(auth *data.SysAuthority) error {
 			}
 		}
 
-		if err = tx.Delete(&data.SysUserAuthority{}, "sys_authority_authority_id = ?", auth.AuthorityId).Error; err != nil {
+		if err = tx.Delete(&entity.SysUserAuthority{}, "sys_authority_authority_id = ?", auth.AuthorityId).Error; err != nil {
 			return err
 		}
-		if err = tx.Where("authority_id = ?", auth.AuthorityId).Delete(&[]data.SysAuthorityBtn{}).Error; err != nil {
+		if err = tx.Where("authority_id = ?", auth.AuthorityId).Delete(&[]entity.SysAuthorityBtn{}).Error; err != nil {
 			return err
 		}
 
@@ -183,11 +183,11 @@ func (svc *AuthorityService) DeleteAuthority(auth *data.SysAuthority) error {
 func (svc *AuthorityService) GetAuthorityInfoList(info rhttp.PageInfo) (list interface{}, total int64, err error) {
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
-	db := svc.data.SqlClient.Model(&data.SysAuthority{})
+	db := svc.data.SqlClient.Model(&entity.SysAuthority{})
 	if err = db.Where("parent_id = ?", "0").Count(&total).Error; total == 0 || err != nil {
 		return
 	}
-	var authority []data.SysAuthority
+	var authority []entity.SysAuthority
 	err = db.Limit(limit).Offset(offset).Preload("DataAuthorityId").Where("parent_id = ?", "0").Find(&authority).Error
 	for k := range authority {
 		err = AuthorityService.findChildrenAuthority(&authority[k])
@@ -200,7 +200,7 @@ func (svc *AuthorityService) GetAuthorityInfoList(info rhttp.PageInfo) (list int
 //@param: auth data.SysAuthority
 //@return: sa data.SysAuthority, err error
 
-func (svc *AuthorityService) GetAuthorityInfo(auth data.SysAuthority) (sa data.SysAuthority, err error) {
+func (svc *AuthorityService) GetAuthorityInfo(auth entity.SysAuthority) (sa entity.SysAuthority, err error) {
 	err = svc.data.SqlClient.Preload("DataAuthorityId").Where("authority_id = ?", auth.AuthorityId).First(&sa).Error
 	return sa, err
 }
@@ -210,8 +210,8 @@ func (svc *AuthorityService) GetAuthorityInfo(auth data.SysAuthority) (sa data.S
 //@param: auth data.SysAuthority
 //@return: error
 
-func (svc *AuthorityService) SetDataAuthority(auth data.SysAuthority) error {
-	var s data.SysAuthority
+func (svc *AuthorityService) SetDataAuthority(auth entity.SysAuthority) error {
+	var s entity.SysAuthority
 	svc.data.SqlClient.Preload("DataAuthorityId").First(&s, "authority_id = ?", auth.AuthorityId)
 	err := svc.data.SqlClient.Model(&s).Association("DataAuthorityId").Replace(&auth.DataAuthorityId)
 	return err
@@ -222,8 +222,8 @@ func (svc *AuthorityService) SetDataAuthority(auth data.SysAuthority) error {
 //@param: auth *data.SysAuthority
 //@return: error
 
-func (svc *AuthorityService) SetMenuAuthority(auth *data.SysAuthority) error {
-	var s data.SysAuthority
+func (svc *AuthorityService) SetMenuAuthority(auth *entity.SysAuthority) error {
+	var s entity.SysAuthority
 	svc.data.SqlClient.Preload("SysBaseMenus").First(&s, "authority_id = ?", auth.AuthorityId)
 	err := svc.data.SqlClient.Model(&s).Association("SysBaseMenus").Replace(&auth.SysBaseMenus)
 	return err
@@ -234,7 +234,7 @@ func (svc *AuthorityService) SetMenuAuthority(auth *data.SysAuthority) error {
 //@param: authority *data.SysAuthority
 //@return: err error
 
-func (svc *AuthorityService) findChildrenAuthority(authority *data.SysAuthority) (err error) {
+func (svc *AuthorityService) findChildrenAuthority(authority *entity.SysAuthority) (err error) {
 	err = svc.data.SqlClient.Preload("DataAuthorityId").Where("parent_id = ?", authority.AuthorityId).Find(&authority.Children).Error
 	if len(authority.Children) > 0 {
 		for k := range authority.Children {

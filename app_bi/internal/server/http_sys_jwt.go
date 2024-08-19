@@ -3,7 +3,7 @@ package server
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"net"
 )
 
@@ -43,9 +43,9 @@ func (b *UserApi) GetToken(c *gin.Context) string {
 	return token
 }
 
-func (b *UserApi) GetClaims(c *gin.Context) (*data.CustomClaims, error) {
+func (b *UserApi) GetClaims(c *gin.Context) (*entity.CustomClaims, error) {
 	token := b.GetToken(c)
-	j := data.NewJWT(b.data)
+	j := entity.NewJWT(b.data)
 	claims, err := j.ParseToken(token)
 	if err != nil {
 		b.log.Error("[GetClaims]从Gin的Context中获取从jwt解析信息失败, 请检查请求头是否存在x-token且claims是否为规定结构")
@@ -62,7 +62,7 @@ func (b *UserApi) GetUserID(c *gin.Context) uint {
 			return cl.BaseClaims.ID
 		}
 	} else {
-		waitUse := claims.(*data.CustomClaims)
+		waitUse := claims.(*entity.CustomClaims)
 		return waitUse.BaseClaims.ID
 	}
 }
@@ -76,7 +76,7 @@ func (b *UserApi) GetUserUuid(c *gin.Context) uuid.UUID {
 			return cl.UUID
 		}
 	} else {
-		waitUse := claims.(*data.CustomClaims)
+		waitUse := claims.(*entity.CustomClaims)
 		return waitUse.UUID
 	}
 }
@@ -90,13 +90,13 @@ func (b *UserApi) GetUserAuthorityId(c *gin.Context) uint {
 			return cl.AuthorityId
 		}
 	} else {
-		waitUse := claims.(*data.CustomClaims)
+		waitUse := claims.(*entity.CustomClaims)
 		return waitUse.AuthorityId
 	}
 }
 
 // GetUserInfo 从Gin的Context中获取从jwt解析出来的用户角色id
-func (b *UserApi) GetUserInfoByCtx(c *gin.Context) *data.CustomClaims {
+func (b *UserApi) GetUserInfoByCtx(c *gin.Context) *entity.CustomClaims {
 	if claims, exists := c.Get("claims"); !exists {
 		if cl, err := b.GetClaims(c); err != nil {
 			return nil
@@ -104,7 +104,7 @@ func (b *UserApi) GetUserInfoByCtx(c *gin.Context) *data.CustomClaims {
 			return cl
 		}
 	} else {
-		waitUse := claims.(*data.CustomClaims)
+		waitUse := claims.(*entity.CustomClaims)
 		return waitUse
 	}
 }
@@ -118,14 +118,14 @@ func (b *UserApi) GetUserName(c *gin.Context) string {
 			return cl.Username
 		}
 	} else {
-		waitUse := claims.(*data.CustomClaims)
+		waitUse := claims.(*entity.CustomClaims)
 		return waitUse.Username
 	}
 }
 
-func (b *UserApi) LoginToken(user data.Login) (token string, claims data.CustomClaims, err error) {
-	j := data.NewJWT(b.data) // 唯一签名
-	claims = j.CreateClaims(data.BaseClaims{
+func (b *UserApi) LoginToken(user entity.Login) (token string, claims entity.CustomClaims, err error) {
+	j := entity.NewJWT(b.data) // 唯一签名
+	claims = j.CreateClaims(entity.BaseClaims{
 		UUID:        user.GetUUID(),
 		ID:          user.GetUserId(),
 		NickName:    user.GetNickname(),

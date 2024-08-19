@@ -2,11 +2,12 @@ package service
 
 import (
 	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
 )
 
 type CustomerService struct {
-	data *data.Data
+	data *entity.Data
 }
 
 var CustomerServiceApp = new(CustomerService)
@@ -60,7 +61,7 @@ func (exa *CustomerService) GetCustomerInfoList(sysUserAuthorityID uint, info rh
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	db := exa.data.SqlClient.Model(&data.ExaCustomer{})
-	var a data.SysAuthority
+	var a entity.SysAuthority
 	a.AuthorityId = sysUserAuthorityID
 	auth, err := systemService.AuthorityServiceApp.GetAuthorityInfo(a)
 	if err != nil {

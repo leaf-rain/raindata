@@ -2,7 +2,7 @@ package server
 
 import (
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
 	"github.com/leaf-rain/raindata/app_bi/third_party/utils"
 
@@ -11,7 +11,7 @@ import (
 )
 
 type SystemApiApi struct {
-	data *data.Data
+	data *entity.Data
 	log  *zap.Logger
 	conf *conf.Bootstrap
 }
@@ -26,7 +26,7 @@ type SystemApiApi struct {
 // @Success   200   {object}  rhttp.Response{msg=string}  "创建基础api"
 // @Router    /api/createApi [post]
 func (svr *SystemApiApi) CreateApi(c *gin.Context) {
-	var api data.SysApi
+	var api entity.SysApi
 	err := c.ShouldBindJSON(&api)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
@@ -98,7 +98,7 @@ func (svr *SystemApiApi) GetApiGroups(c *gin.Context) {
 // @Success   200   {object}  rhttp.Response{msg=string}  "同步API"
 // @Router    /api/ignoreApi [post]
 func (svr *SystemApiApi) IgnoreApi(c *gin.Context) {
-	var ignoreApi data.SysIgnoreApi
+	var ignoreApi entity.SysIgnoreApi
 	err := c.ShouldBindJSON(&ignoreApi)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
@@ -147,7 +147,7 @@ func (svr *SystemApiApi) EnterSyncApi(c *gin.Context) {
 // @Success   200   {object}  rhttp.Response{msg=string}  "删除api"
 // @Router    /api/deleteApi [post]
 func (svr *SystemApiApi) DeleteApi(c *gin.Context) {
-	var api data.SysApi
+	var api entity.SysApi
 	err := c.ShouldBindJSON(&api)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
@@ -242,7 +242,7 @@ func (svr *SystemApiApi) GetApiById(c *gin.Context) {
 // @Success   200   {object}  rhttp.Response{msg=string}  "修改基础api"
 // @Router    /api/updateApi [post]
 func (svr *SystemApiApi) UpdateApi(c *gin.Context) {
-	var api data.SysApi
+	var api entity.SysApi
 	err := c.ShouldBindJSON(&api)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)

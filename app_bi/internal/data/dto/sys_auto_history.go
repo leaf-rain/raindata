@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
 )
 
@@ -18,8 +18,8 @@ type SysAutoHistoryCreate struct {
 	MenuID      uint              // 菜单ID
 }
 
-func (r *SysAutoHistoryCreate) Create() data.SysAutoCodeHistory {
-	entity := data.SysAutoCodeHistory{
+func (r *SysAutoHistoryCreate) Create() entity.SysAutoCodeHistory {
+	entity := entity.SysAutoCodeHistory{
 		Package:     r.Package,
 		Request:     r.Request,
 		Table:       r.Table,
@@ -44,7 +44,7 @@ type SysAutoHistoryRollBack struct {
 	DeleteTable bool `json:"deleteTable" form:"deleteTable"` // 是否删除表
 }
 
-func (r *SysAutoHistoryRollBack) ApiIds(entity data.SysAutoCodeHistory) rhttp.IdsReq {
+func (r *SysAutoHistoryRollBack) ApiIds(entity entity.SysAutoCodeHistory) rhttp.IdsReq {
 	length := len(entity.ApiIDs)
 	ids := make([]int, 0)
 	for i := 0; i < length; i++ {

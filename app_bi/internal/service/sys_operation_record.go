@@ -2,8 +2,8 @@ package service
 
 import (
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/dto"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
 	"go.uber.org/zap"
 )
@@ -14,14 +14,14 @@ import (
 //@return: err error
 
 type OperationRecordService struct {
-	data *data.Data
+	data *entity.Data
 	log  *zap.Logger
 	conf *conf.Bootstrap
 }
 
 var OperationRecordServiceApp = new(OperationRecordService)
 
-func (svc *OperationRecordService) CreateSysOperationRecord(sysOperationRecord data.SysOperationRecord) (err error) {
+func (svc *OperationRecordService) CreateSysOperationRecord(sysOperationRecord entity.SysOperationRecord) (err error) {
 	err = svc.data.SqlClient.Create(&sysOperationRecord).Error
 	return err
 }
@@ -32,7 +32,7 @@ func (svc *OperationRecordService) CreateSysOperationRecord(sysOperationRecord d
 //@return: err error
 
 func (svc *OperationRecordService) DeleteSysOperationRecordByIds(ids rhttp.IdsReq) (err error) {
-	err = svc.data.SqlClient.Delete(&[]data.SysOperationRecord{}, "id in (?)", ids.Ids).Error
+	err = svc.data.SqlClient.Delete(&[]entity.SysOperationRecord{}, "id in (?)", ids.Ids).Error
 	return err
 }
 
@@ -41,7 +41,7 @@ func (svc *OperationRecordService) DeleteSysOperationRecordByIds(ids rhttp.IdsRe
 //@param: sysOperationRecord data.SysOperationRecord
 //@return: err error
 
-func (svc *OperationRecordService) DeleteSysOperationRecord(sysOperationRecord data.SysOperationRecord) (err error) {
+func (svc *OperationRecordService) DeleteSysOperationRecord(sysOperationRecord entity.SysOperationRecord) (err error) {
 	err = svc.data.SqlClient.Delete(&sysOperationRecord).Error
 	return err
 }
@@ -51,7 +51,7 @@ func (svc *OperationRecordService) DeleteSysOperationRecord(sysOperationRecord d
 //@param: id uint
 //@return: sysOperationRecord data.SysOperationRecord, err error
 
-func (svc *OperationRecordService) GetSysOperationRecord(id uint) (sysOperationRecord data.SysOperationRecord, err error) {
+func (svc *OperationRecordService) GetSysOperationRecord(id uint) (sysOperationRecord entity.SysOperationRecord, err error) {
 	err = svc.data.SqlClient.Where("id = ?", id).First(&sysOperationRecord).Error
 	return
 }
@@ -65,8 +65,8 @@ func (svc *OperationRecordService) GetSysOperationRecordInfoList(info dto.SysOpe
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
-	db := svc.data.SqlClient.Model(&data.SysOperationRecord{})
-	var sysOperationRecords []data.SysOperationRecord
+	db := svc.data.SqlClient.Model(&entity.SysOperationRecord{})
+	var sysOperationRecords []entity.SysOperationRecord
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if info.Method != "" {
 		db = db.Where("method = ?", info.Method)

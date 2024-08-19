@@ -3,7 +3,7 @@ package source
 import (
 	"context"
 	"github.com/google/uuid"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/leaf-rain/raindata/app_bi/third_party/utils"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -18,7 +18,7 @@ func (i *initUser) MigrateTable(ctx context.Context) (context.Context, error) {
 	if !ok {
 		return ctx, ErrMissingDBContext
 	}
-	return ctx, db.AutoMigrate(&data.SysUser{})
+	return ctx, db.AutoMigrate(&entity.SysUser{})
 }
 
 func (i *initUser) TableCreated(ctx context.Context) bool {
@@ -26,11 +26,11 @@ func (i *initUser) TableCreated(ctx context.Context) bool {
 	if !ok {
 		return false
 	}
-	return db.Migrator().HasTable(&data.SysUser{})
+	return db.Migrator().HasTable(&entity.SysUser{})
 }
 
 func (i initUser) InitializerName() string {
-	return data.SysUser{}.TableName()
+	return entity.SysUser{}.TableName()
 }
 
 func (i *initUser) InitializeData(ctx context.Context) (next context.Context, err error) {
@@ -44,36 +44,24 @@ func (i *initUser) InitializeData(ctx context.Context) (next context.Context, er
 	if !ok {
 		apStr = "123456"
 	}
-
-	password := utils.BcryptHash(apStr)
 	adminPassword := utils.BcryptHash(apStr)
-
-	entities := []data.SysUser{
+	entities := []entity.SysUser{
 		{
 			UUID:        uuid.Must(uuid.NewV7()),
 			Username:    "admin",
 			Password:    adminPassword,
-			NickName:    "Mr.奇淼",
-			HeaderImg:   "https://qmplusimg.henrongyi.top/gva_header.jpg",
+			NickName:    "root",
+			HeaderImg:   "https://img1.baidu.com/it/u=1657712229,2620982189&fm=253&app=120&size=w931&n=0&f=JPEG&fmt=auto?sec=1724173200&t=990ed5fcca0d90a914a0afb7c1a3b3b8",
 			AuthorityId: 888,
 			Phone:       "17611111111",
-			Email:       "333333333@qq.com",
+			Email:       "825681476@qq.com",
 		},
-		{
-			UUID:        uuid.Must(uuid.NewV7()),
-			Username:    "a303176530",
-			Password:    password,
-			NickName:    "用户1",
-			HeaderImg:   "https:///qmplusimg.henrongyi.top/1572075907logo.png",
-			AuthorityId: 9528,
-			Phone:       "17611111111",
-			Email:       "333333333@qq.com"},
 	}
 	if err = db.Create(&entities).Error; err != nil {
-		return ctx, errors.Wrap(err, data.SysUser{}.TableName()+"表数据初始化失败!")
+		return ctx, errors.Wrap(err, entity.SysUser{}.TableName()+"表数据初始化失败!")
 	}
 	next = context.WithValue(ctx, i.InitializerName(), entities)
-	authorityEntities, ok := ctx.Value(initAuthority{}.InitializerName()).([]data.SysAuthority)
+	authorityEntities, ok := ctx.Value(initAuthority{}.InitializerName()).([]entity.SysAuthority)
 	if !ok {
 		return next, errors.Wrap(ErrMissingDependentContext, "创建 [用户-权限] 关联失败, 未找到权限表初始化数据")
 	}
@@ -91,7 +79,7 @@ func (i *initUser) DataInserted(ctx context.Context) bool {
 	if !ok {
 		return false
 	}
-	var record data.SysUser
+	var record entity.SysUser
 	if errors.Is(db.Where("username = ?", "a303176530").
 		Preload("Authorities").First(&record).Error, gorm.ErrRecordNotFound) { // 判断是否存在数据
 		return false

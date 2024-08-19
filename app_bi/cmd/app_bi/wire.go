@@ -8,7 +8,7 @@ package main
 import (
 	"github.com/leaf-rain/raindata/app_bi/internal/biz"
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/leaf-rain/raindata/app_bi/internal/server"
 	"github.com/leaf-rain/raindata/app_bi/internal/service"
 	"go.uber.org/zap"
@@ -20,5 +20,5 @@ import (
 
 // wireApp init kratos application.
 func wireApp(*conf.Server, *conf.Data, *zap.Logger, log.Logger) (*kratos.App, func(), error) {
-	panic(wire.Build(server.ProviderSet, data.ProviderSet, biz.ProviderSet, service.ProviderSet, newApp))
+	panic(wire.Build(server.ProviderSet, entity.ProviderSet, biz.ProviderSet, service.ProviderSet, newApp))
 }

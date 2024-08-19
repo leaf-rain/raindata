@@ -3,14 +3,14 @@ package service
 import (
 	"errors"
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/dto"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 type AuthorityBtnService struct {
-	data *data.Data
+	data *entity.Data
 	log  *zap.Logger
 	conf *conf.Bootstrap
 }
@@ -18,7 +18,7 @@ type AuthorityBtnService struct {
 var AuthorityBtnServiceApp = new(AuthorityBtnService)
 
 func (svc *AuthorityBtnService) GetAuthorityBtn(req dto.SysAuthorityBtnReq) (res dto.SysAuthorityBtnRes, err error) {
-	var authorityBtn []data.SysAuthorityBtn
+	var authorityBtn []entity.SysAuthorityBtn
 	err = svc.data.SqlClient.Find(&authorityBtn, "authority_id = ? and sys_menu_id = ?", req.AuthorityId, req.MenuID).Error
 	if err != nil {
 		return
@@ -33,13 +33,13 @@ func (svc *AuthorityBtnService) GetAuthorityBtn(req dto.SysAuthorityBtnReq) (res
 
 func (svc *AuthorityBtnService) SetAuthorityBtn(req dto.SysAuthorityBtnReq) (err error) {
 	return svc.data.SqlClient.Transaction(func(tx *gorm.DB) error {
-		var authorityBtn []data.SysAuthorityBtn
-		err = tx.Delete(&[]data.SysAuthorityBtn{}, "authority_id = ? and sys_menu_id = ?", req.AuthorityId, req.MenuID).Error
+		var authorityBtn []entity.SysAuthorityBtn
+		err = tx.Delete(&[]entity.SysAuthorityBtn{}, "authority_id = ? and sys_menu_id = ?", req.AuthorityId, req.MenuID).Error
 		if err != nil {
 			return err
 		}
 		for _, v := range req.Selected {
-			authorityBtn = append(authorityBtn, data.SysAuthorityBtn{
+			authorityBtn = append(authorityBtn, entity.SysAuthorityBtn{
 				AuthorityId:      req.AuthorityId,
 				SysMenuID:        req.MenuID,
 				SysBaseMenuBtnID: v,
@@ -56,7 +56,7 @@ func (svc *AuthorityBtnService) SetAuthorityBtn(req dto.SysAuthorityBtnReq) (err
 }
 
 func (svc *AuthorityBtnService) CanRemoveAuthorityBtn(ID string) (err error) {
-	fErr := svc.data.SqlClient.First(&data.SysAuthorityBtn{}, "sys_base_menu_btn_id = ?", ID).Error
+	fErr := svc.data.SqlClient.First(&entity.SysAuthorityBtn{}, "sys_base_menu_btn_id = ?", ID).Error
 	if errors.Is(fErr, gorm.ErrRecordNotFound) {
 		return nil
 	}

@@ -3,7 +3,7 @@ package service
 import (
 	"errors"
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"go.uber.org/zap"
 
 	"gorm.io/gorm"
@@ -15,15 +15,15 @@ import (
 //@return: err error
 
 type DictionaryService struct {
-	data *data.Data
+	data *entity.Data
 	log  *zap.Logger
 	conf *conf.Bootstrap
 }
 
 var DictionaryServiceApp = new(DictionaryService)
 
-func (svc *DictionaryService) CreateSysDictionary(sysDictionary data.SysDictionary) (err error) {
-	if (!errors.Is(svc.data.SqlClient.First(&data.SysDictionary{}, "type = ?", sysDictionary.Type).Error, gorm.ErrRecordNotFound)) {
+func (svc *DictionaryService) CreateSysDictionary(sysDictionary entity.SysDictionary) (err error) {
+	if (!errors.Is(svc.data.SqlClient.First(&entity.SysDictionary{}, "type = ?", sysDictionary.Type).Error, gorm.ErrRecordNotFound)) {
 		return errors.New("存在相同的type，不允许创建")
 	}
 	err = svc.data.SqlClient.Create(&sysDictionary).Error
@@ -35,7 +35,7 @@ func (svc *DictionaryService) CreateSysDictionary(sysDictionary data.SysDictiona
 //@param: sysDictionary data.SysDictionary
 //@return: err error
 
-func (svc *DictionaryService) DeleteSysDictionary(sysDictionary data.SysDictionary) (err error) {
+func (svc *DictionaryService) DeleteSysDictionary(sysDictionary entity.SysDictionary) (err error) {
 	err = svc.data.SqlClient.Where("id = ?", sysDictionary.ID).Preload("SysDictionaryDetails").First(&sysDictionary).Error
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		return errors.New("请不要搞事")
@@ -59,8 +59,8 @@ func (svc *DictionaryService) DeleteSysDictionary(sysDictionary data.SysDictiona
 //@param: sysDictionary *data.SysDictionary
 //@return: err error
 
-func (svc *DictionaryService) UpdateSysDictionary(sysDictionary *data.SysDictionary) (err error) {
-	var dict data.SysDictionary
+func (svc *DictionaryService) UpdateSysDictionary(sysDictionary *entity.SysDictionary) (err error) {
+	var dict entity.SysDictionary
 	sysDictionaryMap := map[string]interface{}{
 		"Name":   sysDictionary.Name,
 		"Type":   sysDictionary.Type,
@@ -73,7 +73,7 @@ func (svc *DictionaryService) UpdateSysDictionary(sysDictionary *data.SysDiction
 		return errors.New("查询字典数据失败")
 	}
 	if dict.Type != sysDictionary.Type {
-		if !errors.Is(svc.data.SqlClient.First(&data.SysDictionary{}, "type = ?", sysDictionary.Type).Error, gorm.ErrRecordNotFound) {
+		if !errors.Is(svc.data.SqlClient.First(&entity.SysDictionary{}, "type = ?", sysDictionary.Type).Error, gorm.ErrRecordNotFound) {
 			return errors.New("存在相同的type，不允许创建")
 		}
 	}
@@ -86,7 +86,7 @@ func (svc *DictionaryService) UpdateSysDictionary(sysDictionary *data.SysDiction
 //@param: Type string, Id uint
 //@return: err error, sysDictionary data.SysDictionary
 
-func (svc *DictionaryService) GetSysDictionary(Type string, Id uint, status *bool) (sysDictionary data.SysDictionary, err error) {
+func (svc *DictionaryService) GetSysDictionary(Type string, Id uint, status *bool) (sysDictionary entity.SysDictionary, err error) {
 	var flag = false
 	if status == nil {
 		flag = true
@@ -105,7 +105,7 @@ func (svc *DictionaryService) GetSysDictionary(Type string, Id uint, status *boo
 //@return: err error, list interface{}, total int64
 
 func (svc *DictionaryService) GetSysDictionaryInfoList() (list interface{}, err error) {
-	var sysDictionarys []data.SysDictionary
+	var sysDictionarys []entity.SysDictionary
 	err = svc.data.SqlClient.Find(&sysDictionarys).Error
 	return sysDictionarys, err
 }

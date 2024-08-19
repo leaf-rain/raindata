@@ -1,6 +1,8 @@
 package dto
 
-import "github.com/leaf-rain/raindata/app_bi/internal/data"
+import (
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
+)
 
 type SysAutoCodePackageCreate struct {
 	Desc        string `json:"desc" example:"描述"`
@@ -15,8 +17,8 @@ func (r *SysAutoCodePackageCreate) AutoCode() AutoCode {
 	}
 }
 
-func (r *SysAutoCodePackageCreate) Create() data.SysAutoCodePackage {
-	return data.SysAutoCodePackage{
+func (r *SysAutoCodePackageCreate) Create() entity.SysAutoCodePackage {
+	return entity.SysAutoCodePackage{
 		Desc:        r.Desc,
 		Label:       r.Label,
 		Template:    r.Template,

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/leaf-rain/raindata/app_bi/third_party/utils"
 	"gorm.io/gorm"
 
@@ -12,7 +12,7 @@ import (
 )
 
 type JwtService struct {
-	data *data.Data
+	data *entity.Data
 	log  *zap.Logger
 	conf *conf.Bootstrap
 }
@@ -24,7 +24,7 @@ var JwtServiceApp = new(JwtService)
 //@param: jwtList data.JwtBlacklist
 //@return: err error
 
-func (svc *JwtService) JsonInBlacklist(jwtList data.JwtBlacklist) (err error) {
+func (svc *JwtService) JsonInBlacklist(jwtList entity.JwtBlacklist) (err error) {
 	err = svc.data.SqlClient.Create(&jwtList).Error
 	if err != nil {
 		return
@@ -38,7 +38,7 @@ func (svc *JwtService) JsonInBlacklist(jwtList data.JwtBlacklist) (err error) {
 //@return: bool
 
 func (svc *JwtService) IsBlacklist(jwt string) bool {
-	err := svc.data.SqlClient.Where("jwt = ?", jwt).First(&data.JwtBlacklist{}).Error
+	err := svc.data.SqlClient.Where("jwt = ?", jwt).First(&entity.JwtBlacklist{}).Error
 	isNotFound := errors.Is(err, gorm.ErrRecordNotFound)
 	return !isNotFound
 }
@@ -71,7 +71,7 @@ func (svc *JwtService) SetRedisJWT(jwt string, userName string) (err error) {
 
 func (svc *JwtService) LoadAll() {
 	var records []string
-	err := svc.data.SqlClient.Model(&data.JwtBlacklist{}).Select("jwt").Find(&records).Error
+	err := svc.data.SqlClient.Model(&entity.JwtBlacklist{}).Select("jwt").Find(&records).Error
 	if err != nil {
 		svc.log.Error("加载数据库jwt黑名单失败!", zap.Error(err))
 		return

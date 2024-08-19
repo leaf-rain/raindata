@@ -1,5 +1,5 @@
 // 自动生成模板SysOperationRecord
-package data
+package entity
 
 import (
 	"time"

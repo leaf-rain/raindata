@@ -2,7 +2,7 @@ package source
 
 import (
 	"context"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/leaf-rain/raindata/app_bi/third_party/utils"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -17,7 +17,7 @@ func (i *initAuthority) MigrateTable(ctx context.Context) (context.Context, erro
 	if !ok {
 		return ctx, ErrMissingDBContext
 	}
-	return ctx, db.AutoMigrate(&data.SysAuthority{})
+	return ctx, db.AutoMigrate(&entity.SysAuthority{})
 }
 
 func (i *initAuthority) TableCreated(ctx context.Context) bool {
@@ -25,11 +25,11 @@ func (i *initAuthority) TableCreated(ctx context.Context) bool {
 	if !ok {
 		return false
 	}
-	return db.Migrator().HasTable(&data.SysAuthority{})
+	return db.Migrator().HasTable(&entity.SysAuthority{})
 }
 
 func (i initAuthority) InitializerName() string {
-	return data.SysAuthority{}.TableName()
+	return entity.SysAuthority{}.TableName()
 }
 
 func (i *initAuthority) InitializeData(ctx context.Context) (context.Context, error) {
@@ -37,18 +37,18 @@ func (i *initAuthority) InitializeData(ctx context.Context) (context.Context, er
 	if !ok {
 		return ctx, ErrMissingDBContext
 	}
-	entities := []data.SysAuthority{
+	entities := []entity.SysAuthority{
 		{AuthorityId: 888, AuthorityName: "普通用户", ParentId: utils.Pointer[uint](0), DefaultRouter: "dashboard"},
 		{AuthorityId: 9528, AuthorityName: "测试角色", ParentId: utils.Pointer[uint](0), DefaultRouter: "dashboard"},
 		{AuthorityId: 8881, AuthorityName: "普通用户子角色", ParentId: utils.Pointer[uint](888), DefaultRouter: "dashboard"},
 	}
 
 	if err := db.Create(&entities).Error; err != nil {
-		return ctx, errors.Wrapf(err, "%s表数据初始化失败!", data.SysAuthority{}.TableName())
+		return ctx, errors.Wrapf(err, "%s表数据初始化失败!", entity.SysAuthority{}.TableName())
 	}
 	// data authority
 	if err := db.Model(&entities[0]).Association("DataAuthorityId").Replace(
-		[]*data.SysAuthority{
+		[]*entity.SysAuthority{
 			{AuthorityId: 888},
 			{AuthorityId: 9528},
 			{AuthorityId: 8881},
@@ -57,7 +57,7 @@ func (i *initAuthority) InitializeData(ctx context.Context) (context.Context, er
 			db.Model(&entities[0]).Association("DataAuthorityId").Relationship.JoinTable.Name)
 	}
 	if err := db.Model(&entities[1]).Association("DataAuthorityId").Replace(
-		[]*data.SysAuthority{
+		[]*entity.SysAuthority{
 			{AuthorityId: 9528},
 			{AuthorityId: 8881},
 		}); err != nil {
@@ -75,7 +75,7 @@ func (i *initAuthority) DataInserted(ctx context.Context) bool {
 		return false
 	}
 	if errors.Is(db.Where("authority_id = ?", "8881").
-		First(&data.SysAuthority{}).Error, gorm.ErrRecordNotFound) { // 判断是否存在数据
+		First(&entity.SysAuthority{}).Error, gorm.ErrRecordNotFound) { // 判断是否存在数据
 		return false
 	}
 	return true

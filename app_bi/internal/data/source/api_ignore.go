@@ -2,7 +2,7 @@ package source
 
 import (
 	"context"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
@@ -12,7 +12,7 @@ type initApiIgnore struct{}
 const initOrderApiIgnore = initOrderApi + 1
 
 func (i initApiIgnore) InitializerName() string {
-	return data.SysIgnoreApi{}.TableName()
+	return entity.SysIgnoreApi{}.TableName()
 }
 
 func (i *initApiIgnore) MigrateTable(ctx context.Context) (context.Context, error) {
@@ -20,7 +20,7 @@ func (i *initApiIgnore) MigrateTable(ctx context.Context) (context.Context, erro
 	if !ok {
 		return ctx, ErrMissingDBContext
 	}
-	return ctx, db.AutoMigrate(&data.SysIgnoreApi{})
+	return ctx, db.AutoMigrate(&entity.SysIgnoreApi{})
 }
 
 func (i *initApiIgnore) TableCreated(ctx context.Context) bool {
@@ -28,7 +28,7 @@ func (i *initApiIgnore) TableCreated(ctx context.Context) bool {
 	if !ok {
 		return false
 	}
-	return db.Migrator().HasTable(&data.SysIgnoreApi{})
+	return db.Migrator().HasTable(&entity.SysIgnoreApi{})
 }
 
 func (i *initApiIgnore) InitializeData(ctx context.Context) (context.Context, error) {
@@ -36,7 +36,7 @@ func (i *initApiIgnore) InitializeData(ctx context.Context) (context.Context, er
 	if !ok {
 		return ctx, ErrMissingDBContext
 	}
-	entities := []data.SysIgnoreApi{
+	entities := []entity.SysIgnoreApi{
 		{Method: "GET", Path: "/swagger/*any"},
 		{Method: "GET", Path: "/api/freshCasbin"},
 		{Method: "GET", Path: "/uploads/file/*filepath"},
@@ -50,7 +50,7 @@ func (i *initApiIgnore) InitializeData(ctx context.Context) (context.Context, er
 		{Method: "POST", Path: "/init/checkdb"},
 	}
 	if err := db.Create(&entities).Error; err != nil {
-		return ctx, errors.Wrap(err, data.SysIgnoreApi{}.TableName()+"表数据初始化失败!")
+		return ctx, errors.Wrap(err, entity.SysIgnoreApi{}.TableName()+"表数据初始化失败!")
 	}
 	next := context.WithValue(ctx, i.InitializerName(), entities)
 	return next, nil
@@ -62,7 +62,7 @@ func (i *initApiIgnore) DataInserted(ctx context.Context) bool {
 		return false
 	}
 	if errors.Is(db.Where("path = ? AND method = ?", "/swagger/*any", "GET").
-		First(&data.SysIgnoreApi{}).Error, gorm.ErrRecordNotFound) {
+		First(&entity.SysIgnoreApi{}).Error, gorm.ErrRecordNotFound) {
 		return false
 	}
 	return true

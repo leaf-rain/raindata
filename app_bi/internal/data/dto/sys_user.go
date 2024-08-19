@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 )
 
 // Register User register structure
@@ -44,23 +44,23 @@ type SetUserAuthorities struct {
 }
 
 type ChangeUserInfo struct {
-	ID           uint                `gorm:"primarykey"`                                                                           // 主键ID
-	NickName     string              `json:"nickName" gorm:"default:系统用户;comment:用户昵称"`                                            // 用户昵称
-	Phone        string              `json:"phone"  gorm:"comment:用户手机号"`                                                          // 用户手机号
-	AuthorityIds []uint              `json:"authorityIds" gorm:"-"`                                                                // 角色ID
-	Email        string              `json:"email"  gorm:"comment:用户邮箱"`                                                           // 用户邮箱
-	HeaderImg    string              `json:"headerImg" gorm:"default:https://qmplusimg.henrongyi.top/gva_header.jpg;comment:用户头像"` // 用户头像
-	SideMode     string              `json:"sideMode"  gorm:"comment:用户侧边主题"`                                                      // 用户侧边主题
-	Enable       int                 `json:"enable" gorm:"comment:冻结用户"`                                                           //冻结用户
-	Authorities  []data.SysAuthority `json:"-" gorm:"many2many:sys_user_authority;"`
+	ID           uint                  `gorm:"primarykey"`                                                                           // 主键ID
+	NickName     string                `json:"nickName" gorm:"default:系统用户;comment:用户昵称"`                                            // 用户昵称
+	Phone        string                `json:"phone"  gorm:"comment:用户手机号"`                                                          // 用户手机号
+	AuthorityIds []uint                `json:"authorityIds" gorm:"-"`                                                                // 角色ID
+	Email        string                `json:"email"  gorm:"comment:用户邮箱"`                                                           // 用户邮箱
+	HeaderImg    string                `json:"headerImg" gorm:"default:https://qmplusimg.henrongyi.top/gva_header.jpg;comment:用户头像"` // 用户头像
+	SideMode     string                `json:"sideMode"  gorm:"comment:用户侧边主题"`                                                      // 用户侧边主题
+	Enable       int                   `json:"enable" gorm:"comment:冻结用户"`                                                           //冻结用户
+	Authorities  []entity.SysAuthority `json:"-" gorm:"many2many:sys_user_authority;"`
 }
 
 type SysUserResponse struct {
-	User data.SysUser `json:"user"`
+	User entity.SysUser `json:"user"`
 }
 
 type LoginResponse struct {
-	User      data.SysUser `json:"user"`
-	Token     string       `json:"token"`
-	ExpiresAt int64        `json:"expiresAt"`
+	User      entity.SysUser `json:"user"`
+	Token     string         `json:"token"`
+	ExpiresAt int64          `json:"expiresAt"`
 }

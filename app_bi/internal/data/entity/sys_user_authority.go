@@ -1,4 +1,4 @@
-package data
+package entity
 
 // SysUserAuthority 是 sysUser 和 sysAuthority 的连接表
 type SysUserAuthority struct {

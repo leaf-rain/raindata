@@ -3,7 +3,7 @@ package source
 import (
 	"context"
 	"fmt"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
@@ -17,7 +17,7 @@ func (i *initDictDetail) MigrateTable(ctx context.Context) (context.Context, err
 	if !ok {
 		return ctx, ErrMissingDBContext
 	}
-	return ctx, db.AutoMigrate(&data.SysDictionaryDetail{})
+	return ctx, db.AutoMigrate(&entity.SysDictionaryDetail{})
 }
 
 func (i *initDictDetail) TableCreated(ctx context.Context) bool {
@@ -25,11 +25,11 @@ func (i *initDictDetail) TableCreated(ctx context.Context) bool {
 	if !ok {
 		return false
 	}
-	return db.Migrator().HasTable(&data.SysDictionaryDetail{})
+	return db.Migrator().HasTable(&entity.SysDictionaryDetail{})
 }
 
 func (i initDictDetail) InitializerName() string {
-	return data.SysDictionaryDetail{}.TableName()
+	return entity.SysDictionaryDetail{}.TableName()
 }
 
 func (i *initDictDetail) InitializeData(ctx context.Context) (context.Context, error) {
@@ -37,18 +37,18 @@ func (i *initDictDetail) InitializeData(ctx context.Context) (context.Context, e
 	if !ok {
 		return ctx, ErrMissingDBContext
 	}
-	dicts, ok := ctx.Value(initDict{}.InitializerName()).([]data.SysDictionary)
+	dicts, ok := ctx.Value(initDict{}.InitializerName()).([]entity.SysDictionary)
 	if !ok {
 		return ctx, errors.Wrap(ErrMissingDependentContext,
-			fmt.Sprintf("未找到 %s 表初始化数据", data.SysDictionary{}.TableName()))
+			fmt.Sprintf("未找到 %s 表初始化数据", entity.SysDictionary{}.TableName()))
 	}
 	True := true
-	dicts[0].SysDictionaryDetails = []data.SysDictionaryDetail{
+	dicts[0].SysDictionaryDetails = []entity.SysDictionaryDetail{
 		{Label: "男", Value: "1", Status: &True, Sort: 1},
 		{Label: "女", Value: "2", Status: &True, Sort: 2},
 	}
 
-	dicts[1].SysDictionaryDetails = []data.SysDictionaryDetail{
+	dicts[1].SysDictionaryDetails = []entity.SysDictionaryDetail{
 		{Label: "smallint", Value: "1", Status: &True, Extend: "mysql", Sort: 1},
 		{Label: "mediumint", Value: "2", Status: &True, Extend: "mysql", Sort: 2},
 		{Label: "int", Value: "3", Status: &True, Extend: "mysql", Sort: 3},
@@ -59,7 +59,7 @@ func (i *initDictDetail) InitializeData(ctx context.Context) (context.Context, e
 		{Label: "int8", Value: "8", Status: &True, Extend: "pgsql", Sort: 8},
 	}
 
-	dicts[2].SysDictionaryDetails = []data.SysDictionaryDetail{
+	dicts[2].SysDictionaryDetails = []entity.SysDictionaryDetail{
 		{Label: "date", Status: &True},
 		{Label: "time", Value: "1", Status: &True, Extend: "mysql", Sort: 1},
 		{Label: "year", Value: "2", Status: &True, Extend: "mysql", Sort: 2},
@@ -67,7 +67,7 @@ func (i *initDictDetail) InitializeData(ctx context.Context) (context.Context, e
 		{Label: "timestamp", Value: "5", Status: &True, Extend: "mysql", Sort: 5},
 		{Label: "timestamptz", Value: "6", Status: &True, Extend: "pgsql", Sort: 5},
 	}
-	dicts[3].SysDictionaryDetails = []data.SysDictionaryDetail{
+	dicts[3].SysDictionaryDetails = []entity.SysDictionaryDetail{
 		{Label: "float", Status: &True},
 		{Label: "double", Value: "1", Status: &True, Extend: "mysql", Sort: 1},
 		{Label: "decimal", Value: "2", Status: &True, Extend: "mysql", Sort: 2},
@@ -75,7 +75,7 @@ func (i *initDictDetail) InitializeData(ctx context.Context) (context.Context, e
 		{Label: "smallserial", Value: "4", Status: &True, Extend: "pgsql", Sort: 4},
 	}
 
-	dicts[4].SysDictionaryDetails = []data.SysDictionaryDetail{
+	dicts[4].SysDictionaryDetails = []entity.SysDictionaryDetail{
 		{Label: "char", Status: &True},
 		{Label: "varchar", Value: "1", Status: &True, Extend: "mysql", Sort: 1},
 		{Label: "tinyblob", Value: "2", Status: &True, Extend: "mysql", Sort: 2},
@@ -88,14 +88,14 @@ func (i *initDictDetail) InitializeData(ctx context.Context) (context.Context, e
 		{Label: "longtext", Value: "9", Status: &True, Extend: "mysql", Sort: 9},
 	}
 
-	dicts[5].SysDictionaryDetails = []data.SysDictionaryDetail{
+	dicts[5].SysDictionaryDetails = []entity.SysDictionaryDetail{
 		{Label: "tinyint", Value: "1", Extend: "mysql", Status: &True},
 		{Label: "bool", Value: "2", Extend: "pgsql", Status: &True},
 	}
 	for _, dict := range dicts {
 		if err := db.Model(&dict).Association("SysDictionaryDetails").
 			Replace(dict.SysDictionaryDetails); err != nil {
-			return ctx, errors.Wrap(err, data.SysDictionaryDetail{}.TableName()+"表数据初始化失败!")
+			return ctx, errors.Wrap(err, entity.SysDictionaryDetail{}.TableName()+"表数据初始化失败!")
 		}
 	}
 	return ctx, nil
@@ -106,9 +106,9 @@ func (i *initDictDetail) DataInserted(ctx context.Context) bool {
 	if !ok {
 		return false
 	}
-	var dict data.SysDictionary
+	var dict entity.SysDictionary
 	if err := db.Preload("SysDictionaryDetails").
-		First(&dict, &data.SysDictionary{Name: "数据库bool类型"}).Error; err != nil {
+		First(&dict, &entity.SysDictionary{Name: "数据库bool类型"}).Error; err != nil {
 		return false
 	}
 	return len(dict.SysDictionaryDetails) > 0 && dict.SysDictionaryDetails[0].Label == "tinyint"

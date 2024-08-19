@@ -1,4 +1,4 @@
-package data
+package entity
 
 // Register User register structure
 type Register struct {

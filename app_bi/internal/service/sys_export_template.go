@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/dto"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
 	"github.com/leaf-rain/raindata/app_bi/third_party/utils"
 	"go.uber.org/zap"
@@ -19,7 +19,7 @@ import (
 )
 
 type SysExportTemplateService struct {
-	data *data.Data
+	data *entity.Data
 	log  *zap.Logger
 	conf *conf.Bootstrap
 }
@@ -27,35 +27,35 @@ type SysExportTemplateService struct {
 var SysExportTemplateServiceApp = new(SysExportTemplateService)
 
 // CreateSysExportTemplate 创建导出模板记录
-func (svc *SysExportTemplateService) CreateSysExportTemplate(sysExportTemplate *data.SysExportTemplate) (err error) {
+func (svc *SysExportTemplateService) CreateSysExportTemplate(sysExportTemplate *entity.SysExportTemplate) (err error) {
 	err = svc.data.SqlClient.Create(sysExportTemplate).Error
 	return err
 }
 
 // DeleteSysExportTemplate 删除导出模板记录
-func (svc *SysExportTemplateService) DeleteSysExportTemplate(sysExportTemplate data.SysExportTemplate) (err error) {
+func (svc *SysExportTemplateService) DeleteSysExportTemplate(sysExportTemplate entity.SysExportTemplate) (err error) {
 	err = svc.data.SqlClient.Delete(&sysExportTemplate).Error
 	return err
 }
 
 // DeleteSysExportTemplateByIds 批量删除导出模板记录
 func (svc *SysExportTemplateService) DeleteSysExportTemplateByIds(ids rhttp.IdsReq) (err error) {
-	err = svc.data.SqlClient.Delete(&[]data.SysExportTemplate{}, "id in ?", ids.Ids).Error
+	err = svc.data.SqlClient.Delete(&[]entity.SysExportTemplate{}, "id in ?", ids.Ids).Error
 	return err
 }
 
 // UpdateSysExportTemplate 更新导出模板记录
-func (svc *SysExportTemplateService) UpdateSysExportTemplate(sysExportTemplate data.SysExportTemplate) (err error) {
+func (svc *SysExportTemplateService) UpdateSysExportTemplate(sysExportTemplate entity.SysExportTemplate) (err error) {
 	return svc.data.SqlClient.Transaction(func(tx *gorm.DB) error {
 		conditions := sysExportTemplate.Conditions
-		e := tx.Delete(&[]data.Condition{}, "template_id = ?", sysExportTemplate.TemplateID).Error
+		e := tx.Delete(&[]entity.Condition{}, "template_id = ?", sysExportTemplate.TemplateID).Error
 		if e != nil {
 			return e
 		}
 		sysExportTemplate.Conditions = nil
 
 		joins := sysExportTemplate.JoinTemplate
-		e = tx.Delete(&[]data.JoinTemplate{}, "template_id = ?", sysExportTemplate.TemplateID).Error
+		e = tx.Delete(&[]entity.JoinTemplate{}, "template_id = ?", sysExportTemplate.TemplateID).Error
 		if e != nil {
 			return e
 		}
@@ -82,18 +82,18 @@ func (svc *SysExportTemplateService) UpdateSysExportTemplate(sysExportTemplate d
 }
 
 // GetSysExportTemplate 根据id获取导出模板记录
-func (svc *SysExportTemplateService) GetSysExportTemplate(id uint) (sysExportTemplate data.SysExportTemplate, err error) {
+func (svc *SysExportTemplateService) GetSysExportTemplate(id uint) (sysExportTemplate entity.SysExportTemplate, err error) {
 	err = svc.data.SqlClient.Where("id = ?", id).Preload("JoinTemplate").Preload("Conditions").First(&sysExportTemplate).Error
 	return
 }
 
 // GetSysExportTemplateInfoList 分页获取导出模板记录
-func (svc *SysExportTemplateService) GetSysExportTemplateInfoList(info dto.SysExportTemplateSearch) (list []data.SysExportTemplate, total int64, err error) {
+func (svc *SysExportTemplateService) GetSysExportTemplateInfoList(info dto.SysExportTemplateSearch) (list []entity.SysExportTemplate, total int64, err error) {
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
-	db := svc.data.SqlClient.Model(&data.SysExportTemplate{})
-	var sysExportTemplates []data.SysExportTemplate
+	db := svc.data.SqlClient.Model(&entity.SysExportTemplate{})
+	var sysExportTemplates []entity.SysExportTemplate
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if info.StartCreatedAt != nil && info.EndCreatedAt != nil {
 		db = db.Where("created_at BETWEEN ? AND ?", info.StartCreatedAt, info.EndCreatedAt)
@@ -122,7 +122,7 @@ func (svc *SysExportTemplateService) GetSysExportTemplateInfoList(info dto.SysEx
 
 // ExportExcel 导出Excel
 func (svc *SysExportTemplateService) ExportExcel(templateID string, values url.Values) (file *bytes.Buffer, name string, err error) {
-	var template data.SysExportTemplate
+	var template entity.SysExportTemplate
 	err = svc.data.SqlClient.Preload("Conditions").Preload("JoinTemplate").First(&template, "template_id = ?", templateID).Error
 	if err != nil {
 		return nil, "", err
@@ -287,7 +287,7 @@ func (svc *SysExportTemplateService) ExportExcel(templateID string, values url.V
 
 // ExportTemplate 导出Excel模板
 func (svc *SysExportTemplateService) ExportTemplate(templateID string) (file *bytes.Buffer, name string, err error) {
-	var template data.SysExportTemplate
+	var template entity.SysExportTemplate
 	err = svc.data.SqlClient.First(&template, "template_id = ?", templateID).Error
 	if err != nil {
 		return nil, "", err
@@ -334,7 +334,7 @@ func (svc *SysExportTemplateService) ExportTemplate(templateID string) (file *by
 
 // ImportExcel 导入Excel
 func (svc *SysExportTemplateService) ImportExcel(templateID string, file *multipart.FileHeader) (err error) {
-	var template data.SysExportTemplate
+	var template entity.SysExportTemplate
 	err = svc.data.SqlClient.First(&template, "template_id = ?", templateID).Error
 	if err != nil {
 		return err

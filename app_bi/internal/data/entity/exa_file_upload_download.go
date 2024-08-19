@@ -1,4 +1,4 @@
-package data
+package entity
 
 type ExaFileUploadAndDownload struct {
 	GVA_MODEL

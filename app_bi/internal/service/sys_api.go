@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/dto"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -18,22 +18,22 @@ import (
 //@return: err error
 
 type ApiService struct {
-	data *data.Data
+	data *entity.Data
 	log  *zap.Logger
 	conf *conf.Bootstrap
 }
 
 var ApiServiceApp = new(ApiService)
 
-func (svc *ApiService) CreateApi(api data.SysApi) (err error) {
-	if !errors.Is(svc.data.SqlClient.Where("path = ? AND method = ?", api.Path, api.Method).First(&data.SysApi{}).Error, gorm.ErrRecordNotFound) {
+func (svc *ApiService) CreateApi(api entity.SysApi) (err error) {
+	if !errors.Is(svc.data.SqlClient.Where("path = ? AND method = ?", api.Path, api.Method).First(&entity.SysApi{}).Error, gorm.ErrRecordNotFound) {
 		return errors.New("存在相同api")
 	}
 	return svc.data.SqlClient.Create(&api).Error
 }
 
 func (svc *ApiService) GetApiGroups() (groups []string, groupApiMap map[string]string, err error) {
-	var apis []data.SysApi
+	var apis []entity.SysApi
 	err = svc.data.SqlClient.Find(&apis).Error
 	if err != nil {
 		return
@@ -55,23 +55,23 @@ func (svc *ApiService) GetApiGroups() (groups []string, groupApiMap map[string]s
 	return
 }
 
-func (svc *ApiService) SyncApi() (newApis, deleteApis, ignoreApis []data.SysApi, err error) {
-	newApis = make([]data.SysApi, 0)
-	deleteApis = make([]data.SysApi, 0)
-	ignoreApis = make([]data.SysApi, 0)
-	var apis []data.SysApi
+func (svc *ApiService) SyncApi() (newApis, deleteApis, ignoreApis []entity.SysApi, err error) {
+	newApis = make([]entity.SysApi, 0)
+	deleteApis = make([]entity.SysApi, 0)
+	ignoreApis = make([]entity.SysApi, 0)
+	var apis []entity.SysApi
 	err = svc.data.SqlClient.Find(&apis).Error
 	if err != nil {
 		return
 	}
-	var ignores []data.SysIgnoreApi
+	var ignores []entity.SysIgnoreApi
 	err = svc.data.SqlClient.Find(&ignores).Error
 	if err != nil {
 		return
 	}
 
 	for i := range ignores {
-		ignoreApis = append(ignoreApis, data.SysApi{
+		ignoreApis = append(ignoreApis, entity.SysApi{
 			Path:        ignores[i].Path,
 			Description: "",
 			ApiGroup:    "",
@@ -79,7 +79,7 @@ func (svc *ApiService) SyncApi() (newApis, deleteApis, ignoreApis []data.SysApi,
 		})
 	}
 
-	var cacheApis []data.SysApi
+	var cacheApis []entity.SysApi
 	for i := range global.GVA_ROUTERS {
 		ignoresFlag := false
 		for j := range ignores {
@@ -88,7 +88,7 @@ func (svc *ApiService) SyncApi() (newApis, deleteApis, ignoreApis []data.SysApi,
 			}
 		}
 		if !ignoresFlag {
-			cacheApis = append(cacheApis, data.SysApi{
+			cacheApis = append(cacheApis, entity.SysApi{
 				Path:   global.GVA_ROUTERS[i].Path,
 				Method: global.GVA_ROUTERS[i].Method,
 			})
@@ -105,7 +105,7 @@ func (svc *ApiService) SyncApi() (newApis, deleteApis, ignoreApis []data.SysApi,
 			}
 		}
 		if !flag {
-			newApis = append(newApis, data.SysApi{
+			newApis = append(newApis, entity.SysApi{
 				Path:        cacheApis[i].Path,
 				Description: "",
 				ApiGroup:    "",
@@ -129,7 +129,7 @@ func (svc *ApiService) SyncApi() (newApis, deleteApis, ignoreApis []data.SysApi,
 	return
 }
 
-func (svc *ApiService) IgnoreApi(ignoreApi data.SysIgnoreApi) (err error) {
+func (svc *ApiService) IgnoreApi(ignoreApi entity.SysIgnoreApi) (err error) {
 	if ignoreApi.Flag {
 		return svc.data.SqlClient.Create(&ignoreApi).Error
 	}
@@ -147,7 +147,7 @@ func (svc *ApiService) EnterSyncApi(syncApis dto.SysSyncApis) (err error) {
 		}
 		for i := range syncApis.DeleteApis {
 			CasbinServiceApp.ClearCasbin(1, syncApis.DeleteApis[i].Path, syncApis.DeleteApis[i].Method)
-			txErr = tx.Delete(&data.SysApi{}, "path = ? AND method = ?", syncApis.DeleteApis[i].Path, syncApis.DeleteApis[i].Method).Error
+			txErr = tx.Delete(&entity.SysApi{}, "path = ? AND method = ?", syncApis.DeleteApis[i].Path, syncApis.DeleteApis[i].Method).Error
 			if txErr != nil {
 				return txErr
 			}
@@ -161,8 +161,8 @@ func (svc *ApiService) EnterSyncApi(syncApis dto.SysSyncApis) (err error) {
 //@param: api data.SysApi
 //@return: err error
 
-func (svc *ApiService) DeleteApi(api data.SysApi) (err error) {
-	var entity data.SysApi
+func (svc *ApiService) DeleteApi(api entity.SysApi) (err error) {
+	var entity entity.SysApi
 	err = svc.data.SqlClient.First(&entity, "id = ?", api.ID).Error // 根据id查询api记录
 	if errors.Is(err, gorm.ErrRecordNotFound) {                     // api记录不存在
 		return err
@@ -180,11 +180,11 @@ func (svc *ApiService) DeleteApi(api data.SysApi) (err error) {
 //@param: api data.SysApi, info dto.PageInfo, order string, desc bool
 //@return: list interface{}, total int64, err error
 
-func (svc *ApiService) GetAPIInfoList(api data.SysApi, info rhttp.PageInfo, order string, desc bool) (list interface{}, total int64, err error) {
+func (svc *ApiService) GetAPIInfoList(api entity.SysApi, info rhttp.PageInfo, order string, desc bool) (list interface{}, total int64, err error) {
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
-	db := svc.data.SqlClient.Model(&data.SysApi{})
-	var apiList []data.SysApi
+	db := svc.data.SqlClient.Model(&entity.SysApi{})
+	var apiList []entity.SysApi
 
 	if api.Path != "" {
 		db = db.Where("path LIKE ?", "%"+api.Path+"%")
@@ -234,7 +234,7 @@ func (svc *ApiService) GetAPIInfoList(api data.SysApi, info rhttp.PageInfo, orde
 //@description: 获取所有的api
 //@return:  apis []data.SysApi, err error
 
-func (svc *ApiService) GetAllApis() (apis []data.SysApi, err error) {
+func (svc *ApiService) GetAllApis() (apis []entity.SysApi, err error) {
 	err = svc.data.SqlClient.Order("id desc").Find(&apis).Error
 	return
 }
@@ -244,7 +244,7 @@ func (svc *ApiService) GetAllApis() (apis []data.SysApi, err error) {
 //@param: id float64
 //@return: api data.SysApi, err error
 
-func (svc *ApiService) GetApiById(id int) (api data.SysApi, err error) {
+func (svc *ApiService) GetApiById(id int) (api entity.SysApi, err error) {
 	err = svc.data.SqlClient.First(&api, "id = ?", id).Error
 	return
 }
@@ -254,11 +254,11 @@ func (svc *ApiService) GetApiById(id int) (api data.SysApi, err error) {
 //@param: api data.SysApi
 //@return: err error
 
-func (svc *ApiService) UpdateApi(api data.SysApi) (err error) {
-	var oldA data.SysApi
+func (svc *ApiService) UpdateApi(api entity.SysApi) (err error) {
+	var oldA entity.SysApi
 	err = svc.data.SqlClient.First(&oldA, "id = ?", api.ID).Error
 	if oldA.Path != api.Path || oldA.Method != api.Method {
-		var duplicateApi data.SysApi
+		var duplicateApi entity.SysApi
 		if ferr := svc.data.SqlClient.First(&duplicateApi, "path = ? AND method = ?", api.Path, api.Method).Error; ferr != nil {
 			if !errors.Is(ferr, gorm.ErrRecordNotFound) {
 				return ferr
@@ -289,12 +289,12 @@ func (svc *ApiService) UpdateApi(api data.SysApi) (err error) {
 
 func (svc *ApiService) DeleteApisByIds(ids rhttp.IdsReq) (err error) {
 	return svc.data.SqlClient.Transaction(func(tx *gorm.DB) error {
-		var apis []data.SysApi
+		var apis []entity.SysApi
 		err = tx.Find(&apis, "id in ?", ids.Ids).Error
 		if err != nil {
 			return err
 		}
-		err = tx.Delete(&[]data.SysApi{}, "id in ?", ids.Ids).Error
+		err = tx.Delete(&[]entity.SysApi{}, "id in ?", ids.Ids).Error
 		if err != nil {
 			return err
 		}

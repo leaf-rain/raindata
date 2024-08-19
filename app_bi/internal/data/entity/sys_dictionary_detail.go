@@ -1,5 +1,5 @@
 // 自动生成模板SysDictionaryDetail
-package data
+package entity
 
 // 如果含有time.Time 请自行import time包
 type SysDictionaryDetail struct {

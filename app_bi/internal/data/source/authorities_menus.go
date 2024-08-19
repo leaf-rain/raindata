@@ -2,7 +2,7 @@ package source
 
 import (
 	"context"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -29,11 +29,11 @@ func (i *initMenuAuthority) InitializeData(ctx context.Context) (next context.Co
 	if !ok {
 		return ctx, ErrMissingDBContext
 	}
-	authorities, ok := ctx.Value(initAuthority{}.InitializerName()).([]data.SysAuthority)
+	authorities, ok := ctx.Value(initAuthority{}.InitializerName()).([]entity.SysAuthority)
 	if !ok {
 		return ctx, errors.Wrap(ErrMissingDependentContext, "创建 [菜单-权限] 关联失败, 未找到权限表初始化数据")
 	}
-	menus, ok := ctx.Value(initMenu{}.InitializerName()).([]data.SysBaseMenu)
+	menus, ok := ctx.Value(initMenu{}.InitializerName()).([]entity.SysBaseMenu)
 	if !ok {
 		return next, errors.Wrap(errors.New(""), "创建 [菜单-权限] 关联失败, 未找到菜单表初始化数据")
 	}
@@ -65,7 +65,7 @@ func (i *initMenuAuthority) DataInserted(ctx context.Context) bool {
 	if !ok {
 		return false
 	}
-	auth := &data.SysAuthority{}
+	auth := &entity.SysAuthority{}
 	if ret := db.Model(auth).
 		Where("authority_id = ?", 9528).Preload("SysBaseMenus").Find(auth); ret != nil {
 		if ret.Error != nil {

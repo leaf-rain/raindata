@@ -2,7 +2,7 @@ package source
 
 import (
 	"context"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
@@ -39,7 +39,7 @@ func (i *initExaFileMysql) MigrateTable(ctx context.Context) (context.Context, e
 	if !ok {
 		return ctx, ErrMissingDBContext
 	}
-	return ctx, db.AutoMigrate(&data.ExaFileUploadAndDownload{})
+	return ctx, db.AutoMigrate(&entity.ExaFileUploadAndDownload{})
 }
 
 func (i *initExaFileMysql) TableCreated(ctx context.Context) bool {
@@ -47,11 +47,11 @@ func (i *initExaFileMysql) TableCreated(ctx context.Context) bool {
 	if !ok {
 		return false
 	}
-	return db.Migrator().HasTable(&data.ExaFileUploadAndDownload{})
+	return db.Migrator().HasTable(&entity.ExaFileUploadAndDownload{})
 }
 
 func (i initExaFileMysql) InitializerName() string {
-	return data.ExaFileUploadAndDownload{}.TableName()
+	return entity.ExaFileUploadAndDownload{}.TableName()
 }
 
 func (i *initExaFileMysql) InitializeData(ctx context.Context) (context.Context, error) {
@@ -59,12 +59,12 @@ func (i *initExaFileMysql) InitializeData(ctx context.Context) (context.Context,
 	if !ok {
 		return ctx, ErrMissingDBContext
 	}
-	entities := []data.ExaFileUploadAndDownload{
+	entities := []entity.ExaFileUploadAndDownload{
 		{Name: "10.png", Url: "https://qmplusimg.henrongyi.top/gvalogo.png", Tag: "png", Key: "158787308910.png"},
 		{Name: "logo.png", Url: "https://qmplusimg.henrongyi.top/1576554439myAvatar.png", Tag: "png", Key: "1587973709logo.png"},
 	}
 	if err := db.Create(&entities).Error; err != nil {
-		return ctx, errors.Wrap(err, data.ExaFileUploadAndDownload{}.TableName()+"表数据初始化失败!")
+		return ctx, errors.Wrap(err, entity.ExaFileUploadAndDownload{}.TableName()+"表数据初始化失败!")
 	}
 	return ctx, nil
 }
@@ -74,7 +74,7 @@ func (i *initExaFileMysql) DataInserted(ctx context.Context) bool {
 	if !ok {
 		return false
 	}
-	lookup := data.ExaFileUploadAndDownload{Name: "logo.png", Key: "1587973709logo.png"}
+	lookup := entity.ExaFileUploadAndDownload{Name: "logo.png", Key: "1587973709logo.png"}
 	if errors.Is(db.First(&lookup, &lookup).Error, gorm.ErrRecordNotFound) {
 		return false
 	}

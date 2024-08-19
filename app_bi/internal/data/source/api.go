@@ -2,7 +2,7 @@ package source
 
 import (
 	"context"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
@@ -12,7 +12,7 @@ type initApi struct{}
 const initOrderApi = InitOrderSystem + 1
 
 func (i initApi) InitializerName() string {
-	return data.SysApi{}.TableName()
+	return entity.SysApi{}.TableName()
 }
 
 func (i *initApi) MigrateTable(ctx context.Context) (context.Context, error) {
@@ -20,7 +20,7 @@ func (i *initApi) MigrateTable(ctx context.Context) (context.Context, error) {
 	if !ok {
 		return ctx, ErrMissingDBContext
 	}
-	return ctx, db.AutoMigrate(&data.SysApi{})
+	return ctx, db.AutoMigrate(&entity.SysApi{})
 }
 
 func (i *initApi) TableCreated(ctx context.Context) bool {
@@ -28,7 +28,7 @@ func (i *initApi) TableCreated(ctx context.Context) bool {
 	if !ok {
 		return false
 	}
-	return db.Migrator().HasTable(&data.SysApi{})
+	return db.Migrator().HasTable(&entity.SysApi{})
 }
 
 func (i *initApi) InitializeData(ctx context.Context) (context.Context, error) {
@@ -36,7 +36,7 @@ func (i *initApi) InitializeData(ctx context.Context) (context.Context, error) {
 	if !ok {
 		return ctx, ErrMissingDBContext
 	}
-	entities := []data.SysApi{
+	entities := []entity.SysApi{
 		{ApiGroup: "jwt", Method: "POST", Path: "/jwt/jsonInBlacklist", Description: "jwt加入黑名单(退出，必选)"},
 
 		{ApiGroup: "系统用户", Method: "DELETE", Path: "/user/deleteUser", Description: "删除用户"},
@@ -168,7 +168,7 @@ func (i *initApi) InitializeData(ctx context.Context) (context.Context, error) {
 		{ApiGroup: "公告", Method: "GET", Path: "/info/getInfoList", Description: "获取公告列表"},
 	}
 	if err := db.Create(&entities).Error; err != nil {
-		return ctx, errors.Wrap(err, data.SysApi{}.TableName()+"表数据初始化失败!")
+		return ctx, errors.Wrap(err, entity.SysApi{}.TableName()+"表数据初始化失败!")
 	}
 	next := context.WithValue(ctx, i.InitializerName(), entities)
 	return next, nil
@@ -180,7 +180,7 @@ func (i *initApi) DataInserted(ctx context.Context) bool {
 		return false
 	}
 	if errors.Is(db.Where("path = ? AND method = ?", "/authorityBtn/canRemoveAuthorityBtn", "POST").
-		First(&data.SysApi{}).Error, gorm.ErrRecordNotFound) {
+		First(&entity.SysApi{}).Error, gorm.ErrRecordNotFound) {
 		return false
 	}
 	return true

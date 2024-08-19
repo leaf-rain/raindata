@@ -1,4 +1,4 @@
-package data
+package entity
 
 type SysAutoCodePackage struct {
 	GVA_MODEL

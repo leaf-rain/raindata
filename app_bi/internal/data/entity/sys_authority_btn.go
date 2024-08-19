@@ -1,4 +1,4 @@
-package data
+package entity
 
 type SysAuthorityBtn struct {
 	AuthorityId      uint           `gorm:"comment:角色ID"`

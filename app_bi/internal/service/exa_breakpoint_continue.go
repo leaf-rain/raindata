@@ -3,13 +3,13 @@ package service
 import (
 	"errors"
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 type FileUploadAndDownloadService struct {
-	data *data.Data
+	data *entity.Data
 	log  *zap.Logger
 	conf *conf.Bootstrap
 }
@@ -21,8 +21,8 @@ var FileUploadAndDownloadServiceApp = new(FileUploadAndDownloadService)
 //@param: fileMd5 string, fileName string, chunkTotal int
 //@return: file data.ExaFile, err error
 
-func (e *FileUploadAndDownloadService) FindOrCreateFile(fileMd5 string, fileName string, chunkTotal int) (file data.ExaFile, err error) {
-	var cfile data.ExaFile
+func (e *FileUploadAndDownloadService) FindOrCreateFile(fileMd5 string, fileName string, chunkTotal int) (file entity.ExaFile, err error) {
+	var cfile entity.ExaFile
 	cfile.FileMd5 = fileMd5
 	cfile.FileName = fileName
 	cfile.ChunkTotal = chunkTotal
@@ -43,7 +43,7 @@ func (e *FileUploadAndDownloadService) FindOrCreateFile(fileMd5 string, fileName
 //@return: error
 
 func (e *FileUploadAndDownloadService) CreateFileChunk(id uint, fileChunkPath string, fileChunkNumber int) error {
-	var chunk data.ExaFileChunk
+	var chunk entity.ExaFileChunk
 	chunk.FileChunkPath = fileChunkPath
 	chunk.ExaFileID = id
 	chunk.FileChunkNumber = fileChunkNumber
@@ -57,8 +57,8 @@ func (e *FileUploadAndDownloadService) CreateFileChunk(id uint, fileChunkPath st
 //@return: error
 
 func (e *FileUploadAndDownloadService) DeleteFileChunk(fileMd5 string, filePath string) error {
-	var chunks []data.ExaFileChunk
-	var file data.ExaFile
+	var chunks []entity.ExaFileChunk
+	var file entity.ExaFile
 	err := e.data.SqlClient.Where("file_md5 = ? ", fileMd5).First(&file).
 		Updates(map[string]interface{}{
 			"IsFinish":  true,
