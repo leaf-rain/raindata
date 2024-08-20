@@ -1,8 +1,10 @@
 package entity
 
+import "gorm.io/gorm"
+
 // file struct, 文件结构体
 type ExaFile struct {
-	GVA_MODEL
+	gorm.Model
 	FileName     string
 	FileMd5      string
 	FilePath     string
@@ -13,7 +15,7 @@ type ExaFile struct {
 
 // file chunk struct, 切片结构体
 type ExaFileChunk struct {
-	GVA_MODEL
+	gorm.Model
 	ExaFileID       uint
 	FileChunkNumber int
 	FileChunkPath   string

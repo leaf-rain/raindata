@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
+	"github.com/leaf-rain/raindata/common/ecode"
 	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 	"strconv"
@@ -13,7 +14,7 @@ import (
 )
 
 type JwtBlacklist struct {
-	GVA_MODEL
+	gorm.Model
 	Jwt string `gorm:"type:text;comment:jwt"`
 }
 
@@ -32,19 +33,12 @@ type BaseClaims struct {
 	AuthorityId uint
 }
 
+var _ initDb = (*JWT)(nil)
+
 type JWT struct {
 	data  *Data
 	group *singleflight.Group
 }
-
-var (
-	TokenExpired     = errors.New("Token is expired")
-	TokenNotValidYet = errors.New("Token not active yet")
-	TokenMalformed   = errors.New("That's not even a token")
-	TokenInvalid     = errors.New("Couldn't handle this token:")
-
-	ErrDB = errors.New("数据库错误")
-)
 
 func NewJWT(data *Data) *JWT {
 	return &JWT{
@@ -90,14 +84,14 @@ func (j *JWT) ParseToken(tokenString string) (*CustomClaims, error) {
 	if err != nil {
 		if ve, ok := err.(*jwt.ValidationError); ok {
 			if ve.Errors&jwt.ValidationErrorMalformed != 0 {
-				return nil, TokenMalformed
+				return nil, ecode.ERR_TokenMalformed
 			} else if ve.Errors&jwt.ValidationErrorExpired != 0 {
 				// Token is expired
-				return nil, TokenExpired
+				return nil, ecode.ERR_TokenExpired
 			} else if ve.Errors&jwt.ValidationErrorNotValidYet != 0 {
-				return nil, TokenNotValidYet
+				return nil, ecode.ERR_TokenNotValidYet
 			} else {
-				return nil, TokenInvalid
+				return nil, ecode.ERR_TokenInvalid
 			}
 		}
 	}
@@ -105,10 +99,10 @@ func (j *JWT) ParseToken(tokenString string) (*CustomClaims, error) {
 		if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid {
 			return claims, nil
 		}
-		return nil, TokenInvalid
+		return nil, ecode.ERR_TokenInvalid
 
 	} else {
-		return nil, TokenInvalid
+		return nil, ecode.ERR_TokenInvalid
 	}
 }
 
@@ -187,4 +181,12 @@ func LoginToken(user Login, data *Data) (j *JWT, token string, claims CustomClai
 		return
 	}
 	return
+}
+
+func (j *JWT) MigrateTable(ctx context.Context) error {
+	return j.data.SqlClient.AutoMigrate(&JwtBlacklist{})
+}
+
+func (j *JWT) TableCreated(context.Context) bool {
+	return j.data.SqlClient.Migrator().HasTable(&JwtBlacklist{})
 }

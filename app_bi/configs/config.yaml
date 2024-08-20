@@ -8,7 +8,7 @@ server:
 data:
   database:
     driverName: mysql
-    dbSource: root:root@tcp(127.0.0.1:3306)/test?parseTime=True&loc=Local
+    dbSource: root:yeyangfengqi@tcp(127.0.0.1:3306)/test?parseTime=True&loc=Local
     maxOpenConns: 6
     maxIdleConns: 4
     idleTimeOut: 10
@@ -22,5 +22,5 @@ data:
     write_timeout: 2
 log:
   server_name: app_bi
-  appid: 1
+  appid: "1"
   log_level: "debug"

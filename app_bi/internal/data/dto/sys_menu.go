@@ -12,7 +12,7 @@ type AddMenuAuthorityInfo struct {
 
 func DefaultMenu() []entity.SysBaseMenu {
 	return []entity.SysBaseMenu{{
-		GVA_MODEL: entity.GVA_MODEL{ID: 1},
+		gorm.Model: entity.gorm.Model{ID: 1},
 		ParentId:  0,
 		Path:      "dashboard",
 		Name:      "dashboard",

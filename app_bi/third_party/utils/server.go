@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
@@ -101,21 +100,21 @@ func InitRAM() (r Ram, err error) {
 //@description: 硬盘信息
 //@return: d Disk, err error
 
-func InitDisk() (d []Disk, err error) {
-	for i := range svc.conf.DiskList {
-		mp := svc.conf.DiskList[i].MountPoint
-		if u, err := disk.Usage(mp); err != nil {
-			return d, err
-		} else {
-			d = append(d, Disk{
-				MountPoint:  mp,
-				UsedMB:      int(u.Used) / MB,
-				UsedGB:      int(u.Used) / GB,
-				TotalMB:     int(u.Total) / MB,
-				TotalGB:     int(u.Total) / GB,
-				UsedPercent: int(u.UsedPercent),
-			})
-		}
-	}
-	return d, nil
-}
+//func InitDisk() (d []Disk, err error) {
+//	for i := range svc.conf.DiskList {
+//		mp := svc.conf.DiskList[i].MountPoint
+//		if u, err := disk.Usage(mp); err != nil {
+//			return d, err
+//		} else {
+//			d = append(d, Disk{
+//				MountPoint:  mp,
+//				UsedMB:      int(u.Used) / MB,
+//				UsedGB:      int(u.Used) / GB,
+//				TotalMB:     int(u.Total) / MB,
+//				TotalGB:     int(u.Total) / GB,
+//				UsedPercent: int(u.UsedPercent),
+//			})
+//		}
+//	}
+//	return d, nil
+//}

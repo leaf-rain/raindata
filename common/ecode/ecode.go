@@ -3,6 +3,8 @@ package ecode
 import "errors"
 
 var (
+	ERR_USER_AUTH = errors.New("用户用户名或密码错误")
+
 	ERR_CONFIG_PATH      = errors.New("配置路径错误")
 	ERR_CONFIG_UNMARSHAL = errors.New("配置解析错误")
 	ERR_HTTP_CONFIG      = errors.New("http配置解析错误")

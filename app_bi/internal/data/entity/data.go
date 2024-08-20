@@ -22,11 +22,15 @@ type Data struct {
 	SqlClient         *gorm.DB
 	SingleflightGroup *singleflight.Group
 	Config            *conf.Bootstrap
+	logger            *zap.Logger
 }
 
 // NewData .
 func NewData(c *conf.Bootstrap, logger *zap.Logger) (*Data, func(), error) {
-	data := &Data{}
+	data := &Data{
+		Config: c,
+		logger: logger,
+	}
 	var gormLogger = rgorm.NewGormZapLogger(logger)
 	data.SqlClient = rgorm.NewRGrom(rgorm.DtGromConfig{
 		DriverName:   c.Data.Database.DriverName,
@@ -58,5 +62,31 @@ func NewData(c *conf.Bootstrap, logger *zap.Logger) (*Data, func(), error) {
 		}
 		logger.Info("close the data resources")
 	}
+	data.initDb()
 	return data, cleanup, nil
+}
+
+type initDb interface {
+	MigrateTable(ctx context.Context) error
+	TableCreated(ctx context.Context) bool
+}
+
+func (data *Data) initDb() {
+	data.createTable(NewEntityExaFileUploadAndDownload(data))
+	data.createTable(NewEntitySysApi(data))
+	data.createTable(NewEntitySysIgnoreApi(data))
+	data.createTable(NewEntitySysAuthority(data))
+	data.createTable(NewEntitySysCasbin(data))
+	data.createTable(NewJWT(data))
+	data.createTable(NewEntitySysOperationRecord(data))
+	data.createTable(NewEntitySysUser(data))
+}
+
+func (data *Data) createTable(i initDb) {
+	if !i.TableCreated(data.Ctx) {
+		err := i.MigrateTable(data.Ctx)
+		if err != nil {
+			panic("init db failed. err:" + err.Error())
+		}
+	}
 }

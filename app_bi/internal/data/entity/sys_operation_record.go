@@ -1,13 +1,13 @@
-// 自动生成模板SysOperationRecord
 package entity
 
 import (
+	"context"
+	"gorm.io/gorm"
 	"time"
 )
 
-// 如果含有time.Time 请自行import time包
 type SysOperationRecord struct {
-	GVA_MODEL
+	gorm.Model
 	Ip           string        `json:"ip" form:"ip" gorm:"column:ip;comment:请求ip"`                                   // 请求ip
 	Method       string        `json:"method" form:"method" gorm:"column:method;comment:请求方法"`                       // 请求方法
 	Path         string        `json:"path" form:"path" gorm:"column:path;comment:请求路径"`                             // 请求路径
@@ -18,5 +18,26 @@ type SysOperationRecord struct {
 	Body         string        `json:"body" form:"body" gorm:"type:text;column:body;comment:请求Body"`                 // 请求Body
 	Resp         string        `json:"resp" form:"resp" gorm:"type:text;column:resp;comment:响应Body"`                 // 响应Body
 	UserID       int           `json:"user_id" form:"user_id" gorm:"column:user_id;comment:用户id"`                    // 用户id
-	User         SysUser       `json:"user"`
+	User         SysUser       `json:"user" gorm:"-"`
+}
+
+var _ initDb = (*EntitySysOperationRecord)(nil)
+
+type EntitySysOperationRecord struct {
+	data  *Data
+	Model *SysOperationRecord
+}
+
+func NewEntitySysOperationRecord(data *Data) *EntitySysOperationRecord {
+	return &EntitySysOperationRecord{
+		data: data,
+	}
+}
+
+func (i *EntitySysOperationRecord) MigrateTable(ctx context.Context) error {
+	return i.data.SqlClient.AutoMigrate(&SysOperationRecord{})
+}
+
+func (i *EntitySysOperationRecord) TableCreated(context.Context) bool {
+	return i.data.SqlClient.Migrator().HasTable(&SysOperationRecord{})
 }

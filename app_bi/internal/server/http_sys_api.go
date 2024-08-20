@@ -153,7 +153,7 @@ func (svr *SystemApiApi) DeleteApi(c *gin.Context) {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
-	err = utils.Verify(api.GVA_MODEL, utils.IdVerify)
+	err = utils.Verify(api.gorm.Model, utils.IdVerify)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
 		return

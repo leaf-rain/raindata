@@ -1,18 +1,95 @@
-package utils
+package server
 
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/dto"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
+	"go.uber.org/zap"
 	"net"
+	"time"
 )
+
+type JWT struct {
+	SigningKey  []byte
+	BufferTime  string
+	ExpiresTime string
+	Issuer      string
+	logger      *zap.Logger
+}
+
+func NewJWT(signing []byte, logger *zap.Logger) *JWT {
+	return &JWT{
+		SigningKey: signing,
+		logger:     logger,
+	}
+}
+
+func (j *JWT) CreateClaims(baseClaims dto.BaseClaims) dto.CustomClaims {
+	bf, _ := ParseDuration(j.BufferTime)
+	ep, _ := ParseDuration(j.ExpiresTime)
+	claims := dto.CustomClaims{
+		BaseClaims: baseClaims,
+		BufferTime: int64(bf / time.Second), // 缓冲时间1天 缓冲时间内会获得新的token刷新令牌 此时一个用户会存在两个有效令牌 但是前端只留一个 另一个会丢失
+		RegisteredClaims: jwt.RegisteredClaims{
+			Audience:  jwt.ClaimStrings{"GVA"},                   // 受众
+			NotBefore: jwt.NewNumericDate(time.Now().Add(-1000)), // 签名生效时间
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ep)),    // 过期时间 7天  配置文件
+			Issuer:    j.Issuer,                                  // 签名的发行者
+		},
+	}
+	return claims
+}
+
+// 创建一个token
+func (j *JWT) CreateToken(claims dto.CustomClaims) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(j.SigningKey)
+}
+
+// CreateTokenByOldToken 旧token 换新token 使用归并回源避免并发问题
+func (j *JWT) CreateTokenByOldToken(oldToken string, claims dto.CustomClaims) (string, error) {
+	v, err, _ := global.GVA_Concurrency_Control.Do("JWT:"+oldToken, func() (interface{}, error) {
+		return j.CreateToken(claims)
+	})
+	return v.(string), err
+}
+
+// 解析 token
+func (j *JWT) ParseToken(tokenString string) (*dto.CustomClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &dto.CustomClaims{}, func(token *jwt.Token) (i interface{}, e error) {
+		return j.SigningKey, nil
+	})
+	if err != nil {
+		if ve, ok := err.(*jwt.ValidationError); ok {
+			if ve.Errors&jwt.ValidationErrorMalformed != 0 {
+				return nil, ERR_TokenMalformed
+			} else if ve.Errors&jwt.ValidationErrorExpired != 0 {
+				// Token is expired
+				return nil, ERR_TokenExpired
+			} else if ve.Errors&jwt.ValidationErrorNotValidYet != 0 {
+				return nil, ERR_TokenNotValidYet
+			} else {
+				return nil, ERR_TokenInvalid
+			}
+		}
+	}
+	if token != nil {
+		if claims, ok := token.Claims.(*dto.CustomClaims); ok && token.Valid {
+			return claims, nil
+		}
+		return nil, ERR_TokenInvalid
+
+	} else {
+		return nil, ERR_TokenInvalid
+	}
+}
 
 func ClearToken(c *gin.Context) {
 	// 增加cookie x-token 向来源的web添加
-	host, _, err := net.SplitHostPort(c.dto.Host)
+	host, _, err := net.SplitHostPort(c.Request.Host)
 	if err != nil {
-		host = c.dto.Host
+		host = c.Request.Host
 	}
 
 	if net.ParseIP(host) != nil {
@@ -24,9 +101,9 @@ func ClearToken(c *gin.Context) {
 
 func SetToken(c *gin.Context, token string, maxAge int) {
 	// 增加cookie x-token 向来源的web添加
-	host, _, err := net.SplitHostPort(c.dto.Host)
+	host, _, err := net.SplitHostPort(c.Request.Host)
 	if err != nil {
-		host = c.dto.Host
+		host = c.Request.Host
 	}
 
 	if net.ParseIP(host) != nil {
@@ -39,7 +116,7 @@ func SetToken(c *gin.Context, token string, maxAge int) {
 func GetToken(c *gin.Context) string {
 	token, _ := c.Cookie("x-token")
 	if token == "" {
-		token = c.dto.Header.Get("x-token")
+		token = c.Request.Header.Get("x-token")
 	}
 	return token
 }

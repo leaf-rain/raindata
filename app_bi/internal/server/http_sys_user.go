@@ -2,7 +2,9 @@ package server
 
 import (
 	"errors"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/dto"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
+	"gorm.io/gorm"
 	"strconv"
 	"time"
 
@@ -176,10 +178,10 @@ func (b *UserApi) Register(c *gin.Context) {
 	userReturn, err := b.userSvc.Register(*user)
 	if err != nil {
 		b.log.Error("注册失败!", zap.Error(err))
-		rhttp.FailWithDetailed(entity.SysUserResponse{User: userReturn}, "注册失败", c)
+		rhttp.FailWithDetailed(dto.SysUserResponse{User: userReturn}, "注册失败", c)
 		return
 	}
-	rhttp.OkWithDetailed(entity.SysUserResponse{User: userReturn}, "注册成功", c)
+	rhttp.OkWithDetailed(dto.SysUserResponse{User: userReturn}, "注册成功", c)
 }
 
 // ChangePassword
@@ -204,7 +206,7 @@ func (b *UserApi) ChangePassword(c *gin.Context) {
 		return
 	}
 	uid := b.GetUserID(c)
-	u := &entity.SysUser{GVA_MODEL: entity.GVA_MODEL{ID: uid}, Password: req.Password}
+	u := &entity.SysUser{gorm.Model: entity.gorm.Model{ID: uid}, Password: req.Password}
 	_, err = b.userSvc.ChangePassword(u, req.NewPassword)
 	if err != nil {
 		b.log.Error("修改失败!", zap.Error(err))
@@ -381,7 +383,7 @@ func (b *UserApi) SetUserInfo(c *gin.Context) {
 		}
 	}
 	err = b.userSvc.SetUserInfo(entity.SysUser{
-		GVA_MODEL: entity.GVA_MODEL{
+		gorm.Model: entity.gorm.Model, {
 			ID: user.ID,
 		},
 		NickName:  user.NickName,
@@ -417,7 +419,7 @@ func (b *UserApi) SetSelfInfo(c *gin.Context) {
 	}
 	user.ID = b.GetUserID(c)
 	err = b.userSvc.SetSelfInfo(entity.SysUser{
-		GVA_MODEL: entity.GVA_MODEL{
+		gorm.Model: entity.gorm.Model, {
 			ID: user.ID,
 		},
 		NickName:  user.NickName,

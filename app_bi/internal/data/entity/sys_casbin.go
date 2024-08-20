@@ -1,43 +1,39 @@
-package source
+package entity
 
 import (
 	"context"
-
+	"errors"
 	adapter "github.com/casbin/gorm-adapter/v3"
-	"github.com/pkg/errors"
+	errors2 "github.com/pkg/errors"
 	"gorm.io/gorm"
 )
 
-const initOrderCasbin = initOrderApiIgnore + 1
+var _ initDb = (*EntitySysCasbin)(nil)
 
-type initCasbin struct{}
-
-func (i *initCasbin) MigrateTable(ctx context.Context) (context.Context, error) {
-	db, ok := ctx.Value("db").(*gorm.DB)
-	if !ok {
-		return ctx, ErrMissingDBContext
-	}
-	return ctx, db.AutoMigrate(&adapter.CasbinRule{})
+type EntitySysCasbin struct {
+	data *Data
 }
 
-func (i *initCasbin) TableCreated(ctx context.Context) bool {
-	db, ok := ctx.Value("db").(*gorm.DB)
-	if !ok {
-		return false
+func NewEntitySysCasbin(data *Data) *EntitySysCasbin {
+	return &EntitySysCasbin{
+		data: data,
 	}
-	return db.Migrator().HasTable(&adapter.CasbinRule{})
 }
 
-func (i initCasbin) InitializerName() string {
+func (i *EntitySysCasbin) MigrateTable(ctx context.Context) error {
+	return i.data.SqlClient.AutoMigrate(&adapter.CasbinRule{})
+}
+
+func (i *EntitySysCasbin) TableCreated(context.Context) bool {
+	return i.data.SqlClient.Migrator().HasTable(&adapter.CasbinRule{})
+}
+
+func (i *EntitySysCasbin) InitializerName() string {
 	var entity adapter.CasbinRule
 	return entity.TableName()
 }
 
-func (i *initCasbin) InitializeData(ctx context.Context) (context.Context, error) {
-	db, ok := ctx.Value("db").(*gorm.DB)
-	if !ok {
-		return ctx, ErrMissingDBContext
-	}
+func (i *EntitySysCasbin) InitializeData(ctx context.Context) (context.Context, error) {
 	entities := []adapter.CasbinRule{
 		{Ptype: "p", V0: "888", V1: "/user/admin_register", V2: "POST"},
 
@@ -59,16 +55,6 @@ func (i *initCasbin) InitializeData(ctx context.Context) (context.Context, error
 		{Ptype: "p", V0: "888", V1: "/authority/deleteAuthority", V2: "POST"},
 		{Ptype: "p", V0: "888", V1: "/authority/getAuthorityList", V2: "POST"},
 		{Ptype: "p", V0: "888", V1: "/authority/setDataAuthority", V2: "POST"},
-
-		{Ptype: "p", V0: "888", V1: "/menu/getMenu", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/menu/getMenuList", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/menu/addBaseMenu", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/menu/getBaseMenuTree", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/menu/addMenuAuthority", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/menu/getMenuAuthority", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/menu/deleteBaseMenu", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/menu/updateBaseMenu", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/menu/getBaseMenuById", V2: "POST"},
 
 		{Ptype: "p", V0: "888", V1: "/user/getUserInfo", V2: "GET"},
 		{Ptype: "p", V0: "888", V1: "/user/setUserInfo", V2: "PUT"},
@@ -104,36 +90,6 @@ func (i *initCasbin) InitializeData(ctx context.Context) (context.Context, error
 		{Ptype: "p", V0: "888", V1: "/customer/customer", V2: "POST"},
 		{Ptype: "p", V0: "888", V1: "/customer/customer", V2: "DELETE"},
 		{Ptype: "p", V0: "888", V1: "/customer/customerList", V2: "GET"},
-
-		{Ptype: "p", V0: "888", V1: "/autoCode/getDB", V2: "GET"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/getMeta", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/preview", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/getTables", V2: "GET"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/getColumn", V2: "GET"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/rollback", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/createTemp", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/delSysHistory", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/getSysHistory", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/createPackage", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/getTemplates", V2: "GET"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/getPackage", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/delPackage", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/createPlug", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/installPlugin", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/pubPlug", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/autoCode/addFunc", V2: "POST"},
-
-		{Ptype: "p", V0: "888", V1: "/sysDictionaryDetail/findSysDictionaryDetail", V2: "GET"},
-		{Ptype: "p", V0: "888", V1: "/sysDictionaryDetail/updateSysDictionaryDetail", V2: "PUT"},
-		{Ptype: "p", V0: "888", V1: "/sysDictionaryDetail/createSysDictionaryDetail", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/sysDictionaryDetail/getSysDictionaryDetailList", V2: "GET"},
-		{Ptype: "p", V0: "888", V1: "/sysDictionaryDetail/deleteSysDictionaryDetail", V2: "DELETE"},
-
-		{Ptype: "p", V0: "888", V1: "/sysDictionary/findSysDictionary", V2: "GET"},
-		{Ptype: "p", V0: "888", V1: "/sysDictionary/updateSysDictionary", V2: "PUT"},
-		{Ptype: "p", V0: "888", V1: "/sysDictionary/getSysDictionaryList", V2: "GET"},
-		{Ptype: "p", V0: "888", V1: "/sysDictionary/createSysDictionary", V2: "POST"},
-		{Ptype: "p", V0: "888", V1: "/sysDictionary/deleteSysDictionary", V2: "DELETE"},
 
 		{Ptype: "p", V0: "888", V1: "/sysOperationRecord/findSysOperationRecord", V2: "GET"},
 		{Ptype: "p", V0: "888", V1: "/sysOperationRecord/updateSysOperationRecord", V2: "PUT"},
@@ -181,15 +137,6 @@ func (i *initCasbin) InitializeData(ctx context.Context) (context.Context, error
 		{Ptype: "p", V0: "8881", V1: "/authority/deleteAuthority", V2: "POST"},
 		{Ptype: "p", V0: "8881", V1: "/authority/getAuthorityList", V2: "POST"},
 		{Ptype: "p", V0: "8881", V1: "/authority/setDataAuthority", V2: "POST"},
-		{Ptype: "p", V0: "8881", V1: "/menu/getMenu", V2: "POST"},
-		{Ptype: "p", V0: "8881", V1: "/menu/getMenuList", V2: "POST"},
-		{Ptype: "p", V0: "8881", V1: "/menu/addBaseMenu", V2: "POST"},
-		{Ptype: "p", V0: "8881", V1: "/menu/getBaseMenuTree", V2: "POST"},
-		{Ptype: "p", V0: "8881", V1: "/menu/addMenuAuthority", V2: "POST"},
-		{Ptype: "p", V0: "8881", V1: "/menu/getMenuAuthority", V2: "POST"},
-		{Ptype: "p", V0: "8881", V1: "/menu/deleteBaseMenu", V2: "POST"},
-		{Ptype: "p", V0: "8881", V1: "/menu/updateBaseMenu", V2: "POST"},
-		{Ptype: "p", V0: "8881", V1: "/menu/getBaseMenuById", V2: "POST"},
 		{Ptype: "p", V0: "8881", V1: "/user/changePassword", V2: "POST"},
 		{Ptype: "p", V0: "8881", V1: "/user/getUserList", V2: "POST"},
 		{Ptype: "p", V0: "8881", V1: "/user/setUserAuthority", V2: "POST"},
@@ -251,19 +198,15 @@ func (i *initCasbin) InitializeData(ctx context.Context) (context.Context, error
 		{Ptype: "p", V0: "9528", V1: "/autoCode/createTemp", V2: "POST"},
 		{Ptype: "p", V0: "9528", V1: "/user/getUserInfo", V2: "GET"},
 	}
-	if err := db.Create(&entities).Error; err != nil {
-		return ctx, errors.Wrap(err, "Casbin 表 ("+i.InitializerName()+") 数据初始化失败!")
+	if err := i.data.SqlClient.Create(&entities).Error; err != nil {
+		return ctx, errors2.Wrap(err, "Casbin 表 ("+i.InitializerName()+") 数据初始化失败!")
 	}
 	next := context.WithValue(ctx, i.InitializerName(), entities)
 	return next, nil
 }
 
-func (i *initCasbin) DataInserted(ctx context.Context) bool {
-	db, ok := ctx.Value("db").(*gorm.DB)
-	if !ok {
-		return false
-	}
-	if errors.Is(db.Where(adapter.CasbinRule{Ptype: "p", V0: "9528", V1: "/user/getUserInfo", V2: "GET"}).
+func (i *EntitySysCasbin) DataInserted(ctx context.Context) bool {
+	if errors.Is(i.data.SqlClient.Where(adapter.CasbinRule{Ptype: "p", V0: "9528", V1: "/user/getUserInfo", V2: "GET"}).
 		First(&adapter.CasbinRule{}).Error, gorm.ErrRecordNotFound) { // 判断是否存在数据
 		return false
 	}
