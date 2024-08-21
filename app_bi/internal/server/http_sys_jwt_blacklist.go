@@ -3,14 +3,14 @@ package server
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/data"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
 	"github.com/leaf-rain/raindata/app_bi/third_party/utils"
 	"go.uber.org/zap"
 )
 
 type JwtApi struct {
-	data *entity.Data
+	data *data.Data
 	log  *zap.Logger
 	conf *conf.Bootstrap
 }
@@ -22,7 +22,7 @@ type JwtApi struct {
 // @accept    application/json
 // @Produce   application/json
 // @Success   200  {object}  rhttp.Response{msg=string}  "jwt加入黑名单"
-// @Router    /jwt/jsonInBlacklist [post]
+// @Router    /jwt.proto/jsonInBlacklist [post]
 func (j *JwtApi) JsonInBlacklist(c *gin.Context) {
 	token := utils.GetToken(c)
 	jwt := system.JwtBlacklist{Jwt: token}

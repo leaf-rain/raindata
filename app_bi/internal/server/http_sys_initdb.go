@@ -2,7 +2,7 @@ package server
 
 import (
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/data"
 	"go.uber.org/zap"
 
 	"github.com/gin-gonic/gin"
@@ -10,7 +10,7 @@ import (
 )
 
 type DBApi struct {
-	data *entity.Data
+	data *data.Data
 	log  *zap.Logger
 	conf *conf.Bootstrap
 }

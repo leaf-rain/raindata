@@ -1,40 +1,28 @@
 package service
 
 import (
-	"errors"
-	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
-	"go.uber.org/zap"
-	"gorm.io/gorm"
+	"github.com/leaf-rain/raindata/app_bi/internal/biz"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/data"
 )
 
 type FileUploadAndDownloadService struct {
-	data *entity.Data
-	log  *zap.Logger
-	conf *conf.Bootstrap
+	*Service
 }
 
-var FileUploadAndDownloadServiceApp = new(FileUploadAndDownloadService)
+func NewFileUploadAndDownloadService(service *Service) *FileUploadAndDownloadService {
+	return &FileUploadAndDownloadService{
+		service,
+	}
+}
 
 //@function: FindOrCreateFile
 //@description: 上传文件时检测当前文件属性，如果没有文件则创建，有则返回文件的当前切片
 //@param: fileMd5 string, fileName string, chunkTotal int
 //@return: file data.ExaFile, err error
 
-func (e *FileUploadAndDownloadService) FindOrCreateFile(fileMd5 string, fileName string, chunkTotal int) (file entity.ExaFile, err error) {
-	var cfile entity.ExaFile
-	cfile.FileMd5 = fileMd5
-	cfile.FileName = fileName
-	cfile.ChunkTotal = chunkTotal
-
-	if errors.Is(e.data.SqlClient.Where("file_md5 = ? AND is_finish = ?", fileMd5, true).First(&file).Error, gorm.ErrRecordNotFound) {
-		err = e.data.SqlClient.Where("file_md5 = ? AND file_name = ?", fileMd5, fileName).Preload("ExaFileChunk").FirstOrCreate(&file, cfile).Error
-		return file, err
-	}
-	cfile.IsFinish = true
-	cfile.FilePath = file.FilePath
-	err = e.data.SqlClient.Create(&cfile).Error
-	return cfile, err
+func (e *FileUploadAndDownloadService) FindOrCreateFile(fileMd5 string, fileName string, chunkTotal int) (file data.ExaFile, err error) {
+	b := biz.NewFileUploadAndDownload(e.biz)
+	return b.FindOrCreateFile(fileMd5, fileName, chunkTotal)
 }
 
 //@function: CreateFileChunk
@@ -43,12 +31,8 @@ func (e *FileUploadAndDownloadService) FindOrCreateFile(fileMd5 string, fileName
 //@return: error
 
 func (e *FileUploadAndDownloadService) CreateFileChunk(id uint, fileChunkPath string, fileChunkNumber int) error {
-	var chunk entity.ExaFileChunk
-	chunk.FileChunkPath = fileChunkPath
-	chunk.ExaFileID = id
-	chunk.FileChunkNumber = fileChunkNumber
-	err := e.data.SqlClient.Create(&chunk).Error
-	return err
+	b := biz.NewFileUploadAndDownload(e.biz)
+	return b.CreateFileChunk(id, fileChunkPath, fileChunkNumber)
 }
 
 //@function: DeleteFileChunk
@@ -57,16 +41,6 @@ func (e *FileUploadAndDownloadService) CreateFileChunk(id uint, fileChunkPath st
 //@return: error
 
 func (e *FileUploadAndDownloadService) DeleteFileChunk(fileMd5 string, filePath string) error {
-	var chunks []entity.ExaFileChunk
-	var file entity.ExaFile
-	err := e.data.SqlClient.Where("file_md5 = ? ", fileMd5).First(&file).
-		Updates(map[string]interface{}{
-			"IsFinish":  true,
-			"file_path": filePath,
-		}).Error
-	if err != nil {
-		return err
-	}
-	err = e.data.SqlClient.Where("exa_file_id = ?", file.ID).Delete(&chunks).Unscoped().Error
-	return err
+	b := biz.NewFileUploadAndDownload(e.biz)
+	return b.DeleteFileChunk(fileMd5, filePath)
 }

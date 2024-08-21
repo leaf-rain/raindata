@@ -2,7 +2,7 @@ package server
 
 import (
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/data"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -16,7 +16,7 @@ import (
 var store = base64Captcha.DefaultMemStore
 
 type BaseApi struct {
-	data *entity.Data
+	data *data.Data
 	log  *zap.Logger
 	conf *conf.Bootstrap
 }

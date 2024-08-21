@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package bi.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/leaf-rain/raindata/app_bi/api/bi/v1;v1";
+option java_multiple_files = true;
+option java_package = "dev.kratos.api.bi.v1";
+option java_outer_classname = "BiProtoV1";
+
+// The greeting service definition.
+service Bi {
+  // Sends a greeting
+  rpc Ping (PingRequest) returns (PongReply) {
+    option (google.api.http) = {
+      get: "/bi"
+    };
+  }
+}
+
+// The request message containing the user's name.
+message PingRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message PongReply {
+  string message = 1;
+}

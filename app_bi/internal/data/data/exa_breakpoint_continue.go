@@ -1,4 +1,4 @@
-package entity
+package data
 
 import "gorm.io/gorm"
 

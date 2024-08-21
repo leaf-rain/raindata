@@ -11,7 +11,7 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/leaf-rain/raindata/app_bi/internal/biz"
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/data"
 	"github.com/leaf-rain/raindata/app_bi/internal/server"
 	"github.com/leaf-rain/raindata/app_bi/internal/service"
 	"go.uber.org/zap"
@@ -25,11 +25,11 @@ import (
 
 // wireApp init kratos application.
 func wireApp(confServer *conf.Server, confData *conf.Data, logger *zap.Logger, logLogger log.Logger) (*kratos.App, func(), error) {
-	dataData, cleanup, err := entity.NewData(confData, logger)
+	dataData, cleanup, err := data.NewData(confData, logger)
 	if err != nil {
 		return nil, nil, err
 	}
-	greeterRepo := entity.NewGreeterRepo(dataData, logger)
+	greeterRepo := data.NewGreeterRepo(dataData, logger)
 	greeterUsecase := biz.NewGreeterUsecase(greeterRepo, logger)
 	greeterService := service.NewGreeterService(greeterUsecase, logger)
 	grpcServer := server.NewGRPCServer(confServer, greeterService, logger)

@@ -15,7 +15,7 @@ type CasbinInReceive struct {
 func DefaultCasbin() []CasbinInfo {
 	return []CasbinInfo{
 		{Path: "/menu/getMenu", Method: "POST"},
-		{Path: "/jwt/jsonInBlacklist", Method: "POST"},
+		{Path: "/jwt.proto/jsonInBlacklist", Method: "POST"},
 		{Path: "/base/login", Method: "POST"},
 		{Path: "/user/admin_register", Method: "POST"},
 		{Path: "/user/changePassword", Method: "POST"},

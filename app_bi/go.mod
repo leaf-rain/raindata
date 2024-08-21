@@ -16,7 +16,6 @@ require (
 	github.com/go-mysql-org/go-mysql v1.8.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-sql-driver/mysql v1.8.1
-	github.com/goccy/go-json v0.10.2
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
@@ -34,8 +33,6 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.25.0
 	golang.org/x/sync v0.8.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de
-	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.34.1
 	gorm.io/gorm v1.25.11
 )

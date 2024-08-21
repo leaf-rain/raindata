@@ -3,8 +3,8 @@ package server
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/data"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/dto"
-	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
 	"go.uber.org/zap"
 	"net"
 	"time"
@@ -201,7 +201,7 @@ func GetUserName(c *gin.Context) string {
 	}
 }
 
-func LoginToken(user entity.Login) (token string, claims dto.CustomClaims, err error) {
+func LoginToken(user data.Login) (token string, claims dto.CustomClaims, err error) {
 	j := &JWT{SigningKey: []byte(svc.conf.JWT.SigningKey)} // 唯一签名
 	claims = j.CreateClaims(dto.BaseClaims{
 		UUID:        user.GetUUID(),

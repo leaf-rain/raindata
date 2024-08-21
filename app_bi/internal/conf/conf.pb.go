@@ -29,7 +29,7 @@ type Bootstrap struct {
 	Server   *Server   `protobuf:"bytes,1,opt,name=server,proto3" json:"server,omitempty"`
 	Data     *Data     `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
 	Log      *Log      `protobuf:"bytes,3,opt,name=log,proto3" json:"log,omitempty"`
-	Jwt      *JWT      `protobuf:"bytes,4,opt,name=jwt,proto3" json:"jwt,omitempty"`
+	Jwt      *JWT      `protobuf:"bytes,4,opt,name=jwt.proto,proto3" json:"jwt.proto,omitempty"`
 	AutoCode *AutoCode `protobuf:"bytes,5,opt,name=autoCode,proto3" json:"autoCode,omitempty"`
 	Email    *Email    `protobuf:"bytes,6,opt,name=email,proto3" json:"email,omitempty"`
 	Mongo    *Mongo    `protobuf:"bytes,7,opt,name=mongo,proto3" json:"mongo,omitempty"`
@@ -2116,7 +2116,7 @@ var file_conf_conf_proto_depIdxs = []int32{
 	2,  // 0: kratos.api.Bootstrap.server:type_name -> kratos.api.Server
 	3,  // 1: kratos.api.Bootstrap.data:type_name -> kratos.api.Data
 	1,  // 2: kratos.api.Bootstrap.log:type_name -> kratos.api.Log
-	4,  // 3: kratos.api.Bootstrap.jwt:type_name -> kratos.api.JWT
+	4,  // 3: kratos.api.Bootstrap.jwt.proto:type_name -> kratos.api.JWT
 	5,  // 4: kratos.api.Bootstrap.autoCode:type_name -> kratos.api.AutoCode
 	6,  // 5: kratos.api.Bootstrap.email:type_name -> kratos.api.Email
 	7,  // 6: kratos.api.Bootstrap.mongo:type_name -> kratos.api.Mongo

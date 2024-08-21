@@ -1,18 +1,12 @@
 package service
 
 import (
-	"errors"
-	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data"
-	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
-	"gorm.io/gorm"
-	"strconv"
+	"github.com/casbin/casbin/v2"
+	"github.com/leaf-rain/raindata/app_bi/internal/biz"
 	"sync"
 
-	adapter "github.com/casbin/gorm-adapter/v3"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/dto"
-	"go.uber.org/zap"
 )
 
 //@function: UpdateCasbin
@@ -21,32 +15,18 @@ import (
 //@return: error
 
 type CasbinService struct {
-	data *entity.Data
-	log  *zap.Logger
-	conf *conf.Bootstrap
+	*Service
 }
 
-var CasbinServiceApp = new(CasbinService)
+func NewCasbinService(service *Service) *CasbinService {
+	return &CasbinService{
+		service,
+	}
+}
 
 func (svc *CasbinService) UpdateCasbin(AuthorityID uint, casbinInfos []dto.CasbinInfo) error {
-	authorityId := strconv.Itoa(int(AuthorityID))
-	svc.ClearCasbin(0, authorityId)
-	rules := [][]string{}
-	//做权限去重处理
-	deduplicateMap := make(map[string]bool)
-	for _, v := range casbinInfos {
-		key := authorityId + v.Path + v.Method
-		if _, ok := deduplicateMap[key]; !ok {
-			deduplicateMap[key] = true
-			rules = append(rules, []string{authorityId, v.Path, v.Method})
-		}
-	}
-	e := svc.Casbin()
-	success, _ := e.AddPolicies(rules)
-	if !success {
-		return errors.New("存在相同api,添加失败,请联系管理员")
-	}
-	return nil
+	b := biz.NewCasbin(svc.biz)
+	return b.UpdateCasbin(AuthorityID, casbinInfos)
 }
 
 //@function: UpdateCasbinApi
@@ -55,16 +35,8 @@ func (svc *CasbinService) UpdateCasbin(AuthorityID uint, casbinInfos []dto.Casbi
 //@return: error
 
 func (svc *CasbinService) UpdateCasbinApi(oldPath string, newPath string, oldMethod string, newMethod string) error {
-	err := svc.data.SqlClient.Model(&adapter.CasbinRule{}).Where("v1 = ? AND v2 = ?", oldPath, oldMethod).Updates(map[string]interface{}{
-		"v1": newPath,
-		"v2": newMethod,
-	}).Error
-	e := svc.Casbin()
-	err = e.LoadPolicy()
-	if err != nil {
-		return err
-	}
-	return err
+	b := biz.NewCasbin(svc.biz)
+	return b.UpdateCasbinApi(oldPath, newPath, oldMethod, newMethod)
 }
 
 //@function: GetPolicyPathByAuthorityId
@@ -73,16 +45,8 @@ func (svc *CasbinService) UpdateCasbinApi(oldPath string, newPath string, oldMet
 //@return: pathMaps []dto.CasbinInfo
 
 func (svc *CasbinService) GetPolicyPathByAuthorityId(AuthorityID uint) (pathMaps []dto.CasbinInfo) {
-	e := svc.Casbin()
-	authorityId := strconv.Itoa(int(AuthorityID))
-	list := e.GetFilteredPolicy(0, authorityId)
-	for _, v := range list {
-		pathMaps = append(pathMaps, dto.CasbinInfo{
-			Path:   v[1],
-			Method: v[2],
-		})
-	}
-	return pathMaps
+	b := biz.NewCasbin(svc.biz)
+	return b.GetPolicyPathByAuthorityId(AuthorityID)
 }
 
 //@function: ClearCasbin
@@ -91,9 +55,8 @@ func (svc *CasbinService) GetPolicyPathByAuthorityId(AuthorityID uint) (pathMaps
 //@return: bool
 
 func (svc *CasbinService) ClearCasbin(v int, p ...string) bool {
-	e := svc.Casbin()
-	success, _ := e.RemoveFilteredPolicy(v, p...)
-	return success
+	b := biz.NewCasbin(svc.biz)
+	return b.ClearCasbin(v, p...)
 }
 
 //@function: RemoveFilteredPolicy
@@ -101,8 +64,9 @@ func (svc *CasbinService) ClearCasbin(v int, p ...string) bool {
 //@param: db *gorm.DB, authorityId string
 //@return: error
 
-func (svc *CasbinService) RemoveFilteredPolicy(db *gorm.DB, authorityId string) error {
-	return db.Delete(&adapter.CasbinRule{}, "v0 = ?", authorityId).Error
+func (svc *CasbinService) RemoveFilteredPolicy(authorityId string) error {
+	b := biz.NewCasbin(svc.biz)
+	return b.RemoveFilteredPolicy(authorityId)
 }
 
 //@function: SyncPolicy
@@ -110,12 +74,9 @@ func (svc *CasbinService) RemoveFilteredPolicy(db *gorm.DB, authorityId string) 
 //@param: db *gorm.DB, authorityId string, rules [][]string
 //@return: error
 
-func (svc *CasbinService) SyncPolicy(db *gorm.DB, authorityId string, rules [][]string) error {
-	err := svc.RemoveFilteredPolicy(db, authorityId)
-	if err != nil {
-		return err
-	}
-	return svc.AddPolicies(db, rules)
+func (svc *CasbinService) SyncPolicy(authorityId string, rules [][]string) error {
+	b := biz.NewCasbin(svc.biz)
+	return b.SyncPolicy(authorityId, rules)
 }
 
 //@function: AddPolicies
@@ -123,23 +84,14 @@ func (svc *CasbinService) SyncPolicy(db *gorm.DB, authorityId string, rules [][]
 //@param: v int, p ...string
 //@return: bool
 
-func (svc *CasbinService) AddPolicies(db *gorm.DB, rules [][]string) error {
-	var casbinRules []adapter.CasbinRule
-	for i := range rules {
-		casbinRules = append(casbinRules, adapter.CasbinRule{
-			Ptype: "p",
-			V0:    rules[i][0],
-			V1:    rules[i][1],
-			V2:    rules[i][2],
-		})
-	}
-	return db.Create(&casbinRules).Error
+func (svc *CasbinService) AddPolicies(rules [][]string) error {
+	b := biz.NewCasbin(svc.biz)
+	return b.AddPolicies(rules)
 }
 
 func (svc *CasbinService) FreshCasbin() (err error) {
-	e := CasbinService.Casbin()
-	err = e.LoadPolicy()
-	return err
+	b := biz.NewCasbin(svc.biz)
+	return b.FreshCasbin()
 }
 
 //@function: Casbin
@@ -152,36 +104,6 @@ var (
 )
 
 func (svc *CasbinService) Casbin() *casbin.SyncedCachedEnforcer {
-	once.Do(func() {
-		a, err := adapter.NewAdapterByDB(svc.data.SqlClient)
-		if err != nil {
-			zap.L().Error("适配数据库失败请检查casbin表是否为InnoDB引擎!", zap.Error(err))
-			return
-		}
-		text := `
-		[request_definition]
-		r = sub, obj, act
-		
-		[policy_definition]
-		p = sub, obj, act
-		
-		[role_definition]
-		g = _, _
-		
-		[policy_effect]
-		e = some(where (p.eft == allow))
-		
-		[matchers]
-		m = r.sub == p.sub && keyMatch2(r.obj,p.obj) && r.act == p.act
-		`
-		m, err := data.NewModelFromString(text)
-		if err != nil {
-			zap.L().Error("字符串加载模型失败!", zap.Error(err))
-			return
-		}
-		syncedCachedEnforcer, _ = casbin.NewSyncedCachedEnforcer(m, a)
-		syncedCachedEnforcer.SetExpireTime(60 * 60)
-		_ = syncedCachedEnforcer.LoadPolicy()
-	})
-	return syncedCachedEnforcer
+	b := biz.NewCasbin(svc.biz)
+	return b.Casbin()
 }

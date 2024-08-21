@@ -1,8 +1,7 @@
-package entity
+package data
 
 import (
 	"context"
-	"github.com/leaf-rain/raindata/common/ecode"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
@@ -22,36 +21,33 @@ func (ExaFileUploadAndDownload) TableName() string {
 }
 
 type EntityExaFileUploadAndDownload struct {
-	data *Data
+	*Data
+	Model *ExaFileUploadAndDownload
 }
 
 func NewEntityExaFileUploadAndDownload(data *Data) *EntityExaFileUploadAndDownload {
 	return &EntityExaFileUploadAndDownload{
-		data: data,
+		Data: data,
 	}
 }
 
 func (i *EntityExaFileUploadAndDownload) MigrateTable(ctx context.Context) error {
-	return i.data.SqlClient.AutoMigrate(&ExaFileUploadAndDownload{})
+	return i.SqlClient.AutoMigrate(&ExaFileUploadAndDownload{})
 }
 
 func (i *EntityExaFileUploadAndDownload) TableCreated(context.Context) bool {
-	return i.data.SqlClient.Migrator().HasTable(&ExaFileUploadAndDownload{})
+	return i.SqlClient.Migrator().HasTable(&ExaFileUploadAndDownload{})
 }
 
-func (i *EntityExaFileUploadAndDownload) InitializeData(ctx context.Context) (context.Context, error) {
-	db, ok := ctx.Value("db").(*gorm.DB)
-	if !ok {
-		return ctx, ecode.ErrMissingDBContext
-	}
+func (i *EntityExaFileUploadAndDownload) InitializeData(ctx context.Context) error {
 	entities := []ExaFileUploadAndDownload{
 		{Name: "10.png", Url: "https://qmplusimg.henrongyi.top/gvalogo.png", Tag: "png", Key: "158787308910.png"},
 		{Name: "logo.png", Url: "https://qmplusimg.henrongyi.top/1576554439myAvatar.png", Tag: "png", Key: "1587973709logo.png"},
 	}
-	if err := db.Create(&entities).Error; err != nil {
-		return ctx, errors.Wrap(err, ExaFileUploadAndDownload{}.TableName()+"表数据初始化失败!")
+	if err := i.SqlClient.Create(&entities).Error; err != nil {
+		return errors.Wrap(err, ExaFileUploadAndDownload{}.TableName()+"表数据初始化失败!")
 	}
-	return ctx, nil
+	return nil
 }
 
 func (i *EntityExaFileUploadAndDownload) DataInserted(ctx context.Context) bool {

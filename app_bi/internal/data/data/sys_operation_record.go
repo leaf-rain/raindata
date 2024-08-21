@@ -1,4 +1,4 @@
-package entity
+package data
 
 import (
 	"context"
@@ -24,20 +24,24 @@ type SysOperationRecord struct {
 var _ initDb = (*EntitySysOperationRecord)(nil)
 
 type EntitySysOperationRecord struct {
-	data  *Data
+	*Data
 	Model *SysOperationRecord
+}
+
+func (i *EntitySysOperationRecord) InitializeData(ctx context.Context) error {
+	return nil
 }
 
 func NewEntitySysOperationRecord(data *Data) *EntitySysOperationRecord {
 	return &EntitySysOperationRecord{
-		data: data,
+		Data: data,
 	}
 }
 
 func (i *EntitySysOperationRecord) MigrateTable(ctx context.Context) error {
-	return i.data.SqlClient.AutoMigrate(&SysOperationRecord{})
+	return i.SqlClient.AutoMigrate(&SysOperationRecord{})
 }
 
 func (i *EntitySysOperationRecord) TableCreated(context.Context) bool {
-	return i.data.SqlClient.Migrator().HasTable(&SysOperationRecord{})
+	return i.SqlClient.Migrator().HasTable(&SysOperationRecord{})
 }

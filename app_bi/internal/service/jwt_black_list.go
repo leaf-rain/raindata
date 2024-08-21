@@ -1,46 +1,38 @@
 package service
 
 import (
-	"context"
-	"errors"
-	"github.com/leaf-rain/raindata/app_bi/internal/conf"
-	"github.com/leaf-rain/raindata/app_bi/internal/data/entity"
-	"github.com/leaf-rain/raindata/app_bi/third_party/utils"
-	"gorm.io/gorm"
-
-	"go.uber.org/zap"
+	"github.com/leaf-rain/raindata/app_bi/internal/biz"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/data"
 )
 
 type JwtService struct {
-	data *entity.Data
-	log  *zap.Logger
-	conf *conf.Bootstrap
+	*Service
 }
 
-var JwtServiceApp = new(JwtService)
+func NewJwtService(service *Service) *JwtService {
+	return &JwtService{
+		service,
+	}
+}
 
 //@function: JsonInBlacklist
 //@description: 拉黑jwt
 //@param: jwtList data.JwtBlacklist
 //@return: err error
 
-func (svc *JwtService) JsonInBlacklist(jwtList entity.JwtBlacklist) (err error) {
-	err = svc.data.SqlClient.Create(&jwtList).Error
-	if err != nil {
-		return
-	}
-	return
+func (svc *JwtService) JsonInBlacklist(jwtList data.JwtBlacklist) (err error) {
+	b := biz.NewJwt(svc.biz)
+	return b.JsonInBlacklist(jwtList)
 }
 
 //@function: IsBlacklist
 //@description: 判断JWT是否在黑名单内部
-//@param: jwt string
+//@param: jwt.proto string
 //@return: bool
 
 func (svc *JwtService) IsBlacklist(jwt string) bool {
-	err := svc.data.SqlClient.Where("jwt = ?", jwt).First(&entity.JwtBlacklist{}).Error
-	isNotFound := errors.Is(err, gorm.ErrRecordNotFound)
-	return !isNotFound
+	b := biz.NewJwt(svc.biz)
+	return b.IsBlacklist(jwt)
 }
 
 //@function: GetRedisJWT
@@ -49,31 +41,21 @@ func (svc *JwtService) IsBlacklist(jwt string) bool {
 //@return: redisJWT string, err error
 
 func (svc *JwtService) GetRedisJWT(userName string) (redisJWT string, err error) {
-	redisJWT, err = svc.data.RdClient.Get(context.Background(), userName).Result()
-	return redisJWT, err
+	b := biz.NewJwt(svc.biz)
+	return b.GetRedisJWT(userName)
 }
 
 //@function: SetRedisJWT
 //@description: jwt存入redis并设置过期时间
-//@param: jwt string, userName string
+//@param: jwt.proto string, userName string
 //@return: err error
 
 func (svc *JwtService) SetRedisJWT(jwt string, userName string) (err error) {
-	// 此处过期时间等于jwt过期时间
-	dr, err := utils.ParseDuration(svc.conf.Jwt.ExpiresTime)
-	if err != nil {
-		return err
-	}
-	timer := dr
-	err = svc.data.RdClient.Set(context.Background(), userName, jwt, timer).Err()
-	return err
+	b := biz.NewJwt(svc.biz)
+	return b.SetRedisJWT(jwt, userName)
 }
 
 func (svc *JwtService) LoadAll() {
-	var records []string
-	err := svc.data.SqlClient.Model(&entity.JwtBlacklist{}).Select("jwt").Find(&records).Error
-	if err != nil {
-		svc.log.Error("加载数据库jwt黑名单失败!", zap.Error(err))
-		return
-	}
+	b := biz.NewJwt(svc.biz)
+	b.LoadAll()
 }

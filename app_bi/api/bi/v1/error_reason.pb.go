@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.27.1
 // 	protoc        v3.19.3
-// source: helloworld/v1/error_reason.proto
+// source: bi/v1/error_reason.proto
 
 package v1
 
@@ -99,7 +99,7 @@ func file_helloworld_v1_error_reason_proto_rawDescGZIP() []byte {
 
 var file_helloworld_v1_error_reason_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_helloworld_v1_error_reason_proto_goTypes = []interface{}{
-	(ErrorReason)(0), // 0: helloworld.v1.ErrorReason
+	(ErrorReason)(0), // 0: bi.v1.ErrorReason
 }
 var file_helloworld_v1_error_reason_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type

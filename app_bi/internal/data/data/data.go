@@ -1,4 +1,4 @@
-package entity
+package data
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 )
 
 // ProviderSet is data providers.
-var ProviderSet = wire.NewSet(NewData, NewGreeterRepo)
+var ProviderSet = wire.NewSet(NewData)
 
 // Data .
 type Data struct {
@@ -56,7 +56,7 @@ func NewData(c *conf.Bootstrap, logger *zap.Logger) (*Data, func(), error) {
 	}
 	data.SingleflightGroup = &singleflight.Group{}
 	cleanup := func() {
-		err := data.RdClient.Close()
+		err = data.RdClient.Close()
 		if err != nil {
 			logger.Error("[cleanup] close the data resources", zap.Error(err))
 		}
@@ -69,6 +69,7 @@ func NewData(c *conf.Bootstrap, logger *zap.Logger) (*Data, func(), error) {
 type initDb interface {
 	MigrateTable(ctx context.Context) error
 	TableCreated(ctx context.Context) bool
+	InitializeData(ctx context.Context) error
 }
 
 func (data *Data) initDb() {
@@ -80,6 +81,7 @@ func (data *Data) initDb() {
 	data.createTable(NewJWT(data))
 	data.createTable(NewEntitySysOperationRecord(data))
 	data.createTable(NewEntitySysUser(data))
+	data.createTable(NewEntitySysUserAuthority(data))
 }
 
 func (data *Data) createTable(i initDb) {
@@ -87,6 +89,10 @@ func (data *Data) createTable(i initDb) {
 		err := i.MigrateTable(data.Ctx)
 		if err != nil {
 			panic("init db failed. err:" + err.Error())
+		}
+		err = i.InitializeData(data.Ctx)
+		if err != nil {
+			panic("init data failed. err:" + err.Error())
 		}
 	}
 }

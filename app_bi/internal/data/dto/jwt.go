@@ -1,7 +1,7 @@
 package dto
 
 import (
-	jwt "github.com/golang-jwt/jwt/v4"
+	jwt "github.com/golang-jwt.proto/jwt.proto/v4"
 	"github.com/google/uuid"
 )
 
