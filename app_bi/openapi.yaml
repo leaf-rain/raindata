@@ -3,21 +3,19 @@
 
 openapi: 3.0.3
 info:
-    title: Greeter API
+    title: Bi API
     description: The greeting service definition.
     version: 0.0.1
 paths:
-    /helloworld/{name}:
+    /ping:
         get:
             tags:
-                - Greeter
-                - subgroup
+                - Bi
             description: Sends a greeting
-            operationId: Greeter_SayHello
+            operationId: Bi_Ping
             parameters:
                 - name: name
-                  in: path
-                  required: true
+                  in: query
                   schema:
                     type: string
             responses:
@@ -26,14 +24,14 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/helloworld.v1.HelloReply'
+                                $ref: '#/components/schemas/bi.v1.PongReply'
 components:
     schemas:
-        helloworld.v1.HelloReply:
+        bi.v1.PongReply:
             type: object
             properties:
                 message:
                     type: string
             description: The response message containing the greetings
 tags:
-    - name: Greeter
+    - name: Bi

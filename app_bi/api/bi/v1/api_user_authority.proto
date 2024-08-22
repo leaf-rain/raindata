@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package bi.v1;
+
+option go_package = "github.com/leaf-rain/raindata/app_bi/api/bi/v1;v1";
+option java_multiple_files = true;
+option java_package = "dev.kratos.api.bi.v1";
+option java_outer_classname = "BiProtoV1";
+
+message ReqSetUserAuth {
+  uint64 userId = 1;
+  uint64 authorityId = 2;
+}
+
+message ReqSetUserAuthorities {
+  uint64 userID = 1;
+  // 1:添加; 2:删除
+  uint64 type = 2;
+  repeated uint64 authorityId = 3;
+}
+
+message Authority {
+  uint64 authorityId = 1;
+  string authorityName = 2;
+  uint64 parentId = 3;
+}

@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package bi.v1;
+
+option go_package = "github.com/leaf-rain/raindata/app_bi/api/bi/v1;v1";
+option java_multiple_files = true;
+option java_package = "dev.kratos.api.bi.v1";
+option java_outer_classname = "BiProtoV1";
+
+message ReqUpdateCasbin {
+  string path = 1;
+  // 1:添加，2:删除
+  uint64 type = 2;
+  repeated CasbinInfo casbins = 3;
+}
+
+message CasbinInfo {
+  string path = 1;
+  string method = 2;
+}
+
+message RespUpdateCasbin {
+  repeated CasbinInfo casbins = 1;
+}

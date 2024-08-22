@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"github.com/leaf-rain/raindata/app_bi/third_party/hash"
 	"github.com/leaf-rain/raindata/app_bi/third_party/utils"
 	"github.com/leaf-rain/raindata/common/ecode"
@@ -13,7 +12,6 @@ import (
 type Login interface {
 	GetUsername() string
 	GetNickname() string
-	GetUUID() uuid.UUID
 	GetUserId() uint
 	GetAuthorityId() uint
 	GetUserInfo() any
@@ -23,7 +21,6 @@ var _ Login = (*SysUser)(nil)
 
 type SysUser struct {
 	gorm.Model
-	UUID        uuid.UUID      `json:"uuid" gorm:"index;comment:用户UUID"`                // 用户UUID
 	Username    string         `json:"userName" gorm:"index;comment:用户登录名"`             // 用户登录名
 	Password    string         `json:"password"  gorm:"comment:用户登录密码"`                 // 用户登录密码
 	NickName    string         `json:"nickName" gorm:"comment:用户昵称"`                    // 用户昵称
@@ -48,10 +45,6 @@ func (s *SysUser) GetUsername() string {
 
 func (s *SysUser) GetNickname() string {
 	return s.NickName
-}
-
-func (s *SysUser) GetUUID() uuid.UUID {
-	return s.UUID
 }
 
 func (s *SysUser) GetUserId() uint {
@@ -80,7 +73,12 @@ func NewEntitySysUser(data *Data) *EntitySysUser {
 }
 
 func (entity *EntitySysUser) MigrateTable(ctx context.Context) error {
-	return entity.SqlClient.AutoMigrate(&SysUser{})
+	var err = entity.SqlClient.AutoMigrate(&SysUser{})
+	if err != nil {
+		return err
+	}
+	err = entity.SqlClient.Exec("ALTER TABLE ? AUTO_INCREMENT = 100000", entity.Model.TableName()).Error
+	return err
 }
 
 func (entity *EntitySysUser) TableCreated(context.Context) bool {
@@ -96,7 +94,6 @@ func (entity *EntitySysUser) InitializeData(ctx context.Context) (err error) {
 	adminPassword := utils.BcryptHash(apStr)
 	entities := []SysUser{
 		{
-			UUID:        uuid.Must(uuid.NewV7()),
 			Username:    "admin",
 			Password:    adminPassword,
 			NickName:    "root",

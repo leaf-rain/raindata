@@ -13,7 +13,7 @@ import (
 )
 
 // NewHTTPServer new an HTTP server.
-func NewHTTPServer(c *conf.Server, logger *zap.Logger, greeter *Server) *khttp.Server {
+func NewHTTPServer(c *conf.Server, logger *zap.Logger, svr *Server) *khttp.Server {
 	engine := gin.Default()
 	// 使用kratos中间件
 	engine.Use(kgin.Middlewares(recovery.Recovery()))
@@ -58,12 +58,12 @@ func NewHTTPServer(c *conf.Server, logger *zap.Logger, greeter *Server) *khttp.S
 	}
 
 	{
-		InitUserAuthRouter(publicGroup) // 注册基础功能路由 不做鉴权
+		InitUserAuthRouter(svr, publicGroup) // 注册基础功能路由 不做鉴权
 	}
 
 	// todo:服务注册
 	{
-		InitUserRouter(privateGroup)
+		InitUserRouter(svr, privateGroup)
 	}
 
 	httpSrv := khttp.NewServer(khttp.Address(":8000"))

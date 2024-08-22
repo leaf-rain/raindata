@@ -7,11 +7,11 @@ import (
 	"net"
 )
 
-func (b *UserApi) ClearToken(c *gin.Context) {
+func (svr *UserApi) ClearToken(c *gin.Context) {
 	// 增加cookie x-token 向来源的web添加
-	host, _, err := net.SplitHostPort(c.dto.Host)
+	host, _, err := net.SplitHostPort(c.Request.Host)
 	if err != nil {
-		host = c.dto.Host
+		host = c.Request.Host
 	}
 
 	if net.ParseIP(host) != nil {
@@ -21,11 +21,11 @@ func (b *UserApi) ClearToken(c *gin.Context) {
 	}
 }
 
-func (b *UserApi) SetToken(c *gin.Context, token string, maxAge int) {
+func (svr *UserApi) SetToken(c *gin.Context, token string, maxAge int) {
 	// 增加cookie x-token 向来源的web添加
-	host, _, err := net.SplitHostPort(c.dto.Host)
+	host, _, err := net.SplitHostPort(c.Request.Host)
 	if err != nil {
-		host = c.dto.Host
+		host = c.Request.Host
 	}
 
 	if net.ParseIP(host) != nil {
@@ -35,28 +35,28 @@ func (b *UserApi) SetToken(c *gin.Context, token string, maxAge int) {
 	}
 }
 
-func (b *UserApi) GetToken(c *gin.Context) string {
+func (svr *UserApi) GetToken(c *gin.Context) string {
 	token, _ := c.Cookie("x-token")
 	if token == "" {
-		token = c.dto.Header.Get("x-token")
+		token = c.Request.Header.Get("x-token")
 	}
 	return token
 }
 
-func (b *UserApi) GetClaims(c *gin.Context) (*data.CustomClaims, error) {
-	token := b.GetToken(c)
-	j := data.NewJWT(b.data)
+func (svr *UserApi) GetClaims(c *gin.Context) (*data.CustomClaims, error) {
+	token := svr.GetToken(c)
+	j := data.NewJWT(svr.data)
 	claims, err := j.ParseToken(token)
 	if err != nil {
-		b.log.Error("[GetClaims]从Gin的Context中获取从jwt解析信息失败, 请检查请求头是否存在x-token且claims是否为规定结构")
+		svr.logger.Error("[GetClaims]从Gin的Context中获取从jwt解析信息失败, 请检查请求头是否存在x-token且claims是否为规定结构")
 	}
 	return claims, err
 }
 
 // GetUserID 从Gin的Context中获取从jwt解析出来的用户ID
-func (b *UserApi) GetUserID(c *gin.Context) uint {
+func (svr *UserApi) GetUserID(c *gin.Context) uint {
 	if claims, exists := c.Get("claims"); !exists {
-		if cl, err := b.GetClaims(c); err != nil {
+		if cl, err := svr.GetClaims(c); err != nil {
 			return 0
 		} else {
 			return cl.BaseClaims.ID
@@ -68,9 +68,9 @@ func (b *UserApi) GetUserID(c *gin.Context) uint {
 }
 
 // GetUserUuid 从Gin的Context中获取从jwt解析出来的用户UUID
-func (b *UserApi) GetUserUuid(c *gin.Context) uuid.UUID {
+func (svr *UserApi) GetUserUuid(c *gin.Context) uuid.UUID {
 	if claims, exists := c.Get("claims"); !exists {
-		if cl, err := b.GetClaims(c); err != nil {
+		if cl, err := svr.GetClaims(c); err != nil {
 			return uuid.UUID{}
 		} else {
 			return cl.UUID
@@ -82,9 +82,9 @@ func (b *UserApi) GetUserUuid(c *gin.Context) uuid.UUID {
 }
 
 // GetUserAuthorityId 从Gin的Context中获取从jwt解析出来的用户角色id
-func (b *UserApi) GetUserAuthorityId(c *gin.Context) uint {
+func (svr *UserApi) GetUserAuthorityId(c *gin.Context) uint {
 	if claims, exists := c.Get("claims"); !exists {
-		if cl, err := b.GetClaims(c); err != nil {
+		if cl, err := svr.GetClaims(c); err != nil {
 			return 0
 		} else {
 			return cl.AuthorityId
@@ -96,9 +96,9 @@ func (b *UserApi) GetUserAuthorityId(c *gin.Context) uint {
 }
 
 // GetUserInfo 从Gin的Context中获取从jwt解析出来的用户角色id
-func (b *UserApi) GetUserInfoByCtx(c *gin.Context) *data.CustomClaims {
+func (svr *UserApi) GetUserInfoByCtx(c *gin.Context) *data.CustomClaims {
 	if claims, exists := c.Get("claims"); !exists {
-		if cl, err := b.GetClaims(c); err != nil {
+		if cl, err := svr.GetClaims(c); err != nil {
 			return nil
 		} else {
 			return cl
@@ -110,9 +110,9 @@ func (b *UserApi) GetUserInfoByCtx(c *gin.Context) *data.CustomClaims {
 }
 
 // GetUserName 从Gin的Context中获取从jwt解析出来的用户名
-func (b *UserApi) GetUserName(c *gin.Context) string {
+func (svr *UserApi) GetUserName(c *gin.Context) string {
 	if claims, exists := c.Get("claims"); !exists {
-		if cl, err := b.GetClaims(c); err != nil {
+		if cl, err := svr.GetClaims(c); err != nil {
 			return ""
 		} else {
 			return cl.Username
@@ -123,8 +123,8 @@ func (b *UserApi) GetUserName(c *gin.Context) string {
 	}
 }
 
-func (b *UserApi) LoginToken(user data.Login) (token string, claims data.CustomClaims, err error) {
-	j := data.NewJWT(b.data) // 唯一签名
+func (svr *UserApi) LoginToken(user data.Login) (token string, claims data.CustomClaims, err error) {
+	j := data.NewJWT(svr.data) // 唯一签名
 	claims = j.CreateClaims(data.BaseClaims{
 		UUID:        user.GetUUID(),
 		ID:          user.GetUserId(),

@@ -25,7 +25,6 @@ func (b *User) Register(u data.SysUser) (userInter data.SysUser, err error) {
 	var et = data.NewEntitySysUser(b.data)
 	// 否则 附加uuid 密码hash加密 注册
 	u.Password = hash.BcryptHash(u.Password)
-	u.UUID = uuid.Must(uuid.NewV7())
 	et.Model = &u
 	err = et.CreateUser()
 	if err != nil {

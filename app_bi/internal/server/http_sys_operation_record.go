@@ -2,17 +2,16 @@ package server
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/leaf-rain/raindata/app_bi/internal/conf"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/dto"
+	"github.com/leaf-rain/raindata/app_bi/internal/service"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
 	"github.com/leaf-rain/raindata/app_bi/third_party/utils"
 	"go.uber.org/zap"
 )
 
 type OperationRecordApi struct {
-	data *data.Data
-	log  *zap.Logger
-	conf *conf.Bootstrap
+	*Server
 }
 
 // CreateSysOperationRecord
@@ -24,16 +23,17 @@ type OperationRecordApi struct {
 // @Param     data  body      system.SysOperationRecord      true  "创建SysOperationRecord"
 // @Success   200   {object}  rhttp.Response{msg=string}  "创建SysOperationRecord"
 // @Router    /sysOperationRecord/createSysOperationRecord [post]
-func (s *OperationRecordApi) CreateSysOperationRecord(c *gin.Context) {
-	var sysOperationRecord system.SysOperationRecord
+func (svr *OperationRecordApi) CreateSysOperationRecord(c *gin.Context) {
+	var sysOperationRecord data.SysOperationRecord
 	err := c.ShouldBindJSON(&sysOperationRecord)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
+	operationRecordService := service.NewOperationRecordService(svr.svc)
 	err = operationRecordService.CreateSysOperationRecord(sysOperationRecord)
 	if err != nil {
-		svr.log.Error("创建失败!", zap.Error(err))
+		svr.logger.Error("创建失败!", zap.Error(err))
 		rhttp.FailWithMessage("创建失败", c)
 		return
 	}
@@ -49,16 +49,17 @@ func (s *OperationRecordApi) CreateSysOperationRecord(c *gin.Context) {
 // @Param     data  body      system.SysOperationRecord      true  "SysOperationRecord模型"
 // @Success   200   {object}  rhttp.Response{msg=string}  "删除SysOperationRecord"
 // @Router    /sysOperationRecord/deleteSysOperationRecord [delete]
-func (s *OperationRecordApi) DeleteSysOperationRecord(c *gin.Context) {
-	var sysOperationRecord system.SysOperationRecord
+func (svr *OperationRecordApi) DeleteSysOperationRecord(c *gin.Context) {
+	var sysOperationRecord data.SysOperationRecord
 	err := c.ShouldBindJSON(&sysOperationRecord)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
+	operationRecordService := service.NewOperationRecordService(svr.svc)
 	err = operationRecordService.DeleteSysOperationRecord(sysOperationRecord)
 	if err != nil {
-		svr.log.Error("删除失败!", zap.Error(err))
+		svr.logger.Error("删除失败!", zap.Error(err))
 		rhttp.FailWithMessage("删除失败", c)
 		return
 	}
@@ -74,16 +75,17 @@ func (s *OperationRecordApi) DeleteSysOperationRecord(c *gin.Context) {
 // @Param     data  body      dto.IdsReq                 true  "批量删除SysOperationRecord"
 // @Success   200   {object}  rhttp.Response{msg=string}  "批量删除SysOperationRecord"
 // @Router    /sysOperationRecord/deleteSysOperationRecordByIds [delete]
-func (s *OperationRecordApi) DeleteSysOperationRecordByIds(c *gin.Context) {
-	var IDS dto.IdsReq
+func (svr *OperationRecordApi) DeleteSysOperationRecordByIds(c *gin.Context) {
+	var IDS rhttp.IdsReq
 	err := c.ShouldBindJSON(&IDS)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
+	operationRecordService := service.NewOperationRecordService(svr.svc)
 	err = operationRecordService.DeleteSysOperationRecordByIds(IDS)
 	if err != nil {
-		svr.log.Error("批量删除失败!", zap.Error(err))
+		svr.logger.Error("批量删除失败!", zap.Error(err))
 		rhttp.FailWithMessage("批量删除失败", c)
 		return
 	}
@@ -99,8 +101,8 @@ func (s *OperationRecordApi) DeleteSysOperationRecordByIds(c *gin.Context) {
 // @Param     data  query     system.SysOperationRecord                                  true  "Id"
 // @Success   200   {object}  rhttp.Response{data=map[string]interface{},msg=string}  "用id查询SysOperationRecord"
 // @Router    /sysOperationRecord/findSysOperationRecord [get]
-func (s *OperationRecordApi) FindSysOperationRecord(c *gin.Context) {
-	var sysOperationRecord system.SysOperationRecord
+func (svr *OperationRecordApi) FindSysOperationRecord(c *gin.Context) {
+	var sysOperationRecord data.SysOperationRecord
 	err := c.ShouldBindQuery(&sysOperationRecord)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
@@ -111,9 +113,10 @@ func (s *OperationRecordApi) FindSysOperationRecord(c *gin.Context) {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
+	operationRecordService := service.NewOperationRecordService(svr.svc)
 	reSysOperationRecord, err := operationRecordService.GetSysOperationRecord(sysOperationRecord.ID)
 	if err != nil {
-		svr.log.Error("查询失败!", zap.Error(err))
+		svr.logger.Error("查询失败!", zap.Error(err))
 		rhttp.FailWithMessage("查询失败", c)
 		return
 	}
@@ -129,16 +132,17 @@ func (s *OperationRecordApi) FindSysOperationRecord(c *gin.Context) {
 // @Param     data  query     dto.SysOperationRecordSearch                        true  "页码, 每页大小, 搜索条件"
 // @Success   200   {object}  rhttp.Response{data=rhttp.PageResult,msg=string}  "分页获取SysOperationRecord列表,返回包括列表,总数,页码,每页数量"
 // @Router    /sysOperationRecord/getSysOperationRecordList [get]
-func (s *OperationRecordApi) GetSysOperationRecordList(c *gin.Context) {
-	var pageInfo systemReq.SysOperationRecordSearch
+func (svr *OperationRecordApi) GetSysOperationRecordList(c *gin.Context) {
+	var pageInfo dto.SysOperationRecordSearch
 	err := c.ShouldBindQuery(&pageInfo)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
+	operationRecordService := service.NewOperationRecordService(svr.svc)
 	list, total, err := operationRecordService.GetSysOperationRecordInfoList(pageInfo)
 	if err != nil {
-		svr.log.Error("获取失败!", zap.Error(err))
+		svr.logger.Error("获取失败!", zap.Error(err))
 		rhttp.FailWithMessage("获取失败", c)
 		return
 	}

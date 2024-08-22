@@ -1,8 +1,7 @@
 package dto
 
 import (
-	jwt "github.com/golang-jwt.proto/jwt.proto/v4"
-	"github.com/google/uuid"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 // Custom claims structure
@@ -13,7 +12,6 @@ type CustomClaims struct {
 }
 
 type BaseClaims struct {
-	UUID        uuid.UUID
 	ID          uint
 	Username    string
 	NickName    string

@@ -7,8 +7,3 @@ import (
 type SysAuthorityResponse struct {
 	Authority data.SysAuthority `json:"authority"`
 }
-
-type SysAuthorityCopyResponse struct {
-	Authority      data.SysAuthority `json:"authority"`
-	OldAuthorityId uint              `json:"oldAuthorityId"` // 旧角色ID
-}

@@ -2,35 +2,35 @@ package server
 
 import (
 	"errors"
-	"github.com/leaf-rain/raindata/app_bi/internal/data/dto"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/data"
+	"github.com/leaf-rain/raindata/app_bi/internal/data/dto"
+	"github.com/leaf-rain/raindata/app_bi/internal/service"
 	"gorm.io/gorm"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"github.com/leaf-rain/raindata/app_bi/internal/service"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
 	"go.uber.org/zap"
 )
 
-func InitUserAuthRouter(Router *gin.RouterGroup, userSvc *service.UserService, log *zap.Logger, data *data.Data) {
-	api := NewUserApi(userSvc, log, data)
+func InitUserAuthRouter(svr *Server, router *gin.RouterGroup) {
+	//api := NewUserApi(svr)
 
-	baseRouter := Router.Group("base")
-	{
-		baseRouter.POST("login", api.Login)
-		//baseRouter.POST("captcha", api.Captcha)
-	}
+	//baseRouter := svr.Router.Group("base")
+	//{
+	//	baseRouter.POST("login", api.Login)
+	//	//baseRouter.POST("captcha", api.Captcha)
+	//}
 }
 
-func InitUserRouter(Router *gin.RouterGroup, userSvc *service.UserService, log *zap.Logger, data *data.Data) {
-	api := NewUserApi(userSvc, log, data)
+func InitUserRouter(svr *Server, router *gin.RouterGroup) {
+	api := NewUserApi(svr)
 
 	//userRouter := Router.Group("user").Use(middleware.OperationRecord())
-	userRouter := Router.Group("user")
-	userRouterWithoutRecord := Router.Group("user")
+	userRouter := router.Group("user")
+	userRouterWithoutRecord := router.Group("user")
 	{
 		userRouter.POST("admin_register", api.Register)               // 管理员注册账号
 		userRouter.POST("changePassword", api.ChangePassword)         // 用户修改密码
@@ -48,16 +48,12 @@ func InitUserRouter(Router *gin.RouterGroup, userSvc *service.UserService, log *
 }
 
 type UserApi struct {
-	userSvc *service.UserService
-	log     *zap.Logger
-	data    *data.Data
+	*Server
 }
 
-func NewUserApi(userSvc *service.UserService, log *zap.Logger, data *data.Data) *UserApi {
+func NewUserApi(server *Server) *UserApi {
 	return &UserApi{
-		userSvc: userSvc,
-		log:     log,
-		data:    data,
+		Server: server,
 	}
 }
 
@@ -68,11 +64,11 @@ func NewUserApi(userSvc *service.UserService, log *zap.Logger, data *data.Data) 
 // @Param    data  body      data.LoginReq                                             true  "用户名, 密码, 验证码"
 // @Success  200   {object}  rhttp.Response{data=systemRes.LoginResponse,msg=string}  "返回包括用户信息,token,过期时间"
 // @Router   /base/login [post]
-func (b *UserApi) Login(c *gin.Context) {
-	var l data.LoginReq
+func (svr *UserApi) Login(c *gin.Context) {
+	var l dto.Login
 	err := c.ShouldBindJSON(&l)
 	key := c.ClientIP()
-	b.log.Info("[Login]登陆请求", zap.String("ip", key), zap.String("username", l.Username), zap.String("password", l.Password))
+	svr.logger.Info("[Login]登陆请求", zap.String("ip", key), zap.String("username", l.Username), zap.String("password", l.Password))
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
@@ -85,33 +81,34 @@ func (b *UserApi) Login(c *gin.Context) {
 
 	u := &data.SysUser{Username: l.Username, Password: l.Password}
 	var user *data.SysUser
-	user, err = b.userSvc.Login(u)
+	userService := service.NewUserService(svr.svc)
+	user, err = userService.Login(u)
 	if err != nil {
-		b.log.Error("[Login] 登陆失败! 用户名不存在或者密码错误!", zap.Error(err))
+		svr.logger.Error("[Login] 登陆失败! 用户名不存在或者密码错误!", zap.Error(err))
 		// 验证码次数+1
 		rhttp.FailWithMessage("用户名不存在或者密码错误", c)
 		return
 	}
 	if user.Enable != 1 {
-		b.log.Error("[Login]登陆失败! 用户被禁止登录!", zap.String("userId", user.UUID.String()))
+		svr.logger.Error("[Login]登陆失败! 用户被禁止登录!", zap.Uint("userId", user.ID))
 		rhttp.FailWithMessage("用户被禁止登录", c)
 		return
 	}
-	b.TokenNext(c, *user)
+	svr.TokenNext(c, *user)
 	return
 }
 
 // TokenNext 登录以后签发jwt
-func (b *UserApi) TokenNext(c *gin.Context, user data.SysUser) {
-	jwt, token, claims, err := data.LoginToken(&user, b.data)
+func (svr *UserApi) TokenNext(c *gin.Context, user data.SysUser) {
+	jwt, token, claims, err := data.LoginToken(&user, svr.data)
 	if err != nil {
-		b.log.Error("获取token失败!", zap.Error(err))
+		svr.logger.Error("获取token失败!", zap.Error(err))
 		rhttp.FailWithMessage("获取token失败", c)
 		return
 	}
-	if !b.data.Config.GetJwt().GetUseMultipoint() {
-		b.SetToken(c, token, int(claims.RegisteredClaims.ExpiresAt.Unix()-time.Now().Unix()))
-		rhttp.OkWithDetailed(data.LoginResponse{
+	if !svr.data.Config.GetJwt().GetUseMultipoint() {
+		svr.SetToken(c, token, int(claims.RegisteredClaims.ExpiresAt.Unix()-time.Now().Unix()))
+		rhttp.OkWithDetailed(dto.LoginResponse{
 			User:      user,
 			Token:     token,
 			ExpiresAt: claims.RegisteredClaims.ExpiresAt.Unix() * 1000,
@@ -121,18 +118,18 @@ func (b *UserApi) TokenNext(c *gin.Context, user data.SysUser) {
 
 	if jwtStr, err := jwt.GetRedisJWT(c, user.Username); errors.Is(err, redis.Nil) {
 		if err := jwt.SetRedisJWT(token, user.Username); err != nil {
-			b.log.Error("设置登录状态失败!", zap.Error(err))
+			svr.logger.Error("设置登录状态失败!", zap.Error(err))
 			rhttp.FailWithMessage("设置登录状态失败", c)
 			return
 		}
-		b.SetToken(c, token, int(claims.RegisteredClaims.ExpiresAt.Unix()-time.Now().Unix()))
-		rhttp.OkWithDetailed(data.LoginResponse{
+		svr.SetToken(c, token, int(claims.RegisteredClaims.ExpiresAt.Unix()-time.Now().Unix()))
+		rhttp.OkWithDetailed(dto.LoginResponse{
 			User:      user,
 			Token:     token,
 			ExpiresAt: claims.RegisteredClaims.ExpiresAt.Unix() * 1000,
 		}, "登录成功", c)
 	} else if err != nil {
-		b.log.Error("设置登录状态失败!", zap.Error(err))
+		svr.logger.Error("设置登录状态失败!", zap.Error(err))
 		rhttp.FailWithMessage("设置登录状态失败", c)
 	} else {
 		var blackJWT data.JwtBlacklist
@@ -145,8 +142,8 @@ func (b *UserApi) TokenNext(c *gin.Context, user data.SysUser) {
 			rhttp.FailWithMessage("设置登录状态失败", c)
 			return
 		}
-		b.SetToken(c, token, int(claims.RegisteredClaims.ExpiresAt.Unix()-time.Now().Unix()))
-		rhttp.OkWithDetailed(data.LoginResponse{
+		svr.SetToken(c, token, int(claims.RegisteredClaims.ExpiresAt.Unix()-time.Now().Unix()))
+		rhttp.OkWithDetailed(dto.LoginResponse{
 			User:      user,
 			Token:     token,
 			ExpiresAt: claims.RegisteredClaims.ExpiresAt.Unix() * 1000,
@@ -161,8 +158,8 @@ func (b *UserApi) TokenNext(c *gin.Context, user data.SysUser) {
 // @Param    data  body      systemReq.Register                                            true  "用户名, 昵称, 密码, 角色ID"
 // @Success  200   {object}  rhttp.Response{data=systemRes.SysUserResponse,msg=string}  "用户注册账号,返回包括用户信息"
 // @Router   /user/admin_register [post]
-func (b *UserApi) Register(c *gin.Context) {
-	var r data.Register
+func (svr *UserApi) Register(c *gin.Context) {
+	var r dto.Register
 	err := c.ShouldBindJSON(&r)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
@@ -175,9 +172,10 @@ func (b *UserApi) Register(c *gin.Context) {
 		})
 	}
 	user := &data.SysUser{Username: r.Username, NickName: r.NickName, Password: r.Password, HeaderImg: r.HeaderImg, AuthorityId: r.AuthorityId, Authorities: authorities, Enable: r.Enable, Phone: r.Phone, Email: r.Email}
-	userReturn, err := b.userSvc.Register(*user)
+	userService := service.NewUserService(svr.svc)
+	userReturn, err := userService.Register(*user)
 	if err != nil {
-		b.log.Error("注册失败!", zap.Error(err))
+		svr.logger.Error("注册失败!", zap.Error(err))
 		rhttp.FailWithDetailed(dto.SysUserResponse{User: userReturn}, "注册失败", c)
 		return
 	}
@@ -192,24 +190,25 @@ func (b *UserApi) Register(c *gin.Context) {
 // @Param     data  body      systemReq.ChangePasswordReq    true  "用户名, 原密码, 新密码"
 // @Success   200   {object}  rhttp.Response{msg=string}  "用户修改密码"
 // @Router    /user/changePassword [post]
-func (b *UserApi) ChangePassword(c *gin.Context) {
-	var req data.ChangePasswordReq
+func (svr *UserApi) ChangePassword(c *gin.Context) {
+	var req dto.ChangePasswordReq
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
 
-	err = req.Verify()
+	//err = req.Verify()
+	//if err != nil {
+	//	rhttp.FailWithMessage(err.Error(), c)
+	//	return
+	//}
+	uid := svr.GetUserID(c)
+	u := &data.SysUser{Model: gorm.Model{ID: uid}, Password: req.Password}
+	userService := service.NewUserService(svr.svc)
+	_, err = userService.ChangePassword(u, req.NewPassword)
 	if err != nil {
-		rhttp.FailWithMessage(err.Error(), c)
-		return
-	}
-	uid := b.GetUserID(c)
-	u := &data.SysUser{gorm.Model: data.gorm.Model{ID: uid}, Password: req.Password}
-	_, err = b.userSvc.ChangePassword(u, req.NewPassword)
-	if err != nil {
-		b.log.Error("修改失败!", zap.Error(err))
+		svr.logger.Error("修改失败!", zap.Error(err))
 		rhttp.FailWithMessage("修改失败，原密码与当前账户不符", c)
 		return
 	}
@@ -225,7 +224,7 @@ func (b *UserApi) ChangePassword(c *gin.Context) {
 // @Param     data  body      dto.PageInfo                                        true  "页码, 每页大小"
 // @Success   200   {object}  rhttp.Response{data=rhttp.PageResult,msg=string}  "分页获取用户列表,返回包括列表,总数,页码,每页数量"
 // @Router    /user/getUserList [post]
-func (b *UserApi) GetUserList(c *gin.Context) {
+func (svr *UserApi) GetUserList(c *gin.Context) {
 	var pageInfo rhttp.PageInfo
 	err := c.ShouldBindJSON(&pageInfo)
 	if err != nil {
@@ -237,9 +236,10 @@ func (b *UserApi) GetUserList(c *gin.Context) {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
-	list, total, err := b.userSvc.GetUserInfoList(pageInfo)
+	userService := service.NewUserService(svr.svc)
+	list, total, err := userService.GetUserInfoList(pageInfo)
 	if err != nil {
-		b.log.Error("获取失败!", zap.Error(err))
+		svr.logger.Error("获取失败!", zap.Error(err))
 		rhttp.FailWithMessage("获取失败", c)
 		return
 	}
@@ -260,34 +260,35 @@ func (b *UserApi) GetUserList(c *gin.Context) {
 // @Param     data  body      systemReq.SetUserAuth          true  "用户UUID, 角色ID"
 // @Success   200   {object}  rhttp.Response{msg=string}  "设置用户权限"
 // @Router    /user/setUserAuthority [post]
-func (b *UserApi) SetUserAuthority(c *gin.Context) {
-	var sua data.SetUserAuth
+func (svr *UserApi) SetUserAuthority(c *gin.Context) {
+	var sua dto.SetUserAuth
 	err := c.ShouldBindJSON(&sua)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
-	if UserVerifyErr := sua.Verify(); UserVerifyErr != nil {
-		rhttp.FailWithMessage(UserVerifyErr.Error(), c)
-		return
-	}
-	userID := b.GetUserID(c)
-	err = b.userSvc.SetUserAuthority(userID, sua.AuthorityId)
+	//if UserVerifyErr := sua.Verify(); UserVerifyErr != nil {
+	//	rhttp.FailWithMessage(UserVerifyErr.Error(), c)
+	//	return
+	//}
+	userID := svr.GetUserID(c)
+	userService := service.NewUserService(svr.svc)
+	err = userService.SetUserAuthority(userID, sua.AuthorityId)
 	if err != nil {
-		b.log.Error("修改失败!", zap.Error(err))
+		svr.logger.Error("修改失败!", zap.Error(err))
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
-	claims := b.GetUserInfoByCtx(c)
-	j := data.NewJWT(b.data) // 唯一签名
+	claims := svr.GetUserInfoByCtx(c)
+	j := data.NewJWT(svr.data) // 唯一签名
 	claims.AuthorityId = sua.AuthorityId
 	if token, err := j.CreateToken(*claims); err != nil {
-		b.log.Error("修改失败!", zap.Error(err))
+		svr.logger.Error("修改失败!", zap.Error(err))
 		rhttp.FailWithMessage(err.Error(), c)
 	} else {
 		c.Header("new-token", token)
 		c.Header("new-expires-at", strconv.FormatInt(claims.ExpiresAt.Unix(), 10))
-		b.SetToken(c, token, int((claims.ExpiresAt.Unix()-time.Now().Unix())/60))
+		svr.SetToken(c, token, int((claims.ExpiresAt.Unix()-time.Now().Unix())/60))
 		rhttp.OkWithMessage("修改成功", c)
 	}
 }
@@ -301,16 +302,17 @@ func (b *UserApi) SetUserAuthority(c *gin.Context) {
 // @Param     data  body      systemReq.SetUserAuthorities   true  "用户UUID, 角色ID"
 // @Success   200   {object}  rhttp.Response{msg=string}  "设置用户权限"
 // @Router    /user/setUserAuthorities [post]
-func (b *UserApi) SetUserAuthorities(c *gin.Context) {
-	var sua data.SetUserAuthorities
+func (svr *UserApi) SetUserAuthorities(c *gin.Context) {
+	var sua dto.SetUserAuthorities
 	err := c.ShouldBindJSON(&sua)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
-	err = b.userSvc.SetUserAuthorities(sua.ID, sua.AuthorityIds)
+	userService := service.NewUserService(svr.svc)
+	err = userService.SetUserAuthorities(sua.ID, sua.AuthorityIds)
 	if err != nil {
-		b.log.Error("修改失败!", zap.Error(err))
+		svr.logger.Error("修改失败!", zap.Error(err))
 		rhttp.FailWithMessage("修改失败", c)
 		return
 	}
@@ -326,7 +328,7 @@ func (b *UserApi) SetUserAuthorities(c *gin.Context) {
 // @Param     data  body      dto.GetById                true  "用户ID"
 // @Success   200   {object}  rhttp.Response{msg=string}  "删除用户"
 // @Router    /user/deleteUser [delete]
-func (b *UserApi) DeleteUser(c *gin.Context) {
+func (svr *UserApi) DeleteUser(c *gin.Context) {
 	var reqId rhttp.GetById
 	err := c.ShouldBindJSON(&reqId)
 	if err != nil {
@@ -338,14 +340,15 @@ func (b *UserApi) DeleteUser(c *gin.Context) {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
-	jwtId := b.GetUserID(c)
+	jwtId := svr.GetUserID(c)
 	if jwtId == uint(reqId.ID) {
 		rhttp.FailWithMessage("删除失败, 自杀失败", c)
 		return
 	}
-	err = b.userSvc.DeleteUser(reqId.ID)
+	userService := service.NewUserService(svr.svc)
+	err = userService.DeleteUser(reqId.ID)
 	if err != nil {
-		b.log.Error("删除失败!", zap.Error(err))
+		svr.logger.Error("删除失败!", zap.Error(err))
 		rhttp.FailWithMessage("删除失败", c)
 		return
 	}
@@ -361,29 +364,29 @@ func (b *UserApi) DeleteUser(c *gin.Context) {
 // @Param     data  body      system.SysUser                                             true  "ID, 用户名, 昵称, 头像链接"
 // @Success   200   {object}  rhttp.Response{data=map[string]interface{},msg=string}  "设置用户信息"
 // @Router    /user/setUserInfo [put]
-func (b *UserApi) SetUserInfo(c *gin.Context) {
-	var user data.ChangeUserInfo
+func (svr *UserApi) SetUserInfo(c *gin.Context) {
+	var user dto.ChangeUserInfo
 	err := c.ShouldBindJSON(&user)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
-	err = user.Verify()
-	if err != nil {
-		rhttp.FailWithMessage(err.Error(), c)
-		return
-	}
-
+	//err = user.Verify()
+	//if err != nil {
+	//	rhttp.FailWithMessage(err.Error(), c)
+	//	return
+	//}
+	userService := service.NewUserService(svr.svc)
 	if len(user.AuthorityIds) != 0 {
-		err = b.userSvc.SetUserAuthorities(user.ID, user.AuthorityIds)
+		err = userService.SetUserAuthorities(user.ID, user.AuthorityIds)
 		if err != nil {
-			b.log.Error("设置失败!", zap.Error(err))
+			svr.logger.Error("设置失败!", zap.Error(err))
 			rhttp.FailWithMessage("设置失败", c)
 			return
 		}
 	}
-	err = b.userSvc.SetUserInfo(data.SysUser{
-		gorm.Model: data.gorm.Model, {
+	err = userService.SetUserInfo(data.SysUser{
+		Model: gorm.Model{
 			ID: user.ID,
 		},
 		NickName:  user.NickName,
@@ -394,7 +397,7 @@ func (b *UserApi) SetUserInfo(c *gin.Context) {
 		Enable:    user.Enable,
 	})
 	if err != nil {
-		b.log.Error("设置失败!", zap.Error(err))
+		svr.logger.Error("设置失败!", zap.Error(err))
 		rhttp.FailWithMessage("设置失败", c)
 		return
 	}
@@ -410,16 +413,17 @@ func (b *UserApi) SetUserInfo(c *gin.Context) {
 // @Param     data  body      system.SysUser                                             true  "ID, 用户名, 昵称, 头像链接"
 // @Success   200   {object}  rhttp.Response{data=map[string]interface{},msg=string}  "设置用户信息"
 // @Router    /user/SetSelfInfo [put]
-func (b *UserApi) SetSelfInfo(c *gin.Context) {
-	var user data.ChangeUserInfo
+func (svr *UserApi) SetSelfInfo(c *gin.Context) {
+	var user dto.ChangeUserInfo
 	err := c.ShouldBindJSON(&user)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
-	user.ID = b.GetUserID(c)
-	err = b.userSvc.SetSelfInfo(data.SysUser{
-		gorm.Model: data.gorm.Model, {
+	userService := service.NewUserService(svr.svc)
+	user.ID = svr.GetUserID(c)
+	err = userService.SetSelfInfo(data.SysUser{
+		Model: gorm.Model{
 			ID: user.ID,
 		},
 		NickName:  user.NickName,
@@ -430,7 +434,7 @@ func (b *UserApi) SetSelfInfo(c *gin.Context) {
 		Enable:    user.Enable,
 	})
 	if err != nil {
-		b.log.Error("设置失败!", zap.Error(err))
+		svr.logger.Error("设置失败!", zap.Error(err))
 		rhttp.FailWithMessage("设置失败", c)
 		return
 	}
@@ -445,11 +449,12 @@ func (b *UserApi) SetSelfInfo(c *gin.Context) {
 // @Produce   application/json
 // @Success   200  {object}  rhttp.Response{data=map[string]interface{},msg=string}  "获取用户信息"
 // @Router    /user/getUserInfo [get]
-func (b *UserApi) GetUserInfo(c *gin.Context) {
-	uuid := b.GetUserUuid(c)
-	ReqUser, err := b.userSvc.GetUserInfo(uuid)
+func (svr *UserApi) GetUserInfo(c *gin.Context) {
+	uuid := svr.GetUserUuid(c)
+	userService := service.NewUserService(svr.svc)
+	ReqUser, err := userService.GetUserInfo(uuid)
 	if err != nil {
-		b.log.Error("获取失败!", zap.Error(err))
+		svr.logger.Error("获取失败!", zap.Error(err))
 		rhttp.FailWithMessage("获取失败", c)
 		return
 	}
@@ -464,16 +469,17 @@ func (b *UserApi) GetUserInfo(c *gin.Context) {
 // @Param     data  body      system.SysUser                 true  "ID"
 // @Success   200   {object}  rhttp.Response{msg=string}  "重置用户密码"
 // @Router    /user/resetPassword [post]
-func (b *UserApi) ResetPassword(c *gin.Context) {
+func (svr *UserApi) ResetPassword(c *gin.Context) {
 	var user data.SysUser
 	err := c.ShouldBindJSON(&user)
 	if err != nil {
 		rhttp.FailWithMessage(err.Error(), c)
 		return
 	}
-	err = b.userSvc.ResetPassword(user.ID)
+	userService := service.NewUserService(svr.svc)
+	err = userService.ResetPassword(user.ID)
 	if err != nil {
-		b.log.Error("重置失败!", zap.Error(err))
+		svr.logger.Error("重置失败!", zap.Error(err))
 		rhttp.FailWithMessage("重置失败"+err.Error(), c)
 		return
 	}

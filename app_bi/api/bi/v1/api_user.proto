@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package bi.v1;
+
+option go_package = "github.com/leaf-rain/raindata/app_bi/api/bi/v1;v1";
+option java_multiple_files = true;
+option java_package = "dev.kratos.api.bi.v1";
+option java_outer_classname = "BiProtoV1";
+
+import "bi/v1/api_user_authority.proto";
+
+message ReqLogin {
+  string username = 1;
+  string password = 2;
+}
+
+message RespLogin {
+  string token = 1;
+  int64 ExpiresAt = 2;
+  UserInfo userInfo = 3;
+}
+
+message ReqRegister {
+  string username = 1;
+  string password = 2;
+  string nickName = 3;
+  string headerImg = 4;
+  int64 authorityId = 5;
+  int64 enable = 6;
+  repeated int64 authorityIds = 7;
+  string phone = 8;
+  string email = 9;
+}
+
+message ReqChangePassword {
+  string password = 1;
+  string newPassword = 2;
+}
+
+message ChangeUser {
+  uint64 ID = 1;
+  string username = 2;
+  string nickName = 3;
+  string phone = 4;
+  string email = 5;
+  string headerImg = 6;
+  string sideMode = 7;
+
+  int64 enable = 8;
+}
+
+message UserInfo {
+  uint64 ID = 1;
+  int64 createdAt = 2;
+  int64 updatedAt = 3;
+  int64 deletedAt = 4;
+  string username = 5;
+  string password = 6;
+  string nickName = 7;
+  string headerImg = 8;
+  string baseColor = 9;
+  uint64 authorityId = 10;
+  string email = 11;
+  int64 enable = 12;
+  Authority authority = 13;
+  repeated Authority authorities = 14;
+}
+
