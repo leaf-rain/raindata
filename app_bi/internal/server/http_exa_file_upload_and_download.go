@@ -8,11 +8,17 @@ import (
 	"go.uber.org/zap"
 )
 
+func newFileUploadAndDownloadApi(server *Server) *fileUploadAndDownloadApi {
+	return &fileUploadAndDownloadApi{
+		Server: server,
+	}
+}
+
 type fileUploadAndDownloadApi struct {
 	*Server
 }
 
-func (svr *fileUploadAndDownloadApi) InitFileUploadAndDownloadRouter(Router *gin.RouterGroup) {
+func (svr *fileUploadAndDownloadApi) InitRouter(Router *gin.RouterGroup) {
 	fileUploadAndDownloadRouter := Router.Group("fileUploadAndDownload")
 	{
 		fileUploadAndDownloadRouter.POST("upload", svr.UploadFile)         // 上传文件

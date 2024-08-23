@@ -11,8 +11,27 @@ import (
 	"go.uber.org/zap"
 )
 
+func newAuthorityApi(server *Server) *AuthorityApi {
+	return &AuthorityApi{Server: server}
+}
+
 type AuthorityApi struct {
 	*Server
+}
+
+func (svr *AuthorityApi) InitFileUploadAndDownloadRouter(Router *gin.RouterGroup) {
+	midOperationRecord := newMiddlewareOperationRecord(svr.Server)
+	authorityRouter := Router.Group("authority").Use(midOperationRecord.OperationRecord())
+	authorityRouterWithoutRecord := Router.Group("authority")
+	{
+		authorityRouter.POST("createAuthority", svr.CreateAuthority)   // 创建角色
+		authorityRouter.POST("deleteAuthority", svr.DeleteAuthority)   // 删除角色
+		authorityRouter.PUT("updateAuthority", svr.UpdateAuthority)    // 更新角色
+		authorityRouter.POST("setDataAuthority", svr.SetDataAuthority) // 设置角色资源权限
+	}
+	{
+		authorityRouterWithoutRecord.POST("getAuthorityList", svr.GetAuthorityList) // 获取角色列表
+	}
 }
 
 // CreateAuthority

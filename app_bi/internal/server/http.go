@@ -56,17 +56,21 @@ func NewHTTPServer(c *conf.Server, logger *zap.Logger, svr *Server) *khttp.Serve
 			})
 		})
 	}
-
+	userServer := NewUserApi(svr)
+	uploadFileServer := newFileUploadAndDownloadApi(svr)
+	operationRecordServer := newOperationRecordApi(svr)
 	{
-		InitUserAuthRouter(svr, publicGroup) // 注册基础功能路由 不做鉴权
+		userServer.InitUserAuthRouter(svr, publicGroup) // 注册基础功能路由 不做鉴权
 	}
 
-	// todo:服务注册
+	// 服务注册
 	{
-		InitUserRouter(svr, privateGroup)
+		userServer.InitRouter(svr, privateGroup)
+		uploadFileServer.InitRouter(privateGroup)
+		operationRecordServer.InitRouter(privateGroup)
 	}
 
-	httpSrv := khttp.NewServer(khttp.Address(":8000"))
+	httpSrv := khttp.NewServer(khttp.Address(c.Http.Addr))
 	httpSrv.HandlePrefix("/", engine)
 	return httpSrv
 }

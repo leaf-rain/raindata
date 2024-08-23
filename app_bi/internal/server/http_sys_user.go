@@ -15,38 +15,6 @@ import (
 	"go.uber.org/zap"
 )
 
-func InitUserAuthRouter(svr *Server, router *gin.RouterGroup) {
-	//api := NewUserApi(svr)
-
-	//baseRouter := svr.Router.Group("base")
-	//{
-	//	baseRouter.POST("login", api.Login)
-	//	//baseRouter.POST("captcha", api.Captcha)
-	//}
-}
-
-func InitUserRouter(svr *Server, router *gin.RouterGroup) {
-	api := NewUserApi(svr)
-
-	//userRouter := Router.Group("user").Use(middleware.OperationRecord())
-	userRouter := router.Group("user")
-	userRouterWithoutRecord := router.Group("user")
-	{
-		userRouter.POST("admin_register", api.Register)               // 管理员注册账号
-		userRouter.POST("changePassword", api.ChangePassword)         // 用户修改密码
-		userRouter.POST("setUserAuthority", api.SetUserAuthority)     // 设置用户权限
-		userRouter.DELETE("deleteUser", api.DeleteUser)               // 删除用户
-		userRouter.PUT("setUserInfo", api.SetUserInfo)                // 设置用户信息
-		userRouter.PUT("setSelfInfo", api.SetSelfInfo)                // 设置自身信息
-		userRouter.POST("setUserAuthorities", api.SetUserAuthorities) // 设置用户权限组
-		userRouter.POST("resetPassword", api.ResetPassword)           // 设置用户权限组
-	}
-	{
-		userRouterWithoutRecord.POST("getUserList", api.GetUserList) // 分页获取用户列表
-		userRouterWithoutRecord.GET("getUserInfo", api.GetUserInfo)  // 获取自身信息
-	}
-}
-
 type UserApi struct {
 	*Server
 }
@@ -54,6 +22,35 @@ type UserApi struct {
 func NewUserApi(server *Server) *UserApi {
 	return &UserApi{
 		Server: server,
+	}
+}
+
+func (svr *UserApi) InitUserAuthRouter(server *Server, router *gin.RouterGroup) {
+	api := NewUserApi(server)
+	baseRouter := router.Group("base")
+	{
+		baseRouter.POST("login", api.Login)
+	}
+}
+
+func (svr *UserApi) InitRouter(server *Server, router *gin.RouterGroup) {
+	userServer := NewUserApi(server)
+	midOperationRecord := newMiddlewareOperationRecord(server)
+	userRouter := router.Group("user").Use(midOperationRecord.OperationRecord())
+	userRouterWithoutRecord := router.Group("user")
+	{
+		userRouter.POST("admin_register", userServer.Register)               // 管理员注册账号
+		userRouter.POST("changePassword", userServer.ChangePassword)         // 用户修改密码
+		userRouter.POST("setUserAuthority", userServer.SetUserAuthority)     // 设置用户权限
+		userRouter.DELETE("deleteUser", userServer.DeleteUser)               // 删除用户
+		userRouter.PUT("setUserInfo", userServer.SetUserInfo)                // 设置用户信息
+		userRouter.PUT("setSelfInfo", userServer.SetSelfInfo)                // 设置自身信息
+		userRouter.POST("setUserAuthorities", userServer.SetUserAuthorities) // 设置用户权限组
+		userRouter.POST("resetPassword", userServer.ResetPassword)           // 设置用户权限组
+	}
+	{
+		userRouterWithoutRecord.POST("getUserList", userServer.GetUserList) // 分页获取用户列表
+		userRouterWithoutRecord.GET("getUserInfo", userServer.GetUserInfo)  // 获取自身信息
 	}
 }
 
@@ -450,9 +447,9 @@ func (svr *UserApi) SetSelfInfo(c *gin.Context) {
 // @Success   200  {object}  rhttp.Response{data=map[string]interface{},msg=string}  "获取用户信息"
 // @Router    /user/getUserInfo [get]
 func (svr *UserApi) GetUserInfo(c *gin.Context) {
-	uuid := svr.GetUserUuid(c)
+	uid := svr.GetUserID(c)
 	userService := service.NewUserService(svr.svc)
-	ReqUser, err := userService.GetUserInfo(uuid)
+	ReqUser, err := userService.FindUserById(uid)
 	if err != nil {
 		svr.logger.Error("获取失败!", zap.Error(err))
 		rhttp.FailWithMessage("获取失败", c)

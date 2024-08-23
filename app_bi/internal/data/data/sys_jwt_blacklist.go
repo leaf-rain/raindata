@@ -173,7 +173,6 @@ func ParseDuration(d string) (time.Duration, error) {
 func LoginToken(user Login, data *Data) (j *JWT, token string, claims CustomClaims, err error) {
 	j = NewJWT(data) // 唯一签名
 	claims = j.CreateClaims(BaseClaims{
-		UUID:        user.GetUUID(),
 		ID:          user.GetUserId(),
 		NickName:    user.GetNickname(),
 		Username:    user.GetUsername(),

@@ -2,7 +2,6 @@ package server
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/data"
 	"net"
 )
@@ -67,20 +66,6 @@ func (svr *UserApi) GetUserID(c *gin.Context) uint {
 	}
 }
 
-// GetUserUuid 从Gin的Context中获取从jwt解析出来的用户UUID
-func (svr *UserApi) GetUserUuid(c *gin.Context) uuid.UUID {
-	if claims, exists := c.Get("claims"); !exists {
-		if cl, err := svr.GetClaims(c); err != nil {
-			return uuid.UUID{}
-		} else {
-			return cl.UUID
-		}
-	} else {
-		waitUse := claims.(*data.CustomClaims)
-		return waitUse.UUID
-	}
-}
-
 // GetUserAuthorityId 从Gin的Context中获取从jwt解析出来的用户角色id
 func (svr *UserApi) GetUserAuthorityId(c *gin.Context) uint {
 	if claims, exists := c.Get("claims"); !exists {
@@ -126,7 +111,6 @@ func (svr *UserApi) GetUserName(c *gin.Context) string {
 func (svr *UserApi) LoginToken(user data.Login) (token string, claims data.CustomClaims, err error) {
 	j := data.NewJWT(svr.data) // 唯一签名
 	claims = j.CreateClaims(data.BaseClaims{
-		UUID:        user.GetUUID(),
 		ID:          user.GetUserId(),
 		NickName:    user.GetNickname(),
 		Username:    user.GetUsername(),

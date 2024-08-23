@@ -1,7 +1,6 @@
 package service
 
 import (
-	"github.com/google/uuid"
 	"github.com/leaf-rain/raindata/app_bi/internal/biz"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/data"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
@@ -103,22 +102,12 @@ func (svc *UserService) SetSelfInfo(req data.SysUser) error {
 	return b.SetSelfInfo(req)
 }
 
-//@function: GetUserInfo
-//@description: 获取用户信息
-//@param: uuid uuid.UUID
-//@return: err error, user data.SysUser
-
-func (svc *UserService) GetUserInfo(uuid uuid.UUID) (user data.SysUser, err error) {
-	b := biz.NewUser(svc.biz)
-	return b.GetUserInfo(uuid)
-}
-
 //@function: FindUserById
 //@description: 通过id获取用户信息
 //@param: id int
 //@return: err error, user *data.SysUser
 
-func (svc *UserService) FindUserById(id int) (user *data.SysUser, err error) {
+func (svc *UserService) FindUserById(id uint) (user *data.SysUser, err error) {
 	b := biz.NewUser(svc.biz)
 	return b.FindUserById(id)
 }

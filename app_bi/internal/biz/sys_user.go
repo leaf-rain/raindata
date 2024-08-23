@@ -2,7 +2,6 @@ package biz
 
 import (
 	"errors"
-	"github.com/google/uuid"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/data"
 	"github.com/leaf-rain/raindata/app_bi/third_party/hash"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
@@ -183,26 +182,12 @@ func (b *User) SetSelfInfo(req data.SysUser) error {
 		Updates(req).Error
 }
 
-//@function: GetUserInfo
-//@description: 获取用户信息
-//@param: uuid uuid.UUID
-//@return: err error, user data.SysUser
-
-func (b *User) GetUserInfo(uuid uuid.UUID) (user data.SysUser, err error) {
-	var reqUser data.SysUser
-	err = b.data.SqlClient.Preload("Authorities").Preload("Authority").First(&reqUser, "uuid = ?", uuid).Error
-	if err != nil {
-		return reqUser, err
-	}
-	return reqUser, err
-}
-
 //@function: FindUserById
 //@description: 通过id获取用户信息
 //@param: id int
 //@return: err error, user *data.SysUser
 
-func (b *User) FindUserById(id int) (user *data.SysUser, err error) {
+func (b *User) FindUserById(id uint) (user *data.SysUser, err error) {
 	var u data.SysUser
 	err = b.data.SqlClient.Where("id = ?", id).First(&u).Error
 	return &u, err
