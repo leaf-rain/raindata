@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"github.com/leaf-rain/raindata/app_bi/internal/biz"
 	"github.com/leaf-rain/raindata/app_bi/internal/conf"
 	"github.com/leaf-rain/raindata/app_bi/internal/data/data"
@@ -19,6 +20,6 @@ import (
 )
 
 // wireApp init kratos application.
-func wireApp(*conf.Server, *conf.Data, *zap.Logger, log.Logger) (*kratos.App, func(), error) {
+func wireApp(context.Context, *conf.Server, *conf.Bootstrap, *zap.Logger, log.Logger) (*kratos.App, func(), error) {
 	panic(wire.Build(server.ProviderSet, data.ProviderSet, biz.ProviderSet, service.ProviderSet, newApp))
 }

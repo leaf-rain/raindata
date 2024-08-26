@@ -74,8 +74,6 @@ type initDb interface {
 
 func (data *Data) initDb() {
 	data.createTable(NewEntityExaFileUploadAndDownload(data))
-	data.createTable(NewEntitySysApi(data))
-	data.createTable(NewEntitySysIgnoreApi(data))
 	data.createTable(NewEntitySysAuthority(data))
 	data.createTable(NewEntitySysCasbin(data))
 	data.createTable(NewJWT(data))

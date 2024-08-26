@@ -7,6 +7,7 @@
 package main
 
 import (
+	"context"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/leaf-rain/raindata/app_bi/internal/biz"
@@ -24,17 +25,16 @@ import (
 // Injectors from wire.go:
 
 // wireApp init kratos application.
-func wireApp(confServer *conf.Server, confData *conf.Data, logger *zap.Logger, logLogger log.Logger) (*kratos.App, func(), error) {
-	dataData, cleanup, err := data.NewData(confData, logger)
+func wireApp(contextContext context.Context, confServer *conf.Server, bootstrap *conf.Bootstrap, logger *zap.Logger, logLogger log.Logger) (*kratos.App, func(), error) {
+	dataData, cleanup, err := data.NewData(bootstrap, logger)
 	if err != nil {
 		return nil, nil, err
 	}
-	greeterRepo := data.NewGreeterRepo(dataData, logger)
-	greeterUsecase := biz.NewGreeterUsecase(greeterRepo, logger)
-	greeterService := service.NewGreeterService(greeterUsecase, logger)
-	grpcServer := server.NewGRPCServer(confServer, greeterService, logger)
-	httpServer := server.NewHTTPServer(confServer, logger, greeterService)
-	app := newApp(logLogger, grpcServer, httpServer)
+	business := biz.NewBusiness(contextContext, dataData, logger)
+	serviceService := service.NewService(contextContext, business, dataData, logger)
+	serverServer := server.NewServer(contextContext, serviceService, dataData, logger)
+	httpServer := server.NewHTTPServer(confServer, logger, serverServer)
+	app := newApp(logLogger, httpServer)
 	return app, func() {
 		cleanup()
 	}, nil

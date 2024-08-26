@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"github.com/leaf-rain/raindata/app_bi/third_party/klogs"
 	"os"
@@ -57,7 +58,8 @@ func main() {
 	if err := c.Load(); err != nil {
 		panic(err)
 	}
-	var bc conf.Bootstrap
+	var ctx = context.Background()
+	var bc *conf.Bootstrap
 	if err := c.Scan(&bc); err != nil {
 		panic(err)
 	}
@@ -78,7 +80,7 @@ func main() {
 	}
 	lg := klogs.NewLogger(zapLogger)
 
-	app, cleanup, err := wireApp(bc.Server, bc.Data, zapLogger, lg)
+	app, cleanup, err := wireApp(ctx, bc.Server, bc, zapLogger, lg)
 	if err != nil {
 		panic(err)
 	}

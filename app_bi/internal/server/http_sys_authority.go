@@ -2,7 +2,6 @@ package server
 
 import (
 	"github.com/leaf-rain/raindata/app_bi/internal/data/data"
-	"github.com/leaf-rain/raindata/app_bi/internal/data/dto"
 	"github.com/leaf-rain/raindata/app_bi/internal/service"
 	"github.com/leaf-rain/raindata/app_bi/third_party/rhttp"
 	"github.com/leaf-rain/raindata/app_bi/third_party/utils"
@@ -69,7 +68,7 @@ func (svr *AuthorityApi) CreateAuthority(c *gin.Context) {
 		rhttp.FailWithMessage("创建成功，权限刷新失败。"+err.Error(), c)
 		return
 	}
-	rhttp.OkWithDetailed(dto.SysAuthorityResponse{Authority: authBack}, "创建成功", c)
+	rhttp.OkWithDetailed(authBack, "创建成功", c)
 }
 
 // DeleteAuthority
@@ -132,7 +131,7 @@ func (svr *AuthorityApi) UpdateAuthority(c *gin.Context) {
 		rhttp.FailWithMessage("更新失败"+err.Error(), c)
 		return
 	}
-	rhttp.OkWithDetailed(dto.SysAuthorityResponse{Authority: authority}, "更新成功", c)
+	rhttp.OkWithDetailed(authority, "更新成功", c)
 }
 
 // GetAuthorityList
