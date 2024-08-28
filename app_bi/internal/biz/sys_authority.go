@@ -43,7 +43,7 @@ func (b *Authority) CreateAuthority(auth data.SysAuthority) (authority data.SysA
 			rules = append(rules, []string{authorityId, v.Path, v.Method})
 		}
 		cs := NewCasbin(b.Business)
-		return cs.AddPolicies(tx, rules)
+		return cs.AddPolicies(rules)
 	})
 
 	return auth, e
@@ -100,7 +100,7 @@ func (b *Authority) DeleteAuthority(auth *data.SysAuthority) error {
 		}
 		authorityId := strconv.Itoa(int(auth.AuthorityId))
 		cs := NewCasbin(b.Business)
-		if err = cs.RemoveFilteredPolicy(tx, authorityId); err != nil {
+		if err = cs.RemoveFilteredPolicy(authorityId); err != nil {
 			return err
 		}
 
