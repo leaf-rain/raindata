@@ -35,7 +35,7 @@ func (svr *fileUploadAndDownloadApi) InitRouter(Router *gin.RouterGroup) {
 // @accept    multipart/form-data
 // @Produce   application/json
 // @Param     file  formData  file                                                           true  "上传文件示例"
-// @Success   200   {object}  rhttp.Response{data=dto.ExaFileResponse,msg=string}  "上传文件示例,返回包括文件详情"
+// @Success   200   {object}  rhttp.Response{data=data.ExaFileUploadAndDownload,msg=string}  "上传文件示例,返回包括文件详情"
 // @Router    /fileUploadAndDownload/upload [post]
 func (svr *fileUploadAndDownloadApi) UploadFile(c *gin.Context) {
 	var file data.ExaFileUploadAndDownload
@@ -79,7 +79,7 @@ func (svr *fileUploadAndDownloadApi) EditFileName(c *gin.Context) {
 // @Summary   删除文件
 // @Security  ApiKeyAuth
 // @Produce   application/json
-// @Param     data  body      example.ExaFileUploadAndDownload  true  "传入文件里面id即可"
+// @Param     data  body      data.ExaFileUploadAndDownload  true  "传入文件里面id即可"
 // @Success   200   {object}  rhttp.Response{msg=string}     "删除文件"
 // @Router    /fileUploadAndDownload/deleteFile [post]
 func (svr *fileUploadAndDownloadApi) DeleteFile(c *gin.Context) {
@@ -104,7 +104,7 @@ func (svr *fileUploadAndDownloadApi) DeleteFile(c *gin.Context) {
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      request.PageInfo                                        true  "页码, 每页大小"
+// @Param     data  body      rhttp.PageInfo                                        true  "页码, 每页大小"
 // @Success   200   {object}  rhttp.Response{data=rhttp.PageResult,msg=string}  "分页文件列表,返回包括列表,总数,页码,每页数量"
 // @Router    /fileUploadAndDownload/getFileList [post]
 func (svr *fileUploadAndDownloadApi) GetFileList(c *gin.Context) {

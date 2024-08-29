@@ -35,8 +35,8 @@ func (svr *UserApi) InitUserAuthRouter(server *Server, router *gin.RouterGroup) 
 
 func (svr *UserApi) InitRouter(server *Server, router *gin.RouterGroup) {
 	userServer := NewUserApi(server)
-	midOperationRecord := newMiddlewareOperationRecord(server)
-	userRouter := router.Group("user").Use(midOperationRecord.OperationRecord())
+	mid := newMiddleware(server)
+	userRouter := router.Group("user").Use(mid.OperationRecord())
 	userRouterWithoutRecord := router.Group("user")
 	{
 		userRouter.POST("admin_register", userServer.Register)               // 管理员注册账号
@@ -46,7 +46,7 @@ func (svr *UserApi) InitRouter(server *Server, router *gin.RouterGroup) {
 		userRouter.PUT("setUserInfo", userServer.SetUserInfo)                // 设置用户信息
 		userRouter.PUT("setSelfInfo", userServer.SetSelfInfo)                // 设置自身信息
 		userRouter.POST("setUserAuthorities", userServer.SetUserAuthorities) // 设置用户权限组
-		userRouter.POST("resetPassword", userServer.ResetPassword)           // 设置用户权限组
+		userRouter.POST("resetPassword", userServer.ResetPassword)           // 重置用户密码
 	}
 	{
 		userRouterWithoutRecord.POST("getUserList", userServer.GetUserList) // 分页获取用户列表
@@ -58,8 +58,8 @@ func (svr *UserApi) InitRouter(server *Server, router *gin.RouterGroup) {
 // @Tags     Base
 // @Summary  用户登录
 // @Produce   application/json
-// @Param    data  body      data.LoginReq                                             true  "用户名, 密码, 验证码"
-// @Success  200   {object}  rhttp.Response{data=systemRes.LoginResponse,msg=string}  "返回包括用户信息,token,过期时间"
+// @Param    data  body      dto.Login                                             true  "用户名, 密码, 验证码"
+// @Success  200   {object}  rhttp.Response{data=dto.LoginResponse,msg=string}  "返回包括用户信息,token,过期时间"
 // @Router   /base/login [post]
 func (svr *UserApi) Login(c *gin.Context) {
 	var l dto.Login
@@ -152,8 +152,8 @@ func (svr *UserApi) TokenNext(c *gin.Context, user data.SysUser) {
 // @Tags     SysUser
 // @Summary  用户注册账号
 // @Produce   application/json
-// @Param    data  body      systemReq.Register                                            true  "用户名, 昵称, 密码, 角色ID"
-// @Success  200   {object}  rhttp.Response{data=systemRes.SysUserResponse,msg=string}  "用户注册账号,返回包括用户信息"
+// @Param    data  body      dto.Register                                            true  "用户名, 昵称, 密码, 角色ID"
+// @Success  200   {object}  rhttp.Response{data=dto.SysUserResponse,msg=string}  "用户注册账号,返回包括用户信息"
 // @Router   /user/admin_register [post]
 func (svr *UserApi) Register(c *gin.Context) {
 	var r dto.Register
@@ -184,7 +184,7 @@ func (svr *UserApi) Register(c *gin.Context) {
 // @Summary   用户修改密码
 // @Security  ApiKeyAuth
 // @Produce  application/json
-// @Param     data  body      systemReq.ChangePasswordReq    true  "用户名, 原密码, 新密码"
+// @Param     data  body      dto.ChangePasswordReq    true  "用户名, 原密码, 新密码"
 // @Success   200   {object}  rhttp.Response{msg=string}  "用户修改密码"
 // @Router    /user/changePassword [post]
 func (svr *UserApi) ChangePassword(c *gin.Context) {
@@ -218,7 +218,7 @@ func (svr *UserApi) ChangePassword(c *gin.Context) {
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      dto.PageInfo                                        true  "页码, 每页大小"
+// @Param     data  body      rhttp.PageInfo                                        true  "页码, 每页大小"
 // @Success   200   {object}  rhttp.Response{data=rhttp.PageResult,msg=string}  "分页获取用户列表,返回包括列表,总数,页码,每页数量"
 // @Router    /user/getUserList [post]
 func (svr *UserApi) GetUserList(c *gin.Context) {
@@ -254,7 +254,7 @@ func (svr *UserApi) GetUserList(c *gin.Context) {
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      systemReq.SetUserAuth          true  "用户UUID, 角色ID"
+// @Param     data  body      dto.SetUserAuth          true  "用户UUID, 角色ID"
 // @Success   200   {object}  rhttp.Response{msg=string}  "设置用户权限"
 // @Router    /user/setUserAuthority [post]
 func (svr *UserApi) SetUserAuthority(c *gin.Context) {
@@ -296,7 +296,7 @@ func (svr *UserApi) SetUserAuthority(c *gin.Context) {
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      systemReq.SetUserAuthorities   true  "用户UUID, 角色ID"
+// @Param     data  body      dto.SetUserAuthorities   true  "用户UUID, 角色ID"
 // @Success   200   {object}  rhttp.Response{msg=string}  "设置用户权限"
 // @Router    /user/setUserAuthorities [post]
 func (svr *UserApi) SetUserAuthorities(c *gin.Context) {
@@ -322,7 +322,7 @@ func (svr *UserApi) SetUserAuthorities(c *gin.Context) {
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      dto.GetById                true  "用户ID"
+// @Param     data  body      rhttp.GetById                true  "用户ID"
 // @Success   200   {object}  rhttp.Response{msg=string}  "删除用户"
 // @Router    /user/deleteUser [delete]
 func (svr *UserApi) DeleteUser(c *gin.Context) {
@@ -358,7 +358,7 @@ func (svr *UserApi) DeleteUser(c *gin.Context) {
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      system.SysUser                                             true  "ID, 用户名, 昵称, 头像链接"
+// @Param     data  body      data.SysUser                                             true  "ID, 用户名, 昵称, 头像链接"
 // @Success   200   {object}  rhttp.Response{data=map[string]interface{},msg=string}  "设置用户信息"
 // @Router    /user/setUserInfo [put]
 func (svr *UserApi) SetUserInfo(c *gin.Context) {
@@ -407,7 +407,7 @@ func (svr *UserApi) SetUserInfo(c *gin.Context) {
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      system.SysUser                                             true  "ID, 用户名, 昵称, 头像链接"
+// @Param     data  body      data.SysUser                                             true  "ID, 用户名, 昵称, 头像链接"
 // @Success   200   {object}  rhttp.Response{data=map[string]interface{},msg=string}  "设置用户信息"
 // @Router    /user/SetSelfInfo [put]
 func (svr *UserApi) SetSelfInfo(c *gin.Context) {
@@ -463,7 +463,7 @@ func (svr *UserApi) GetUserInfo(c *gin.Context) {
 // @Summary   重置用户密码
 // @Security  ApiKeyAuth
 // @Produce  application/json
-// @Param     data  body      system.SysUser                 true  "ID"
+// @Param     data  body      data.SysUser                 true  "ID"
 // @Success   200   {object}  rhttp.Response{msg=string}  "重置用户密码"
 // @Router    /user/resetPassword [post]
 func (svr *UserApi) ResetPassword(c *gin.Context) {

@@ -17,6 +17,11 @@ func NewUserService(service *Service) *UserService {
 	}
 }
 
+//@function: Register
+//@description: 用户注册
+//@param: u *data.SysUser
+//@return: err error, userInter *data.SysUser
+
 func (svc *UserService) Register(u data.SysUser) (userInter data.SysUser, err error) {
 	b := biz.NewUser(svc.biz)
 	return b.Register(u)
@@ -44,7 +49,7 @@ func (svc *UserService) ChangePassword(u *data.SysUser, newPassword string) (use
 
 //@function: GetUserInfoList
 //@description: 分页获取数据
-//@param: info dto.PageInfo
+//@param: info rhttp.PageInfo
 //@return: err error, list interface{}, total int64
 
 func (svc *UserService) GetUserInfoList(info rhttp.PageInfo) (list interface{}, total int64, err error) {
@@ -54,7 +59,7 @@ func (svc *UserService) GetUserInfoList(info rhttp.PageInfo) (list interface{}, 
 
 //@function: SetUserAuthority
 //@description: 设置一个用户的权限
-//@param: uuid uuid.UUID, authorityId string
+//@param: authorityId uint
 //@return: err error
 
 func (svc *UserService) SetUserAuthority(id uint, authorityId uint) (err error) {
@@ -110,16 +115,6 @@ func (svc *UserService) SetSelfInfo(req data.SysUser) error {
 func (svc *UserService) FindUserById(id uint) (user *data.SysUser, err error) {
 	b := biz.NewUser(svc.biz)
 	return b.FindUserById(id)
-}
-
-//@function: FindUserByUuid
-//@description: 通过uuid获取用户信息
-//@param: uuid string
-//@return: err error, user *data.SysUser
-
-func (svc *UserService) FindUserByUuid(uuid string) (user *data.SysUser, err error) {
-	b := biz.NewUser(svc.biz)
-	return b.FindUserByUuid(uuid)
 }
 
 //@function: ResetPassword

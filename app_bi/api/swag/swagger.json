@@ -1,0 +1,1946 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/authority/createAuthority": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authority"
+                ],
+                "summary": "创建角色",
+                "parameters": [
+                    {
+                        "description": "权限id, 权限名, 父角色id",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "创建角色,返回包括系统角色详情",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority"
+                                        },
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/authority/deleteAuthority": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authority"
+                ],
+                "summary": "删除角色",
+                "parameters": [
+                    {
+                        "description": "删除角色",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除角色",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/authority/getAuthorityList": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authority"
+                ],
+                "summary": "分页获取角色列表",
+                "parameters": [
+                    {
+                        "description": "页码, 每页大小",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageInfo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "分页获取角色列表,返回包括列表,总数,页码,每页数量",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageResult"
+                                        },
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/authority/setDataAuthority": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authority"
+                ],
+                "summary": "设置角色资源权限",
+                "parameters": [
+                    {
+                        "description": "设置角色资源权限",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "设置角色资源权限",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/authority/updateAuthority": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authority"
+                ],
+                "summary": "更新角色信息",
+                "parameters": [
+                    {
+                        "description": "权限id, 权限名, 父角色id",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新角色信息,返回包括系统角色详情",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority"
+                                        },
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/base/login": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Base"
+                ],
+                "summary": "用户登录",
+                "parameters": [
+                    {
+                        "description": "用户名, 密码, 验证码",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.Login"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "返回包括用户信息,token,过期时间",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.LoginResponse"
+                                        },
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/casbin/UpdateCasbin": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Casbin"
+                ],
+                "summary": "更新角色api权限",
+                "parameters": [
+                    {
+                        "description": "权限id, 权限模型列表",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.CasbinInReceive"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新角色api权限",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/casbin/getPolicyPathByAuthorityId": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Casbin"
+                ],
+                "summary": "获取权限列表",
+                "parameters": [
+                    {
+                        "description": "权限id, 权限模型列表",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.CasbinInReceive"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取权限列表,返回包括casbin详情列表",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.PolicyPathResponse"
+                                        },
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/fileUploadAndDownload/deleteFile": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ExaFileUploadAndDownload"
+                ],
+                "summary": "删除文件",
+                "parameters": [
+                    {
+                        "description": "传入文件里面id即可",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.ExaFileUploadAndDownload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除文件",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/fileUploadAndDownload/getFileList": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ExaFileUploadAndDownload"
+                ],
+                "summary": "分页文件列表",
+                "parameters": [
+                    {
+                        "description": "页码, 每页大小",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageInfo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "分页文件列表,返回包括列表,总数,页码,每页数量",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageResult"
+                                        },
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/fileUploadAndDownload/upload": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ExaFileUploadAndDownload"
+                ],
+                "summary": "上传文件示例",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "上传文件示例",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "上传文件示例,返回包括文件详情",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.ExaFileUploadAndDownload"
+                                        },
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/jwt.proto/jsonInBlacklist": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Jwt"
+                ],
+                "summary": "jwt加入黑名单",
+                "responses": {
+                    "200": {
+                        "description": "jwt加入黑名单",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/sysOperationRecord/createSysOperationRecord": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SysOperationRecord"
+                ],
+                "summary": "创建SysOperationRecord",
+                "parameters": [
+                    {
+                        "description": "创建SysOperationRecord",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysOperationRecord"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "创建SysOperationRecord",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/sysOperationRecord/deleteSysOperationRecord": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SysOperationRecord"
+                ],
+                "summary": "删除SysOperationRecord",
+                "parameters": [
+                    {
+                        "description": "SysOperationRecord模型",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysOperationRecord"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除SysOperationRecord",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/sysOperationRecord/deleteSysOperationRecordByIds": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SysOperationRecord"
+                ],
+                "summary": "批量删除SysOperationRecord",
+                "parameters": [
+                    {
+                        "description": "批量删除SysOperationRecord",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.IdsReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "批量删除SysOperationRecord",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/sysOperationRecord/findSysOperationRecord": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SysOperationRecord"
+                ],
+                "summary": "用id查询SysOperationRecord",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "代理",
+                        "name": "agent",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "请求Body",
+                        "name": "body",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "createdAt",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "错误信息",
+                        "name": "error_message",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "请求ip",
+                        "name": "ip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "延迟",
+                        "name": "latency",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "请求方法",
+                        "name": "method",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "请求路径",
+                        "name": "path",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "响应Body",
+                        "name": "resp",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "请求状态",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "updatedAt",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "用户id",
+                        "name": "user_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "用id查询SysOperationRecord",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": true
+                                        },
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/sysOperationRecord/getSysOperationRecordList": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SysOperationRecord"
+                ],
+                "summary": "分页获取SysOperationRecord列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "代理",
+                        "name": "agent",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "请求Body",
+                        "name": "body",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "createdAt",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "错误信息",
+                        "name": "error_message",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "请求ip",
+                        "name": "ip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "关键字",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "延迟",
+                        "name": "latency",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "请求方法",
+                        "name": "method",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页大小",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "请求路径",
+                        "name": "path",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "响应Body",
+                        "name": "resp",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "请求状态",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "updatedAt",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "用户id",
+                        "name": "user_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "分页获取SysOperationRecord列表,返回包括列表,总数,页码,每页数量",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageResult"
+                                        },
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/user/SetSelfInfo": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SysUser"
+                ],
+                "summary": "设置用户信息",
+                "parameters": [
+                    {
+                        "description": "ID, 用户名, 昵称, 头像链接",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysUser"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "设置用户信息",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": true
+                                        },
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/user/admin_register": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SysUser"
+                ],
+                "summary": "用户注册账号",
+                "parameters": [
+                    {
+                        "description": "用户名, 昵称, 密码, 角色ID",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.Register"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "用户注册账号,返回包括用户信息",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.SysUserResponse"
+                                        },
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/user/changePassword": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SysUser"
+                ],
+                "summary": "用户修改密码",
+                "parameters": [
+                    {
+                        "description": "用户名, 原密码, 新密码",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.ChangePasswordReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "用户修改密码",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/user/deleteUser": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SysUser"
+                ],
+                "summary": "删除用户",
+                "parameters": [
+                    {
+                        "description": "用户ID",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.GetById"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除用户",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/user/getUserInfo": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SysUser"
+                ],
+                "summary": "获取用户信息",
+                "responses": {
+                    "200": {
+                        "description": "获取用户信息",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": true
+                                        },
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/user/getUserList": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SysUser"
+                ],
+                "summary": "分页获取用户列表",
+                "parameters": [
+                    {
+                        "description": "页码, 每页大小",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageInfo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "分页获取用户列表,返回包括列表,总数,页码,每页数量",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageResult"
+                                        },
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/user/resetPassword": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SysUser"
+                ],
+                "summary": "重置用户密码",
+                "parameters": [
+                    {
+                        "description": "ID",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysUser"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "重置用户密码",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/user/setUserAuthorities": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SysUser"
+                ],
+                "summary": "设置用户权限",
+                "parameters": [
+                    {
+                        "description": "用户UUID, 角色ID",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.SetUserAuthorities"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "设置用户权限",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/user/setUserAuthority": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SysUser"
+                ],
+                "summary": "更改用户权限",
+                "parameters": [
+                    {
+                        "description": "用户UUID, 角色ID",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.SetUserAuth"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "设置用户权限",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/user/setUserInfo": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SysUser"
+                ],
+                "summary": "设置用户信息",
+                "parameters": [
+                    {
+                        "description": "ID, 用户名, 昵称, 头像链接",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysUser"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "设置用户信息",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": true
+                                        },
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "github_com_leaf-rain_raindata_app_bi_internal_data_data.ExaFileUploadAndDownload": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "key": {
+                    "description": "编号",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "文件名",
+                    "type": "string"
+                },
+                "tag": {
+                    "description": "文件标签",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "url": {
+                    "description": "文件地址",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority": {
+            "type": "object",
+            "properties": {
+                "authorityId": {
+                    "description": "角色ID",
+                    "type": "integer"
+                },
+                "authorityName": {
+                    "description": "角色名",
+                    "type": "string"
+                },
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority"
+                    }
+                },
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "dataAuthorityId": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority"
+                    }
+                },
+                "defaultRouter": {
+                    "description": "默认菜单(默认dashboard)",
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "type": "string"
+                },
+                "parentId": {
+                    "description": "父角色ID",
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "description": "更新时间",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_internal_data_data.SysOperationRecord": {
+            "type": "object",
+            "properties": {
+                "agent": {
+                    "description": "代理",
+                    "type": "string"
+                },
+                "body": {
+                    "description": "请求Body",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "error_message": {
+                    "description": "错误信息",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "ip": {
+                    "description": "请求ip",
+                    "type": "string"
+                },
+                "latency": {
+                    "description": "延迟",
+                    "type": "string"
+                },
+                "method": {
+                    "description": "请求方法",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "请求路径",
+                    "type": "string"
+                },
+                "resp": {
+                    "description": "响应Body",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "请求状态",
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysUser"
+                },
+                "user_id": {
+                    "description": "用户id",
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_internal_data_data.SysUser": {
+            "type": "object",
+            "properties": {
+                "authorities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority"
+                    }
+                },
+                "authority": {
+                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority"
+                },
+                "authorityId": {
+                    "description": "用户角色ID",
+                    "type": "integer"
+                },
+                "baseColor": {
+                    "description": "基础颜色",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "email": {
+                    "description": "用户邮箱",
+                    "type": "string"
+                },
+                "enable": {
+                    "description": "用户是否被冻结 1正常 2冻结",
+                    "type": "integer"
+                },
+                "headerImg": {
+                    "description": "用户头像",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nickName": {
+                    "description": "用户昵称",
+                    "type": "string"
+                },
+                "password": {
+                    "description": "用户登录密码",
+                    "type": "string"
+                },
+                "phone": {
+                    "description": "用户手机号",
+                    "type": "string"
+                },
+                "sideMode": {
+                    "description": "用户侧边主题",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "userName": {
+                    "description": "用户登录名",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_internal_data_dto.CasbinInReceive": {
+            "type": "object",
+            "properties": {
+                "authorityId": {
+                    "description": "权限id",
+                    "type": "integer"
+                },
+                "casbinInfos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.CasbinInfo"
+                    }
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_internal_data_dto.CasbinInfo": {
+            "type": "object",
+            "properties": {
+                "method": {
+                    "description": "方法",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "路径",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_internal_data_dto.ChangePasswordReq": {
+            "type": "object",
+            "properties": {
+                "newPassword": {
+                    "description": "新密码",
+                    "type": "string"
+                },
+                "password": {
+                    "description": "密码",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_internal_data_dto.Login": {
+            "type": "object",
+            "properties": {
+                "captcha": {
+                    "description": "验证码",
+                    "type": "string"
+                },
+                "captchaId": {
+                    "description": "验证码ID",
+                    "type": "string"
+                },
+                "password": {
+                    "description": "密码",
+                    "type": "string"
+                },
+                "username": {
+                    "description": "用户名",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_internal_data_dto.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "expiresAt": {
+                    "type": "integer"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysUser"
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_internal_data_dto.PolicyPathResponse": {
+            "type": "object",
+            "properties": {
+                "paths": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.CasbinInfo"
+                    }
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_internal_data_dto.Register": {
+            "type": "object",
+            "properties": {
+                "authorityId": {
+                    "type": "string",
+                    "example": "int 角色id"
+                },
+                "authorityIds": {
+                    "type": "string",
+                    "example": "[]uint 角色id"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "电子邮箱"
+                },
+                "enable": {
+                    "type": "string",
+                    "example": "int 是否启用"
+                },
+                "headerImg": {
+                    "type": "string",
+                    "example": "头像链接"
+                },
+                "nickName": {
+                    "type": "string",
+                    "example": "昵称"
+                },
+                "passWord": {
+                    "type": "string",
+                    "example": "密码"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "电话号码"
+                },
+                "userName": {
+                    "type": "string",
+                    "example": "用户名"
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_internal_data_dto.SetUserAuth": {
+            "type": "object",
+            "properties": {
+                "authorityId": {
+                    "description": "角色ID",
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_internal_data_dto.SetUserAuthorities": {
+            "type": "object",
+            "properties": {
+                "authorityIds": {
+                    "description": "角色ID",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_internal_data_dto.SysUserResponse": {
+            "type": "object",
+            "properties": {
+                "user": {
+                    "$ref": "#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysUser"
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_third_party_rhttp.GetById": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "主键ID",
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_third_party_rhttp.IdsReq": {
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageInfo": {
+            "type": "object",
+            "properties": {
+                "keyword": {
+                    "description": "关键字",
+                    "type": "string"
+                },
+                "page": {
+                    "description": "页码",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "description": "每页大小",
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageResult": {
+            "type": "object",
+            "properties": {
+                "list": {},
+                "page": {
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {},
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "gorm.DeletedAt": {
+            "type": "object",
+            "properties": {
+                "time": {
+                    "type": "string"
+                },
+                "valid": {
+                    "description": "Valid is true if Time is not NULL",
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+}

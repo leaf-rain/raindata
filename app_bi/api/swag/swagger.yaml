@@ -1,0 +1,1167 @@
+definitions:
+  github_com_leaf-rain_raindata_app_bi_internal_data_data.ExaFileUploadAndDownload:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      key:
+        description: 编号
+        type: string
+      name:
+        description: 文件名
+        type: string
+      tag:
+        description: 文件标签
+        type: string
+      updatedAt:
+        type: string
+      url:
+        description: 文件地址
+        type: string
+    type: object
+  github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority:
+    properties:
+      authorityId:
+        description: 角色ID
+        type: integer
+      authorityName:
+        description: 角色名
+        type: string
+      children:
+        items:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority'
+        type: array
+      createdAt:
+        description: 创建时间
+        type: string
+      dataAuthorityId:
+        items:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority'
+        type: array
+      defaultRouter:
+        description: 默认菜单(默认dashboard)
+        type: string
+      deletedAt:
+        type: string
+      parentId:
+        description: 父角色ID
+        type: integer
+      updatedAt:
+        description: 更新时间
+        type: string
+    type: object
+  github_com_leaf-rain_raindata_app_bi_internal_data_data.SysOperationRecord:
+    properties:
+      agent:
+        description: 代理
+        type: string
+      body:
+        description: 请求Body
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      error_message:
+        description: 错误信息
+        type: string
+      id:
+        type: integer
+      ip:
+        description: 请求ip
+        type: string
+      latency:
+        description: 延迟
+        type: string
+      method:
+        description: 请求方法
+        type: string
+      path:
+        description: 请求路径
+        type: string
+      resp:
+        description: 响应Body
+        type: string
+      status:
+        description: 请求状态
+        type: integer
+      updatedAt:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysUser'
+      user_id:
+        description: 用户id
+        type: integer
+    type: object
+  github_com_leaf-rain_raindata_app_bi_internal_data_data.SysUser:
+    properties:
+      authorities:
+        items:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority'
+        type: array
+      authority:
+        $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority'
+      authorityId:
+        description: 用户角色ID
+        type: integer
+      baseColor:
+        description: 基础颜色
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      email:
+        description: 用户邮箱
+        type: string
+      enable:
+        description: 用户是否被冻结 1正常 2冻结
+        type: integer
+      headerImg:
+        description: 用户头像
+        type: string
+      id:
+        type: integer
+      nickName:
+        description: 用户昵称
+        type: string
+      password:
+        description: 用户登录密码
+        type: string
+      phone:
+        description: 用户手机号
+        type: string
+      sideMode:
+        description: 用户侧边主题
+        type: string
+      updatedAt:
+        type: string
+      userName:
+        description: 用户登录名
+        type: string
+    type: object
+  github_com_leaf-rain_raindata_app_bi_internal_data_dto.CasbinInReceive:
+    properties:
+      authorityId:
+        description: 权限id
+        type: integer
+      casbinInfos:
+        items:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.CasbinInfo'
+        type: array
+    type: object
+  github_com_leaf-rain_raindata_app_bi_internal_data_dto.CasbinInfo:
+    properties:
+      method:
+        description: 方法
+        type: string
+      path:
+        description: 路径
+        type: string
+    type: object
+  github_com_leaf-rain_raindata_app_bi_internal_data_dto.ChangePasswordReq:
+    properties:
+      newPassword:
+        description: 新密码
+        type: string
+      password:
+        description: 密码
+        type: string
+    type: object
+  github_com_leaf-rain_raindata_app_bi_internal_data_dto.Login:
+    properties:
+      captcha:
+        description: 验证码
+        type: string
+      captchaId:
+        description: 验证码ID
+        type: string
+      password:
+        description: 密码
+        type: string
+      username:
+        description: 用户名
+        type: string
+    type: object
+  github_com_leaf-rain_raindata_app_bi_internal_data_dto.LoginResponse:
+    properties:
+      expiresAt:
+        type: integer
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysUser'
+    type: object
+  github_com_leaf-rain_raindata_app_bi_internal_data_dto.PolicyPathResponse:
+    properties:
+      paths:
+        items:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.CasbinInfo'
+        type: array
+    type: object
+  github_com_leaf-rain_raindata_app_bi_internal_data_dto.Register:
+    properties:
+      authorityId:
+        example: int 角色id
+        type: string
+      authorityIds:
+        example: '[]uint 角色id'
+        type: string
+      email:
+        example: 电子邮箱
+        type: string
+      enable:
+        example: int 是否启用
+        type: string
+      headerImg:
+        example: 头像链接
+        type: string
+      nickName:
+        example: 昵称
+        type: string
+      passWord:
+        example: 密码
+        type: string
+      phone:
+        example: 电话号码
+        type: string
+      userName:
+        example: 用户名
+        type: string
+    type: object
+  github_com_leaf-rain_raindata_app_bi_internal_data_dto.SetUserAuth:
+    properties:
+      authorityId:
+        description: 角色ID
+        type: integer
+    type: object
+  github_com_leaf-rain_raindata_app_bi_internal_data_dto.SetUserAuthorities:
+    properties:
+      authorityIds:
+        description: 角色ID
+        items:
+          type: integer
+        type: array
+      id:
+        type: integer
+    type: object
+  github_com_leaf-rain_raindata_app_bi_internal_data_dto.SysUserResponse:
+    properties:
+      user:
+        $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysUser'
+    type: object
+  github_com_leaf-rain_raindata_app_bi_third_party_rhttp.GetById:
+    properties:
+      id:
+        description: 主键ID
+        type: integer
+    type: object
+  github_com_leaf-rain_raindata_app_bi_third_party_rhttp.IdsReq:
+    properties:
+      ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageInfo:
+    properties:
+      keyword:
+        description: 关键字
+        type: string
+      page:
+        description: 页码
+        type: integer
+      pageSize:
+        description: 每页大小
+        type: integer
+    type: object
+  github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageResult:
+    properties:
+      list: {}
+      page:
+        type: integer
+      pageSize:
+        type: integer
+      total:
+        type: integer
+    type: object
+  github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      msg:
+        type: string
+    type: object
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+info:
+  contact: {}
+paths:
+  /authority/createAuthority:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 权限id, 权限名, 父角色id
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建角色,返回包括系统角色详情
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority'
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 创建角色
+      tags:
+      - Authority
+  /authority/deleteAuthority:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 删除角色
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除角色
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 删除角色
+      tags:
+      - Authority
+  /authority/getAuthorityList:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 页码, 每页大小
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageInfo'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 分页获取角色列表,返回包括列表,总数,页码,每页数量
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageResult'
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 分页获取角色列表
+      tags:
+      - Authority
+  /authority/setDataAuthority:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 设置角色资源权限
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 设置角色资源权限
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 设置角色资源权限
+      tags:
+      - Authority
+  /authority/updateAuthority:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 权限id, 权限名, 父角色id
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新角色信息,返回包括系统角色详情
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysAuthority'
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 更新角色信息
+      tags:
+      - Authority
+  /base/login:
+    post:
+      parameters:
+      - description: 用户名, 密码, 验证码
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.Login'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 返回包括用户信息,token,过期时间
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.LoginResponse'
+                msg:
+                  type: string
+              type: object
+      summary: 用户登录
+      tags:
+      - Base
+  /casbin/UpdateCasbin:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 权限id, 权限模型列表
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.CasbinInReceive'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新角色api权限
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 更新角色api权限
+      tags:
+      - Casbin
+  /casbin/getPolicyPathByAuthorityId:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 权限id, 权限模型列表
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.CasbinInReceive'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取权限列表,返回包括casbin详情列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.PolicyPathResponse'
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取权限列表
+      tags:
+      - Casbin
+  /fileUploadAndDownload/deleteFile:
+    post:
+      parameters:
+      - description: 传入文件里面id即可
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.ExaFileUploadAndDownload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除文件
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 删除文件
+      tags:
+      - ExaFileUploadAndDownload
+  /fileUploadAndDownload/getFileList:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 页码, 每页大小
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageInfo'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 分页文件列表,返回包括列表,总数,页码,每页数量
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageResult'
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 分页文件列表
+      tags:
+      - ExaFileUploadAndDownload
+  /fileUploadAndDownload/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: 上传文件示例
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 上传文件示例,返回包括文件详情
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.ExaFileUploadAndDownload'
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 上传文件示例
+      tags:
+      - ExaFileUploadAndDownload
+  /jwt.proto/jsonInBlacklist:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: jwt加入黑名单
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: jwt加入黑名单
+      tags:
+      - Jwt
+  /sysOperationRecord/createSysOperationRecord:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 创建SysOperationRecord
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysOperationRecord'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建SysOperationRecord
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 创建SysOperationRecord
+      tags:
+      - SysOperationRecord
+  /sysOperationRecord/deleteSysOperationRecord:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: SysOperationRecord模型
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysOperationRecord'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除SysOperationRecord
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 删除SysOperationRecord
+      tags:
+      - SysOperationRecord
+  /sysOperationRecord/deleteSysOperationRecordByIds:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 批量删除SysOperationRecord
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.IdsReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 批量删除SysOperationRecord
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 批量删除SysOperationRecord
+      tags:
+      - SysOperationRecord
+  /sysOperationRecord/findSysOperationRecord:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 代理
+        in: query
+        name: agent
+        type: string
+      - description: 请求Body
+        in: query
+        name: body
+        type: string
+      - in: query
+        name: createdAt
+        type: string
+      - description: 错误信息
+        in: query
+        name: error_message
+        type: string
+      - in: query
+        name: id
+        type: integer
+      - description: 请求ip
+        in: query
+        name: ip
+        type: string
+      - description: 延迟
+        in: query
+        name: latency
+        type: string
+      - description: 请求方法
+        in: query
+        name: method
+        type: string
+      - description: 请求路径
+        in: query
+        name: path
+        type: string
+      - description: 响应Body
+        in: query
+        name: resp
+        type: string
+      - description: 请求状态
+        in: query
+        name: status
+        type: integer
+      - in: query
+        name: updatedAt
+        type: string
+      - description: 用户id
+        in: query
+        name: user_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用id查询SysOperationRecord
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 用id查询SysOperationRecord
+      tags:
+      - SysOperationRecord
+  /sysOperationRecord/getSysOperationRecordList:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 代理
+        in: query
+        name: agent
+        type: string
+      - description: 请求Body
+        in: query
+        name: body
+        type: string
+      - in: query
+        name: createdAt
+        type: string
+      - description: 错误信息
+        in: query
+        name: error_message
+        type: string
+      - in: query
+        name: id
+        type: integer
+      - description: 请求ip
+        in: query
+        name: ip
+        type: string
+      - description: 关键字
+        in: query
+        name: keyword
+        type: string
+      - description: 延迟
+        in: query
+        name: latency
+        type: string
+      - description: 请求方法
+        in: query
+        name: method
+        type: string
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页大小
+        in: query
+        name: pageSize
+        type: integer
+      - description: 请求路径
+        in: query
+        name: path
+        type: string
+      - description: 响应Body
+        in: query
+        name: resp
+        type: string
+      - description: 请求状态
+        in: query
+        name: status
+        type: integer
+      - in: query
+        name: updatedAt
+        type: string
+      - description: 用户id
+        in: query
+        name: user_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 分页获取SysOperationRecord列表,返回包括列表,总数,页码,每页数量
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageResult'
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 分页获取SysOperationRecord列表
+      tags:
+      - SysOperationRecord
+  /user/SetSelfInfo:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID, 用户名, 昵称, 头像链接
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 设置用户信息
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 设置用户信息
+      tags:
+      - SysUser
+  /user/admin_register:
+    post:
+      parameters:
+      - description: 用户名, 昵称, 密码, 角色ID
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.Register'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户注册账号,返回包括用户信息
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.SysUserResponse'
+                msg:
+                  type: string
+              type: object
+      summary: 用户注册账号
+      tags:
+      - SysUser
+  /user/changePassword:
+    post:
+      parameters:
+      - description: 用户名, 原密码, 新密码
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.ChangePasswordReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户修改密码
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 用户修改密码
+      tags:
+      - SysUser
+  /user/deleteUser:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 用户ID
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.GetById'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除用户
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 删除用户
+      tags:
+      - SysUser
+  /user/getUserInfo:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取用户信息
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户信息
+      tags:
+      - SysUser
+  /user/getUserList:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 页码, 每页大小
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageInfo'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 分页获取用户列表,返回包括列表,总数,页码,每页数量
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.PageResult'
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 分页获取用户列表
+      tags:
+      - SysUser
+  /user/resetPassword:
+    post:
+      parameters:
+      - description: ID
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 重置用户密码
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 重置用户密码
+      tags:
+      - SysUser
+  /user/setUserAuthorities:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 用户UUID, 角色ID
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.SetUserAuthorities'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 设置用户权限
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 设置用户权限
+      tags:
+      - SysUser
+  /user/setUserAuthority:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 用户UUID, 角色ID
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_dto.SetUserAuth'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 设置用户权限
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 更改用户权限
+      tags:
+      - SysUser
+  /user/setUserInfo:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID, 用户名, 昵称, 头像链接
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_internal_data_data.SysUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 设置用户信息
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_leaf-rain_raindata_app_bi_third_party_rhttp.Response'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+                msg:
+                  type: string
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 设置用户信息
+      tags:
+      - SysUser
+swagger: "2.0"

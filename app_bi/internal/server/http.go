@@ -1,15 +1,20 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	kgin "github.com/go-kratos/gin"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/leaf-rain/raindata/app_bi/internal/conf"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
+	"github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
-	"net/http"
+
+	_ "github.com/leaf-rain/raindata/app_bi/api/swag"
+	"github.com/leaf-rain/raindata/app_bi/internal/conf"
 )
 
 // NewHTTPServer new an HTTP server.
@@ -20,10 +25,8 @@ func NewHTTPServer(c *conf.Server, logger *zap.Logger, svr *Server) *khttp.Serve
 
 	publicGroup := engine.Group("/")
 	privateGroup := engine.Group("/")
-
-	// todo: private接口校验权限
-	//privateGroup.Use()
-
+	mid := newMiddleware(svr)
+	privateGroup.Use(mid.JWTAuth()).Use(mid.CasbinHandler())
 	{
 		// 健康监测
 		publicGroup.GET("/health", func(c *gin.Context) {
@@ -51,10 +54,10 @@ func NewHTTPServer(c *conf.Server, logger *zap.Logger, svr *Server) *khttp.Serve
 				logger.Info("Used Memory", zap.Uint64("used", vmStat.Used))
 				logger.Info("Memory Usage", zap.Float64("percent", vmStat.UsedPercent))
 			}
-			c.JSON(http.StatusOK, map[string]interface{}{
-				"status": "ok",
-			})
+			c.JSON(http.StatusOK, result)
 		})
+		// swagger
+		publicGroup.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
 	userServer := NewUserApi(svr)
 	uploadFileServer := newFileUploadAndDownloadApi(svr)

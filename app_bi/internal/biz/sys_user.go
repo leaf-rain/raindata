@@ -68,7 +68,7 @@ func (b *User) ChangePassword(u *data.SysUser, newPassword string) (userInter *d
 
 //@function: GetUserInfoList
 //@description: 分页获取数据
-//@param: info dto.PageInfo
+//@param: info rhttp.PageInfo
 //@return: err error, list interface{}, total int64
 
 func (b *User) GetUserInfoList(info rhttp.PageInfo) (list interface{}, total int64, err error) {
@@ -191,19 +191,6 @@ func (b *User) FindUserById(id uint) (user *data.SysUser, err error) {
 	var u data.SysUser
 	err = b.data.SqlClient.Where("id = ?", id).First(&u).Error
 	return &u, err
-}
-
-//@function: FindUserByUuid
-//@description: 通过uuid获取用户信息
-//@param: uuid string
-//@return: err error, user *data.SysUser
-
-func (b *User) FindUserByUuid(uuid string) (user *data.SysUser, err error) {
-	var u data.SysUser
-	if err = b.data.SqlClient.Where("uuid = ?", uuid).First(&u).Error; err != nil {
-		return &u, errors.New("用户不存在")
-	}
-	return &u, nil
 }
 
 //@function: ResetPassword

@@ -12,30 +12,10 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
-var respPool sync.Pool
-var bufferSize = 1024
-
-func init() {
-	respPool.New = func() interface{} {
-		return make([]byte, bufferSize)
-	}
-}
-
-type middlewareOperationRecord struct {
-	*Server
-}
-
-func newMiddlewareOperationRecord(server *Server) *middlewareOperationRecord {
-	return &middlewareOperationRecord{
-		Server: server,
-	}
-}
-
-func (mid *middlewareOperationRecord) OperationRecord() gin.HandlerFunc {
+func (mid *middleware) OperationRecord() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var body []byte
 		var userId int

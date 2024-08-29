@@ -50,7 +50,7 @@ func (svc *AuthorityService) DeleteAuthority(auth *data.SysAuthority) error {
 
 //@function: GetAuthorityInfoList
 //@description: 分页获取数据
-//@param: info dto.PageInfo
+//@param: info rhttp.PageInfo
 //@return: list interface{}, total int64, err error
 
 func (svc *AuthorityService) GetAuthorityInfoList(info rhttp.PageInfo) (list interface{}, total int64, err error) {

@@ -19,8 +19,8 @@ type AuthorityApi struct {
 }
 
 func (svr *AuthorityApi) InitFileUploadAndDownloadRouter(Router *gin.RouterGroup) {
-	midOperationRecord := newMiddlewareOperationRecord(svr.Server)
-	authorityRouter := Router.Group("authority").Use(midOperationRecord.OperationRecord())
+	mid := newMiddleware(svr.Server)
+	authorityRouter := Router.Group("authority").Use(mid.OperationRecord())
 	authorityRouterWithoutRecord := Router.Group("authority")
 	{
 		authorityRouter.POST("createAuthority", svr.CreateAuthority)   // 创建角色
@@ -39,8 +39,8 @@ func (svr *AuthorityApi) InitFileUploadAndDownloadRouter(Router *gin.RouterGroup
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      system.SysAuthority                                                true  "权限id, 权限名, 父角色id"
-// @Success   200   {object}  rhttp.Response{data=systemRes.SysAuthorityResponse,msg=string}  "创建角色,返回包括系统角色详情"
+// @Param     data  body      data.SysAuthority                                                true  "权限id, 权限名, 父角色id"
+// @Success   200   {object}  rhttp.Response{data=data.SysAuthority,msg=string}  "创建角色,返回包括系统角色详情"
 // @Router    /authority/createAuthority [post]
 func (svr *AuthorityApi) CreateAuthority(c *gin.Context) {
 	var authority, authBack data.SysAuthority
@@ -77,7 +77,7 @@ func (svr *AuthorityApi) CreateAuthority(c *gin.Context) {
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      system.SysAuthority            true  "删除角色"
+// @Param     data  body      data.SysAuthority            true  "删除角色"
 // @Success   200   {object}  rhttp.Response{msg=string}  "删除角色"
 // @Router    /authority/deleteAuthority [post]
 func (svr *AuthorityApi) DeleteAuthority(c *gin.Context) {
@@ -109,8 +109,8 @@ func (svr *AuthorityApi) DeleteAuthority(c *gin.Context) {
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      system.SysAuthority                                                true  "权限id, 权限名, 父角色id"
-// @Success   200   {object}  rhttp.Response{data=systemRes.SysAuthorityResponse,msg=string}  "更新角色信息,返回包括系统角色详情"
+// @Param     data  body      data.SysAuthority                                                true  "权限id, 权限名, 父角色id"
+// @Success   200   {object}  rhttp.Response{data=data.SysAuthority,msg=string}  "更新角色信息,返回包括系统角色详情"
 // @Router    /authority/updateAuthority [post]
 func (svr *AuthorityApi) UpdateAuthority(c *gin.Context) {
 	var auth data.SysAuthority
@@ -140,7 +140,7 @@ func (svr *AuthorityApi) UpdateAuthority(c *gin.Context) {
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      dto.PageInfo                                        true  "页码, 每页大小"
+// @Param     data  body      rhttp.PageInfo                                        true  "页码, 每页大小"
 // @Success   200   {object}  rhttp.Response{data=rhttp.PageResult,msg=string}  "分页获取角色列表,返回包括列表,总数,页码,每页数量"
 // @Router    /authority/getAuthorityList [post]
 func (svr *AuthorityApi) GetAuthorityList(c *gin.Context) {
@@ -176,7 +176,7 @@ func (svr *AuthorityApi) GetAuthorityList(c *gin.Context) {
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      system.SysAuthority            true  "设置角色资源权限"
+// @Param     data  body      data.SysAuthority            true  "设置角色资源权限"
 // @Success   200   {object}  rhttp.Response{msg=string}  "设置角色资源权限"
 // @Router    /authority/setDataAuthority [post]
 func (svr *AuthorityApi) SetDataAuthority(c *gin.Context) {

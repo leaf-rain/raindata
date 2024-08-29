@@ -29,7 +29,7 @@ func (svc *OperationRecordService) CreateSysOperationRecord(sysOperationRecord d
 
 //@function: DeleteSysOperationRecordByIds
 //@description: 批量删除记录
-//@param: ids dto.IdsReq
+//@param: ids rhttp.IdsReq
 //@return: err error
 
 func (svc *OperationRecordService) DeleteSysOperationRecordByIds(ids rhttp.IdsReq) (err error) {
@@ -59,7 +59,7 @@ func (svc *OperationRecordService) GetSysOperationRecord(id uint) (sysOperationR
 
 //@function: GetSysOperationRecordInfoList
 //@description: 分页获取操作记录列表
-//@param: info systemReq.SysOperationRecordSearch
+//@param: info dto.SysOperationRecordSearch
 //@return: list interface{}, total int64, err error
 
 func (svc *OperationRecordService) GetSysOperationRecordInfoList(info dto.SysOperationRecordSearch) (list interface{}, total int64, err error) {

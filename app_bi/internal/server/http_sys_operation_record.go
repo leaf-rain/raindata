@@ -38,7 +38,7 @@ func (svr *operationRecordApi) InitRouter(Router *gin.RouterGroup) {
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      system.SysOperationRecord      true  "创建SysOperationRecord"
+// @Param     data  body      data.SysOperationRecord      true  "创建SysOperationRecord"
 // @Success   200   {object}  rhttp.Response{msg=string}  "创建SysOperationRecord"
 // @Router    /sysOperationRecord/createSysOperationRecord [post]
 func (svr *operationRecordApi) CreateSysOperationRecord(c *gin.Context) {
@@ -64,7 +64,7 @@ func (svr *operationRecordApi) CreateSysOperationRecord(c *gin.Context) {
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      system.SysOperationRecord      true  "SysOperationRecord模型"
+// @Param     data  body      data.SysOperationRecord      true  "SysOperationRecord模型"
 // @Success   200   {object}  rhttp.Response{msg=string}  "删除SysOperationRecord"
 // @Router    /sysOperationRecord/deleteSysOperationRecord [delete]
 func (svr *operationRecordApi) DeleteSysOperationRecord(c *gin.Context) {
@@ -90,7 +90,7 @@ func (svr *operationRecordApi) DeleteSysOperationRecord(c *gin.Context) {
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      dto.IdsReq                 true  "批量删除SysOperationRecord"
+// @Param     data  body      rhttp.IdsReq                 true  "批量删除SysOperationRecord"
 // @Success   200   {object}  rhttp.Response{msg=string}  "批量删除SysOperationRecord"
 // @Router    /sysOperationRecord/deleteSysOperationRecordByIds [delete]
 func (svr *operationRecordApi) DeleteSysOperationRecordByIds(c *gin.Context) {
@@ -116,7 +116,7 @@ func (svr *operationRecordApi) DeleteSysOperationRecordByIds(c *gin.Context) {
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  query     system.SysOperationRecord                                  true  "Id"
+// @Param     data  query     data.SysOperationRecord                                  true  "Id"
 // @Success   200   {object}  rhttp.Response{data=map[string]interface{},msg=string}  "用id查询SysOperationRecord"
 // @Router    /sysOperationRecord/findSysOperationRecord [get]
 func (svr *operationRecordApi) FindSysOperationRecord(c *gin.Context) {

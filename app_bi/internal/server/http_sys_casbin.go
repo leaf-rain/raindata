@@ -51,7 +51,7 @@ func (svr *CasbinApi) UpdateCasbin(c *gin.Context) {
 // @accept    application/json
 // @Produce   application/json
 // @Param     data  body      dto.CasbinInReceive                                          true  "权限id, 权限模型列表"
-// @Success   200   {object}  rhttp.Response{data=systemRes.PolicyPathResponse,msg=string}  "获取权限列表,返回包括casbin详情列表"
+// @Success   200   {object}  rhttp.Response{data=dto.PolicyPathResponse,msg=string}  "获取权限列表,返回包括casbin详情列表"
 // @Router    /casbin/getPolicyPathByAuthorityId [post]
 func (svr *CasbinApi) GetPolicyPathByAuthorityId(c *gin.Context) {
 	var casbin dto.CasbinInReceive

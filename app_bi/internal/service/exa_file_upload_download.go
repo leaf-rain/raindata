@@ -45,7 +45,7 @@ func (e *FileUploadAndDownloadService) EditFileName(file data.ExaFileUploadAndDo
 
 //@function: GetFileRecordInfoList
 //@description: 分页获取数据
-//@param: info dto.PageInfo
+//@param: info rhttp.PageInfo
 //@return: list interface{}, total int64, err error
 
 func (e *FileUploadAndDownloadService) GetFileRecordInfoList(info rhttp.PageInfo) (list interface{}, total int64, err error) {

@@ -24,6 +24,7 @@ init:
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
 	go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
 	go install github.com/google/wire/cmd/wire@latest
+	go install github.com/swaggo/swag/cmd/swag@latest
 
 .PHONY: config
 # generate internal proto
@@ -62,6 +63,11 @@ all:
 	make api;
 	make config;
 	make generate;
+
+.PHONY: swagger
+# clean
+swagger:
+	swag init -o ./api/swag --parseDependency --parseInternal -g ./internal/server/http*.go
 
 # show help
 help:
