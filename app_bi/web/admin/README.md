@@ -1,4 +1,4 @@
-# bi
+# admin
 
 This template should help get you started developing with Vue 3 in Vite.
 
@@ -30,10 +30,4 @@ npm run dev
 
 ```sh
 npm run build
-```
-
-### Run Unit Tests with [Vitest](https://vitest.dev/)
-
-```sh
-npm run test:unit
 ```
