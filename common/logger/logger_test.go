@@ -7,7 +7,7 @@ import (
 func TestInitLogger(t *testing.T) {
 	var cfg = &LogConfig{
 		ServerName: "test",
-		Appid:      1,
+		Appid:      "test",
 		LogLevel:   "info",
 		LogFile:    false,
 	}

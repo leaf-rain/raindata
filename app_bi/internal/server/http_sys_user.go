@@ -87,7 +87,7 @@ func (svr *UserApi) Login(c *gin.Context) {
 		return
 	}
 	if user.Enable != 1 {
-		svr.logger.Error("[Login]登陆失败! 用户被禁止登录!", zap.Uint("userId", user.ID))
+		svr.logger.Error("[Login] 登陆失败! 用户被禁止登录!", zap.Uint("userId", user.ID))
 		rhttp.FailWithMessage("用户被禁止登录", c)
 		return
 	}

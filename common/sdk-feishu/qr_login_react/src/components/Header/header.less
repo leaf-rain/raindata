@@ -1,0 +1,54 @@
+
+@DeepColor: #948C76;
+@BrightColor: #c7f3ef;
+.Header {
+  width: 100%;
+  text-align: center;
+  .header-box{
+    animation: fadein .3s;
+    img {
+      width: 40vw;
+      height: 40vw;
+      max-width: 30px;
+      max-height: 30px;
+      border-radius: 50%;
+      padding-bottom: 5px;
+    }
+  }
+
+  .my-id {
+    font-size: 1.5em;
+    font-weight: 700;
+    padding: 0 .2em;
+    letter-spacing: .1em;
+    display: inline-block;
+    color: @DeepColor;
+  }
+
+  .my-sort{
+    margin-bottom: 2em;
+    a {
+      display: inline-block;
+      margin: 0 0.25em;
+      font-size: .8em;
+      &.hover,
+      &.active{
+        color: #948C76;
+        text-decoration: underline;
+        background: @BrightColor;
+        padding: 2px 5px;
+      }
+    }
+  }
+}
+
+@keyframes fadein{
+  from{
+    opacity: 0;
+    transform: translateY(-5em);
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0)
+  }
+}

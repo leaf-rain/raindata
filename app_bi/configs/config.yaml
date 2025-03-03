@@ -26,3 +26,8 @@ log:
   server_name: "app_bi"
   appid: "1"
   log_level: "debug"
+jwt:
+  signingKey: rain
+  expiresTime: 7d
+  bufferTime: 1d
+  issuer: rain

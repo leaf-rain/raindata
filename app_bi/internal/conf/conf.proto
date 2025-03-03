@@ -10,9 +10,7 @@ message Bootstrap {
   Data data = 2;
   Log log = 3;
   JWT jwt = 4;
-  AutoCode autoCode = 5;
   Email email = 6;
-  Mongo mongo = 7;
   Oss oss = 8;
 }
 
@@ -64,6 +62,7 @@ message Data {
   }
   Database database = 1;
   Redis redis = 2;
+  Mongo mongo = 3;
 }
 
 message JWT {

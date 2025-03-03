@@ -44,7 +44,7 @@ func (b *User) Login(u *data.SysUser) (userInter *data.SysUser, err error) {
 	if err != nil {
 		b.logger.Error("[Register] 用户登陆失败", zap.Error(err), zap.String("username", u.Username))
 	}
-	return u, err
+	return entityUser.Model, err
 }
 
 //@function: ChangePassword

@@ -111,7 +111,7 @@ func (entity *EntitySysUser) InitializeData(ctx context.Context) (err error) {
 
 func (entity *EntitySysUser) ReloadByDb() error {
 	var user *SysUser
-	err := entity.SqlClient.Where("username = ?", entity.Model.Username).Preload("Authorities").Preload("Authority").First(&user).Error
+	err := entity.SqlClient.Where("username = ?", entity.Model.Username).First(&user).Error
 	if err == nil {
 		if ok := hash.BcryptCheck(entity.Model.Password, user.Password); !ok {
 			return ecode.ERR_USER_AUTH

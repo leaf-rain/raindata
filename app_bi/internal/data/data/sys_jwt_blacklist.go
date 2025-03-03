@@ -75,7 +75,7 @@ func (j *JWT) CreateClaims(baseClaims BaseClaims) CustomClaims {
 // 创建一个token
 func (j *JWT) CreateToken(claims CustomClaims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(j.Config.GetJwt().SigningKey)
+	return token.SignedString([]byte(j.Config.GetJwt().SigningKey))
 }
 
 // CreateTokenByOldToken 旧token 换新token 使用归并回源避免并发问题

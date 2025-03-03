@@ -43,7 +43,11 @@ type LogConfig struct {
 }
 
 // 初始化日志 logger
-func InitLogger(cfg *LogConfig) (*zap.Logger, error) {
+func InitLogger(cfg *LogConfig, opts ...zap.Option) (*zap.Logger, error) {
+	if cfg == nil {
+		log.Println("InitLogger log config is nil")
+		cfg = new(LogConfig)
+	}
 	_, ok := logLevel[cfg.LogLevel]
 	if !ok {
 		cfg.LogLevel = "info"
@@ -64,7 +68,7 @@ func InitLogger(cfg *LogConfig) (*zap.Logger, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println("server log loading success. path:", cfg.LogPath)
+	log.Println("InitLogger server log loading success. path:", cfg.LogPath)
 	var fields []zap.Field
 	if cfg.ServerName != "" {
 		fields = append(fields, zap.String("server_name", cfg.ServerName))
@@ -73,10 +77,12 @@ func InitLogger(cfg *LogConfig) (*zap.Logger, error) {
 		fields = append(fields, zap.String("appid", cfg.Appid))
 	}
 	if len(fields) > 0 {
-		logger := zap.New(core, zap.AddCaller(), zap.Development(), zap.Fields(fields...))
+		opts = append(opts, zap.AddCaller(), zap.Development(), zap.Fields(fields...))
+		logger := zap.New(core, opts...)
 		return logger, nil
 	}
-	logger := zap.New(core, zap.AddCaller(), zap.Development())
+	opts = append(opts, zap.AddCaller(), zap.Development())
+	logger := zap.New(core, opts...)
 	return logger, nil
 }
 
