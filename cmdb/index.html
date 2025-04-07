@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>服务器管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#3b82f6",
+                        secondary: "#64748b",
+                    },
+                    borderRadius: {
+                        none: "0px",
+                        sm: "4px",
+                        DEFAULT: "8px",
+                        md: "12px",
+                        lg: "16px",
+                        xl: "20px",
+                        "2xl": "24px",
+                        "3xl": "32px",
+                        full: "9999px",
+                        button: "8px",
+                    },
+                },
+            },
+        };
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <style>
+        :where([class^="ri-"])::before {
+            content: "\f3c2";
+        }
+
+        .code-editor {
+            font-family: 'Fira Code', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1rem;
+            border-radius: 8px;
+            resize: none;
+        }
+
+        .log-panel {
+            height: 200px;
+            overflow-y: auto;
+        }
+
+        .server-card {
+            transition: all 0.3s ease;
+        }
+
+        .server-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <div id="app" class="min-h-screen">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-4 flex-1">
+                    <div class="relative flex-1 max-w-md">
+                        <input type="text" v-model="searchQuery" placeholder="搜索服务器..."
+                            class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-button focus:outline-none focus:border-primary" />
+                        <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                    <div class="relative">
+                        <button @click="toggleFilterDropdown"
+                            class="px-4 py-2 border border-gray-200 rounded-button flex items-center space-x-2 hover:bg-gray-50">
+                            <i class="ri-filter-3-line"></i>
+                            <span>筛选</span>
+                        </button>
+                        <div v-if="showFilterDropdown"
+                            class="absolute top-full mt-2 w-48 bg-white rounded shadow-lg border border-gray-100 z-10">
+                            <div class="p-2">
+                                <div class="mb-2">
+                                    <label class="block py-2 font-medium">状态</label>
+                                    <label class="block py-2">
+                                        <input type="checkbox" v-model="filters.status.online" class="mr-2" />
+                                        在线
+                                    </label>
+                                    <label class="block py-2">
+                                        <input type="checkbox" v-model="filters.status.offline" class="mr-2" />
+                                        离线
+                                    </label>
+                                </div>
+                                <div class="border-t pt-2">
+                                    <label class="block py-2 font-medium">标签</label>
+                                    <div v-for="tag in availableTags" :key="tag" class="py-1">
+                                        <label class="block">
+                                            <input type="checkbox" v-model="filters.tags[tag]" class="mr-2" />
+                                            {{tag}}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button @click="showAddServerModal = true"
+                        class="px-4 py-2 bg-primary text-white rounded-button flex items-center space-x-2 hover:bg-primary/90">
+                        <i class="ri-add-line"></i>
+                        <span>添加服务器</span>
+                    </button>
+                </div>
+            </div>
+            <div class="flex flex-col space-y-6">
+                <div class="w-full">
+                    <div class="grid grid-cols-3 gap-4">
+                        <div v-for="server in filteredServers" :key="server.id"
+                            class="server-card bg-white rounded p-4 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <input type="checkbox" v-model="server.selected" class="rounded" />
+                                    <h3 class="font-medium">{{server.name}}</h3>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button @click="editServer(server)"
+                                        class="p-1.5 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100">
+                                        <i class="ri-edit-line"></i>
+                                    </button>
+                                    <button @click="confirmDeleteServer(server)"
+                                        class="p-1.5 text-gray-500 hover:text-red-600 rounded-full hover:bg-gray-100">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+                                    <div class="flex flex-wrap gap-1">
+                                        <span v-for="tag in server.tags" :key="tag"
+                                            class="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs group relative">
+                                            {{tag}}
+                                            <button @click.stop="server.tags = server.tags.filter(t => t !== tag)"
+                                                class="hidden group-hover:inline-block ml-1 hover:text-gray-700">
+                                                <i class="ri-close-line"></i>
+                                            </button>
+                                        </span>
+                                        <button @click.stop="server.showAddTag = true"
+                                            class="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs hover:bg-gray-200">
+                                            <i class="ri-add-line"></i>
+                                        </button>
+                                        <div v-if="server.showAddTag"
+                                            class="absolute mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2 z-20">
+                                            <div class="flex items-center space-x-2 mb-2">
+                                                <input type="text" v-model="server.newTagInput"
+                                                    @keydown.enter="addServerTag(server)" placeholder="输入标签后按回车"
+                                                    class="px-2 py-1 border border-gray-200 rounded text-sm" />
+                                                <button @click="server.showAddTag = false"
+                                                    class="text-gray-500 hover:text-gray-700">
+                                                    <i class="ri-close-line"></i>
+                                                </button>
+                                            </div>
+                                            <div v-if="server.newTagInput && availableTags.filter(t => t.toLowerCase().includes(server.newTagInput.toLowerCase()) && !server.tags.includes(t)).length > 0"
+                                                class="max-h-32 overflow-y-auto">
+                                                <div v-for="tag in availableTags.filter(t => t.toLowerCase().includes(server.newTagInput.toLowerCase()) && !server.tags.includes(t))"
+                                                    :key="tag" @click="selectServerTag(server, tag)"
+                                                    class="px-2 py-1 hover:bg-gray-50 cursor-pointer text-sm">
+                                                    {{tag}}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span
+                                        :class="server.status === 'online' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                                        class="px-2 py-1 rounded-full text-xs whitespace-nowrap"
+                                        @click="initWs(server)">
+                                        {{server.status === 'online' ? '在线' : '离线'}}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>CPU</span>
+                                        <span>{{server.cpu}}%</span>
+                                    </div>
+                                    <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                        <div :style="{width: server.cpu + '%'}" class="h-full bg-primary"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>内存</span>
+                                        <span>{{server.memory}}%</span>
+                                    </div>
+                                    <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                        <div :style="{width: server.memory + '%'}" class="h-full bg-primary"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>磁盘</span>
+                                        <span>{{server.disk.used}}GB / {{server.disk.total}}GB</span>
+                                    </div>
+                                    <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                        <div :style="{width: (server.disk.used / server.disk.total * 100) + '%'}"
+                                            class="h-full bg-primary"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-center justify-between">
+                                <button @click="server.showLogs = !server.showLogs"
+                                    class="text-sm text-gray-600 flex items-center">
+                                    <i :class="server.showLogs ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'"></i>
+                                    日志
+                                </button>
+                                <button @click="cancelExecution(server)" class="text-sm text-red-600 flex items-center"
+                                    v-if="server.executing!=''">
+                                    <i class="ri-stop-circle-line mr-1"></i>
+                                    取消执行
+                                </button>
+                                <button @click="showLogDetails(server)" class="text-sm text-primary flex items-center">
+                                    <i class="ri-file-list-3-line mr-1"></i>
+                                    详情
+                                </button>
+                            </div>
+                            <div v-if="server.showLogs" class="mt-2 log-panel bg-gray-50 rounded p-2 text-sm">
+                                <div v-for="log in server.logs.slice(0,5)" :key="log.id" class="py-1">
+                                    <span class="text-gray-500">{{log.time}}</span>
+                                    <span
+                                        :class="{'text-green-600': log.type === 'success', 'text-red-600': log.type === 'error'}"
+                                        class="ml-2">{{log.message}}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="w-full">
+                    <div class="bg-white rounded shadow-sm p-6">
+                        <h2 class="text-xl font-medium mb-4">执行脚本</h2>
+                        <textarea v-model="scriptContent" class="code-editor w-full mb-4" style="height:200px"
+                            placeholder="请输入要执行的脚本..."></textarea>
+                        <div class="flex items-center justify-between">
+                            <div class="text-sm text-gray-600 flex-1">
+                                <div class="flex flex-wrap gap-2">
+                                    <span v-for="server in selectedServers" :key="server.id"
+                                        class="px-2 py-1 bg-gray-100 rounded-full text-xs flex items-center">
+                                        {{server.name}}
+                                        <button @click="server.selected = false" class="ml-1 hover:text-gray-700">
+                                            <i class="ri-close-line"></i>
+                                        </button>
+                                    </span>
+                                </div>
+                            </div>
+                            <button @click="executeScript" :disabled="!scriptContent || selectedServers.length === 0"
+                                class="px-4 py-2 bg-primary text-white rounded-button hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed">
+                                执行
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div v-if="showAddServerModal || showEditServerModal"
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+            @click="showAddServerModal.value = false; showEditServerModal.value = false">
+            <div class="bg-white rounded-lg p-6 w-full max-w-md">
+                <h3 class="text-lg font-medium mb-4">
+                    {{showEditServerModal ? '修改服务器' : '添加服务器'}}
+                </h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">服务器名称</label>
+                        <input type="text" v-model="tmpServer.name"
+                            class="w-full px-3 py-2 border border-gray-200 rounded-button" />
+                    </div>
+                    <div v-if="!showEditServerModal">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">IP 地址</label>
+                        <input type="text" v-model="tmpServer.ip"
+                            class="w-full px-3 py-2 border border-gray-200 rounded-button" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                        <input type="text" v-model="tmpServer.notes"
+                            class="w-full px-3 py-2 border border-gray-200 rounded-button" />
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button @click="showEditServerModal ? showEditServerModal = false : showAddServerModal = false"
+                        class="px-4 py-2 border border-gray-200 rounded-button hover:bg-gray-50">
+                        取消
+                    </button>
+                    <button @click="showEditServerModal ? saveServerEdit() : addServer()"
+                        class="px-4 py-2 bg-primary text-white rounded-button hover:bg-primary/90">
+                        {{showEditServerModal ? '保存' : '添加'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div v-if="showLogDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div class="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[80vh] flex flex-col" @click.stop>
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium">
+                        服务器日志详情 - {{selectedLogServer?.name}}
+                    </h3>
+                    <button @click="showLogDetailsModal = false" class="text-gray-500 hover:text-gray-700">
+                        <i class="ri-close-line text-xl"></i>
+                    </button>
+                </div>
+                <div class="flex-1 overflow-y-auto">
+                    <div class="space-y-2">
+                        <div v-for="log in selectedLogServer?.logs" :key="log.id"
+                            class="flex items-center p-3 bg-gray-50 rounded">
+                            <span class="text-gray-500 w-48">{{log.time}}</span>
+                            <span
+                                :class="{'text-green-600': log.type === 'success', 'text-red-600': log.type === 'error'}"
+                                class="flex-1">{{log.message}}</span>
+                            <span
+                                :class="{'bg-green-100 text-green-800': log.type === 'success', 'bg-red-100 text-red-800': log.type === 'error'}"
+                                class="px-2 py-1 rounded-full text-xs">
+                                {{log.type === 'success' ? '成功' : '错误'}}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button @click="showLogDetailsModal = false"
+                        class="px-4 py-2 bg-gray-100 text-gray-700 rounded-button hover:bg-gray-200">
+                        关闭
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div v-if="showDeleteConfirmModal"
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div class="bg-white rounded-lg p-6 w-full max-w-sm" @click.stop>
+                <h3 class="text-lg font-medium mb-4">确认删除</h3>
+                <p class="text-gray-600 mb-6">
+                    确定要删除服务器 "{{serverToDelete?.name}}" 吗？此操作无法撤销。
+                </p>
+                <div class="flex justify-end space-x-3">
+                    <button @click="closeDeleteConfirmModal"
+                        class="px-4 py-2 border border-gray-200 rounded-button hover:bg-gray-50">
+                        取消
+                    </button>
+                    <button @click="deleteServer"
+                        class="px-4 py-2 bg-red-500 text-white rounded-button hover:bg-red-600">
+                        删除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const { createApp, ref, toRaw, computed, onMounted } = Vue;
+        createApp({
+            setup() {
+                function uuid() {
+                    var s = [];
+                    var hexDigits = "0123456789abcdef";
+                    for (var i = 0; i < 36; i++) {
+                        s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
+                    }
+                    s[14] = "4"; // bits 12-15 of the time_hi_and_version field to 0010
+                    s[19] = hexDigits.substr((s[19] & 0x3) | 0x8, 1); // bits 6-7 of the clock_seq_hi_and_reserved to 01
+                    s[8] = s[13] = s[18] = s[23] = "-";
+                    var uuid = s.join("");
+                    return uuid;
+                }
+
+                const servers = ref([]);
+                const searchQuery = ref("");
+                const showFilterDropdown = ref(false);
+                const filters = ref({
+                    status: {
+                        online: true,
+                        offline: true,
+                    },
+                    tags: {},
+                });
+                const availableTags = ref([
+                    "生产环境",
+                    "测试环境",
+                    "开发环境",
+                    "数据库",
+                    "Web服务器",
+                    "缓存服务器",
+                ]);
+                const scriptContent = ref("");
+                const showAddServerModal = ref(false);
+                const showLogDetailsModal = ref(false);
+                const showEditServerModal = ref(false);
+                const showDeleteConfirmModal = ref(false);
+                const selectedLogServer = ref(null);
+                const serverToDelete = ref(null);
+                const tmpServer = ref({
+                    name: "",
+                    ip: "",
+                    tags: [],
+                    notes: "",
+                });
+                const clearTmpServer = () => {
+                    tmpServer.value.name = "";
+                    tmpServer.value.ip = "";
+                    tmpServer.value.tags = [];
+                    tmpServer.value.notes = "";
+                };
+                const insertTmpServer = (server) => {
+                    tmpServer.value.name = server.name;
+                    tmpServer.value.ip = server.ip;
+                    tmpServer.value.tags = server.tags;
+                    tmpServer.value.notes = server.notes;
+                };
+                const newTagInput = ref("");
+                const showNotification = (message) => {
+                    const notification = document.createElement("div");
+                    notification.className =
+                        "fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg";
+                    notification.textContent = message;
+                    document.body.appendChild(notification);
+                    setTimeout(() => notification.remove(), 3000);
+                };
+                const showErrorNotification = (message) => {
+                    const notification = document.createElement("div");
+                    notification.className =
+                        "fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg";
+                    notification.textContent = message;
+                    document.body.appendChild(notification);
+                    setTimeout(() => notification.remove(), 3000);
+                };
+                const initServer = (name = "", ip = "", tags = [], notes = "") => {
+                    if (!name || !ip) {
+                        showErrorNotification("参数校验错误")
+                        return
+                    }
+                    ;
+                    let item = ref({
+                        id: uuid(),
+                        name: "name",
+                        ip: ip,
+                        status: "offline", // online, offline, connecting
+                        cpu: 0,
+                        memory: 0,
+                        disk: {
+                            used: 0,
+                            total: 0
+                        },
+                        selected: false,
+                        showLogs: false,
+                        showAddTag: false,
+                        newTagInput: notes,
+                        notes: notes,
+                        tags: tags,
+                        logs: [],
+                        ws: null,
+                        executing: "",
+                    })
+                    initWs(item.value)
+                    servers.value.push(item.value);
+                    showNotification("服务器添加成功");
+                };
+                var reader = {
+                    readAs: function (type, blob, cb) {
+                        var r = new FileReader();
+                        r.onloadend = function () {
+                            if (typeof (cb) === 'function') {
+                                cb.call(r, r.result);
+                            }
+                        }
+                        try {
+                            r['readAs' + type](blob);
+                        } catch (e) {
+                        }
+                    }
+                }
+
+                function parseBlob(blob) {
+                    return new Promise((resolve, reject) => {
+                        let code, msg;
+                        reader.readAs('ArrayBuffer', blob.slice(0, 2), function (arr) {
+                            code = (new Int16Array(arr))[0];
+                            if (msg !== undefined) {
+                                resolve({ code, msg });
+                            }
+                        });
+                        reader.readAs('Text', blob.slice(2, blob.size, 'text/plain;charset=UTF-8'), function (result) {
+                            msg = result;
+                            if (code !== undefined) {
+                                resolve({ code, msg });
+                            }
+                        });
+                        reader.onerror = function (e) {
+                            reject(e);
+                        };
+                    });
+                }
+
+                const initWs = (server) => {
+                    if (server.status === "online") {
+                        return;
+                    }
+                    server.ws = new WebSocket("ws://" + server.ip + ":8080/ws");
+                    server.ws.onopen = () => {
+                        server.status = "online";
+                        server.logs.unshift({
+                            type: "success",
+                            message: "连接成功",
+                            time: new Date().toLocaleTimeString(),
+                        });
+                        showNotification("info:" + server.name + ":" + "连接成功")
+                    };
+                    // 从服务器接受到信息时的回调函数
+                    server.ws.onmessage = async function (e) {
+                        try {
+                            const { code, msg } = await parseBlob(e.data);
+                            // console.log("code:" + code + ";msg:" + msg);
+                            switch (code) {
+                                case 2:
+                                    const response = JSON.parse(msg);
+                                    server.cpu = Math.round(response.cpu_usage * 100) / 100 || 0;
+                                    server.memory = Math.round(response.memory_usage * 100) / 100 || 0;
+                                    server.disk = {
+                                        used: Math.round(response.disk_usage.used / 1024 / 1024 / 1024 * 100) / 100 || 0,
+                                        total: Math.round(response.disk_usage.total / 1024 / 1024 / 1024 * 100) / 100 || 0,
+                                    };
+                                    break;
+                                case 4:
+                                    server.logs.unshift({
+                                        type: "success",
+                                        message: msg,
+                                        time: new Date().toLocaleTimeString(),
+                                    });
+                                    break;
+                                case 6:
+                                    let tmpType = "success";
+                                    if (msg.startsWith("执行失败")) {
+                                        tmpType = "error";
+                                    }
+                                    server.logs.unshift({
+                                        type: tmpType,
+                                        message: msg,
+                                        time: new Date().toLocaleTimeString(),
+                                    });
+                                    server.executing = "";
+                                    break;
+                            }
+                        } catch (error) {
+                            console.error("Error parsing blob:", error);
+                            server.logs.unshift({
+                                type: "error",
+                                message: "解析消息失败",
+                                time: new Date().toLocaleTimeString(),
+                            });
+                        }
+                    };
+                    server.ws.onclose = function (evt) {
+                        server.logs.unshift({
+                            type: "error",
+                            message: "连接关闭，code:" + evt.code,
+                            time: new Date().toLocaleTimeString(),
+                        });
+                        server.status = "offline";
+                        showErrorNotification("error:" + server.name + ":" + "连接关闭，code:" + evt.code)
+                    };
+                    // 连接失败后的回调函数
+                    server.ws.onerror = function (evt) {
+                        const errorMessage = evt.error || "未知错误";
+                        server.status = "offline";
+                        server.logs.unshift({
+                            type: "error",
+                            message: errorMessage,
+                            time: new Date().toLocaleTimeString(),
+                        });
+                        showErrorNotification("error:" + server.name + ":" + errorMessage)
+                    };
+                };
+                initServer("localhost", "127.0.0.1", ["localhost"], "本地服务器")
+                const filteredServers = computed(() => {
+                    return servers.value.filter((server) => {
+                        const matchesSearch =
+                            server.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+                            server.ip.toLowerCase().includes(searchQuery.value.toLowerCase());
+                        const matchesStatus =
+                            (server.status === "online" && filters.value.status.online) ||
+                            (server.status === "offline" && filters.value.status.offline);
+                        const matchesTags = Object.entries(filters.value.tags).every(
+                            ([tag, isSelected]) => {
+                                return !isSelected || server.tags.includes(tag);
+                            },
+                        );
+                        return matchesSearch && matchesStatus && matchesTags;
+                    });
+                });
+                const selectedServers = computed(() => {
+                    return servers.value.filter((server) => server.selected);
+                });
+                const selectedServer = computed(() => {
+                    const selected = servers.value.filter((server) => server.selected);
+                    return selected.length === 1 ? selected[0] : null;
+                });
+                const toggleFilterDropdown = () => {
+                    showFilterDropdown.value = !showFilterDropdown.value;
+                };
+
+                function uint16ToBytesLittleEndian(num) {
+                    if (typeof num !== 'number' || num < 0 || num > 0xFFFF) {
+                        console.error("Invalid input: num must be a 16-bit unsigned integer");
+                        return null;
+                    }
+
+                    const buffer = new ArrayBuffer(2);
+                    const view = new DataView(buffer);
+                    view.setUint16(0, num, true); // true for little-endian
+                    const bytes = new Uint8Array(buffer);
+                    return bytes;
+                }
+                function stringToUint8Array(str) {
+                    var arr = [];
+                    for (var i = 0, j = str.length; i < j; ++i) {
+                        arr.push(str.charCodeAt(i));
+                    }
+
+                    var tmpUint8Array = new Uint8Array(arr);
+                    return tmpUint8Array
+                }
+                const mashalMsg = (code, msg) => {
+                    code = uint16ToBytesLittleEndian(code)
+                    const msgBytes = stringToUint8Array(msg);
+                    const body = new Uint8Array(2 + msg.length);
+                    body.set(code)
+                    body.set(msgBytes, 2);
+                    return body;
+                }
+                const MAX_CHUNK_SIZE = 16 * 1024; // 16KB
+
+                // function sendLargeData(ws, data) {
+                //     let offset = 0;
+                //     while (offset < data.length) {
+                //         const chunk = data.slice(offset, offset + MAX_CHUNK_SIZE);
+                //         ws.send(chunk);
+                //         offset += MAX_CHUNK_SIZE;
+                //     }
+                // }
+                const executeScript = () => {
+                    const tmpExecId = uuid()
+                    selectedServers.value.forEach((server) => {
+                        if (server.status === "online") {
+                            const body = JSON.stringify({
+                                id: tmpExecId,
+                                data: scriptContent.value,
+                            });
+                            let data = mashalMsg(3, body)
+                            server.ws.send(data);
+                            // sendLargeData(server.ws, data);
+                        } else {
+                            server.logs.unshift({
+                                id: Date.now(),
+                                time: new Date().toLocaleTimeString(),
+                                type: "error",
+                                message: "服务器不在线，无法执行脚本",
+                            });
+                        }
+                        server.logs.unshift({
+                            id: Date.now(),
+                            time: new Date().toLocaleTimeString(),
+                            type: "success",
+                            message: "脚本发布到服务器",
+                        });
+                        server.executing = tmpExecId;
+                    });
+                    showNotification("脚本发布到服务器");
+                    scriptContent.value = "";
+                };
+                const cancelExecution = (server) => {
+                    if (server.status === "online") {
+                        let data = mashalMsg(5, server.executing)
+                        server.ws.send(data);
+                        // sendLargeData(server.ws, data);
+                    } else {
+                        server.logs.unshift({
+                            id: Date.now(),
+                            time: new Date().toLocaleTimeString(),
+                            type: "error",
+                            message: "服务器不在线，无法取消执行脚本",
+                        });
+                    }
+                    server.logs.unshift({
+                        id: Date.now(),
+                        time: new Date().toLocaleTimeString(),
+                        type: "success",
+                        message: "正在取消执行脚本",
+                    });
+                    server.executing = "";
+                };
+                const showLogDetails = (server) => {
+                    showLogDetailsModal.value = true;
+                    selectedLogServer.value = server;
+                };
+                const addServerTag = (server) => {
+                    if (!server.newTagInput) return;
+                    if (!server.tags.includes(server.newTagInput)) {
+                        server.tags.push(server.newTagInput);
+                        if (!availableTags.value.includes(server.newTagInput)) {
+                            availableTags.value.push(server.newTagInput);
+                        }
+                    }
+                    server.newTagInput = "";
+                    server.showAddTag = false;
+                };
+                const selectServerTag = (server, tag) => {
+                    if (!server.tags.includes(tag)) {
+                        server.tags.push(tag);
+                    }
+                    server.newTagInput = "";
+                    server.showAddTag = false;
+                };
+                const addServer = () => {
+                    initServer(tmpServer.value.name, tmpServer.value.ip, tmpServer.value.tags || [], tmpServer.value.notes || "")
+                    showAddServerModal.value = false;
+                    clearTmpServer();
+                    newTagInput.value = "";
+                };
+                onMounted(() => {
+                    servers.value.forEach((server) => {
+                        // 初始化数据
+                    });
+                });
+                const editServer = (server) => {
+                    insertTmpServer(server)
+                    showEditServerModal.value = true;
+                };
+                const saveServerEdit = () => {
+                    const index = servers.value.findIndex(
+                        (s) => s.id === tmpServer.value.id,
+                    );
+                    if (index !== -1) {
+                        servers.value[index] = {
+                            ...servers.value[index],
+                            ...tmpServer.value,
+                        };
+                    }
+                    showEditServerModal.value = false;
+                    clearTmpServer();
+                    showNotification("服务器信息已更新");
+                };
+                const addTag = () => {
+                    if (!newTagInput.value) return;
+                    if (!tmpServer.tags.includes(newTagInput.value)) {
+                        tmpServer.tags.push(newTagInput.value);
+                        if (!availableTags.value.includes(newTagInput.value)) {
+                            availableTags.value.push(newTagInput.value);
+                        }
+                    }
+                    newTagInput.value = "";
+                };
+                const removeTag = (tag) => {
+                    tmpServer.tags = tmpServer.tags.filter((t) => t !== tag);
+                };
+                const selectTag = (tag) => {
+                    if (!tmpServer.tags.includes(tag)) {
+                        tmpServer.tags.push(tag);
+                    }
+                    newTagInput.value = "";
+                };
+                const addEditingServerTag = () => {
+                    if (!newTagInput.value) return;
+                    if (!tmpServer.value.tags.includes(newTagInput.value)) {
+                        tmpServer.value.tags.push(newTagInput.value);
+                        if (!availableTags.value.includes(newTagInput.value)) {
+                            availableTags.value.push(newTagInput.value);
+                        }
+                    }
+                    newTagInput.value = "";
+                };
+                const selectEditingServerTag = (tag) => {
+                    if (!tmpServer.value.tags.includes(tag)) {
+                        tmpServer.value.tags.push(tag);
+                    }
+                    newTagInput.value = "";
+                };
+                const confirmDeleteServer = (server) => {
+                    serverToDelete.value = server;
+                    showDeleteConfirmModal.value = true;
+                };
+                const closeDeleteConfirmModal = () => {
+                    console.log("showDeleteConfirmModal--->", showDeleteConfirmModal);
+                    showDeleteConfirmModal.value = false;
+                };
+                const deleteServer = () => {
+                    const index = servers.value.findIndex(
+                        (s) => s.id === serverToDelete.value.id,
+                    );
+                    if (index !== -1) {
+                        servers.value.splice(index, 1);
+                    }
+                    showDeleteConfirmModal.value = false;
+                    serverToDelete.value = null;
+                    showNotification("服务器已删除");
+                };
+                return {
+                    servers,
+                    searchQuery,
+                    showFilterDropdown,
+                    filters,
+                    scriptContent,
+                    showAddServerModal,
+                    showLogDetailsModal,
+                    showEditServerModal,
+                    showDeleteConfirmModal,
+                    selectedLogServer,
+                    serverToDelete,
+                    tmpServer,
+                    newTagInput,
+                    availableTags,
+                    filteredServers,
+                    selectedServers,
+                    selectedServer,
+                    toggleFilterDropdown,
+                    executeScript,
+                    addServer,
+                    showLogDetails,
+                    editServer,
+                    saveServerEdit,
+                    addServerTag,
+                    addTag,
+                    removeTag,
+                    selectTag,
+                    addEditingServerTag,
+                    confirmDeleteServer,
+                    closeDeleteConfirmModal,
+                    deleteServer,
+                    initWs,
+                    cancelExecution,
+                };
+            },
+        }).mount("#app");
+    </script>
+</body>
+
+</html>
