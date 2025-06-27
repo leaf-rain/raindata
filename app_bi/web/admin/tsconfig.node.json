@@ -6,7 +6,6 @@
     "cypress.config.*",
     "nightwatch.conf.*",
     "playwright.config.*",
-    "src/**/*", "typings/**/*", "./**/*.ts", "./**/*.tsx", "./**/*.vue"
   ],
   "compilerOptions": {
     "composite": true,
