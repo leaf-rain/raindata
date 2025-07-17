@@ -1,14 +1,14 @@
 package data
 
 import (
-	"admin/internal/conf"
+	"github.com/leaf-rain/raindata/admin/internal/conf"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 )
 
 // ProviderSet is data providers.
-var ProviderSet = wire.NewSet(NewData, NewGreeterRepo)
+var ProviderSet = wire.NewSet(NewData, NewAuthRepo)
 
 // Data .
 type Data struct {

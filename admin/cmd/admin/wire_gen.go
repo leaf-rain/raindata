@@ -7,11 +7,11 @@
 package main
 
 import (
-	"admin/internal/biz"
-	"admin/internal/conf"
-	"admin/internal/data"
-	"admin/internal/server"
-	"admin/internal/service"
+	"github.com/leaf-rain/raindata/admin/internal/biz"
+	"github.com/leaf-rain/raindata/admin/internal/conf"
+	"github.com/leaf-rain/raindata/admin/internal/data"
+	"github.com/leaf-rain/raindata/admin/internal/server"
+	"github.com/leaf-rain/raindata/admin/internal/service"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -28,11 +28,11 @@ func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 	if err != nil {
 		return nil, nil, err
 	}
-	greeterRepo := data.NewGreeterRepo(dataData, logger)
-	greeterUsecase := biz.NewGreeterUsecase(greeterRepo, logger)
-	greeterService := service.NewGreeterService(greeterUsecase)
-	grpcServer := server.NewGRPCServer(confServer, greeterService, logger)
-	httpServer := server.NewHTTPServer(confServer, greeterService, logger)
+	authRepoI := data.NewAuthRepo(dataData)
+	authBiz := biz.NewAuthBiz(confData, authRepoI, logger)
+	authService := service.NewAuthService(logger, confData, authBiz)
+	grpcServer := server.NewGRPCServer(confServer, authService, logger)
+	httpServer := server.NewHTTPServer(confServer, authBiz, authService, logger)
 	app := newApp(logger, grpcServer, httpServer)
 	return app, func() {
 		cleanup()

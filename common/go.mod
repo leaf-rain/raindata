@@ -13,6 +13,7 @@ require (
 	github.com/go-kratos/kratos/v2 v2.8.3
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-sql-driver/mysql v1.8.1
+	github.com/golang-jwt/jwt/v5 v5.1.0
 	github.com/hashicorp/hcl v1.0.0
 	github.com/larksuite/oapi-sdk-go/v3 v3.4.9
 	github.com/leaf-rain/fastjson v1.0.0

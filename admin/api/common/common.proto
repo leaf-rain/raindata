@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package common;
+
+option go_package = "github.com/leaf-rain/raindata/admin/api/common;common";
+
+message HttpReplyCommon {
+  int64  code = 1;
+  string msg = 2;
+}
+
+// 通用请求头
+message BaseHead {
+  int64  userid = 1; // 用户ID
+  int32  appid = 2; // 游戏ID
+  int32  channel = 3; // 渠道ID
+  string version = 4; // 版本号
+  string region = 5; // 区域
+  string ext = 6; // 扩展字段(json)
+  USER_TYPE userType = 8; // 用户类型
+  SEX_TYPE gender = 9;    // 性别
+}
+
+// 用户类型  主播类型：2、3、4、35、36
+enum USER_TYPE {
+  UT_SUPERADMIN = 0;//  超级管理员
+  UT_NORMAL = 1;    //  普通用户
+}
+
+// 性别类型
+enum SEX_TYPE {
+  ST_WOMAN = 0; // 女性
+  ST_MAN = 1; // 男性
+  ST_OTHER = 2; // 不区分性别
+}

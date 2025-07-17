@@ -1,9 +1,9 @@
 package server
 
 import (
-	v1 "admin/api/admin/v1"
-	"admin/internal/conf"
-	"admin/internal/service"
+	v1 "github.com/leaf-rain/raindata/admin/api/admin/v1"
+	"github.com/leaf-rain/raindata/admin/internal/conf"
+	"github.com/leaf-rain/raindata/admin/internal/service"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
@@ -11,7 +11,10 @@ import (
 )
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Server, greeter *service.GreeterService, logger log.Logger) *grpc.Server {
+func NewGRPCServer(
+	c *conf.Server,
+	auth *service.AuthService,
+	logger log.Logger) *grpc.Server {
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
 			recovery.Recovery(),
@@ -27,6 +30,6 @@ func NewGRPCServer(c *conf.Server, greeter *service.GreeterService, logger log.L
 		opts = append(opts, grpc.Timeout(c.Grpc.Timeout.AsDuration()))
 	}
 	srv := grpc.NewServer(opts...)
-	v1.RegisterGreeterServer(srv, greeter)
+	v1.RegisterAuthServer(srv, auth)
 	return srv
 }

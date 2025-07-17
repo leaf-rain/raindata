@@ -6,11 +6,11 @@
 package main
 
 import (
-	"admin/internal/biz"
-	"admin/internal/conf"
-	"admin/internal/data"
-	"admin/internal/server"
-	"admin/internal/service"
+	"github.com/leaf-rain/raindata/admin/internal/biz"
+	"github.com/leaf-rain/raindata/admin/internal/conf"
+	"github.com/leaf-rain/raindata/admin/internal/data"
+	"github.com/leaf-rain/raindata/admin/internal/server"
+	"github.com/leaf-rain/raindata/admin/internal/service"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
