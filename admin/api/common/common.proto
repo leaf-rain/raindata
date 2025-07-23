@@ -12,8 +12,8 @@ message HttpReplyCommon {
 // 通用请求头
 message BaseHead {
   int64  userid = 1; // 用户ID
-  int32  appid = 2; // 游戏ID
-  int32  channel = 3; // 渠道ID
+  string appid = 2; // 游戏ID
+  string channel = 3; // 渠道ID
   string version = 4; // 版本号
   string region = 5; // 区域
   string ext = 6; // 扩展字段(json)

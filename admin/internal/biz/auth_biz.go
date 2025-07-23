@@ -2,6 +2,7 @@ package biz
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -10,11 +11,9 @@ import (
 	v1 "github.com/leaf-rain/raindata/admin/api/admin/v1"
 	"github.com/leaf-rain/raindata/admin/api/common"
 	"github.com/leaf-rain/raindata/admin/internal/conf"
+	"github.com/leaf-rain/raindata/common/str"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"reflect"
-	"strconv"
 	"time"
 )
 
@@ -25,7 +24,6 @@ var (
 
 type IProto interface {
 	GetHead() *common.BaseHead
-	ProtoReflect() protoreflect.Message
 }
 
 type Auth struct {
@@ -79,19 +77,34 @@ func (biz AuthBiz) AuthUser(handler middleware.Handler) middleware.Handler {
 			if !ok {
 				return nil, status.Error(codes.InvalidArgument, "argument error")
 			}
+			uid := str.Str2Int64(su.AuthorityId)
 			head := proto.GetHead()
-			if head == nil {
-				//反射方式实现
-				val := reflect.ValueOf(req).Elem().FieldByName("Head")
-				if val.Type().Kind() == reflect.Ptr && val.IsNil() {
-					elemType := val.Type().Elem()
-					newVal := reflect.New(elemType)
-					val.Set(newVal)
-				}
-				head = proto.GetHead()
+			//	//反射方式实现 反射还是觉得有点浪费性能，后续打算封装方法从ctx中获取head吧
+			//if head == nil {
+			//	val := reflect.ValueOf(req).Elem().FieldByName("Head")
+			//	if val.Type().Kind() == reflect.Ptr && val.IsNil() {
+			//		elemType := val.Type().Elem()
+			//		newVal := reflect.New(elemType)
+			//		val.Set(newVal)
+			//	}
+			//	head = proto.GetHead()
+			//}
+			if head != nil {
+				head.Userid = uid
 			}
-			head.Userid, _ = strconv.ParseInt(su.AuthorityId, 10, 64)
 			ctx = context.WithValue(ctx, "auth_user", su)
+			// 从param获取用户信息
+			h := header.RequestHeader()
+			var bh = &common.BaseHead{}
+			bh.Userid = uid
+			bh.Appid = h.Get("appid")
+			bh.Channel = h.Get("channel")
+			bh.Version = h.Get("version")
+			bh.Region = h.Get("region")
+			bh.Ext = h.Get("ext")
+			bh.UserType = common.USER_TYPE(str.Str2Int64(h.Get("userType")))
+			bh.Gender = common.SEX_TYPE(str.Str2Int64(h.Get("gender")))
+			ctx = context.WithValue(ctx, "head", bh)
 		}
 		var now = time.Now()
 		reply, err := handler(ctx, req)
@@ -100,13 +113,16 @@ func (biz AuthBiz) AuthUser(handler middleware.Handler) middleware.Handler {
 	}
 }
 
-func SetHead(proto IProto) {
-	newVal := &common.BaseHead{} // 注意这里改为指针类型
-	reflectMst := proto.ProtoReflect()
-	fd := reflectMst.Descriptor().Fields().ByName("Head")
-	if fd != nil && reflectMst.Get(fd).IsValid() {
-		reflectMst.Set(fd, protoreflect.ValueOfMessage(newVal.ProtoReflect()))
+func GetHead(ctx context.Context, proto IProto) *common.BaseHead {
+	head := proto.GetHead()
+	if head != nil {
+		return head
 	}
+	su := ctx.Value("head")
+	if su != nil {
+		return su.(*common.BaseHead)
+	}
+	return nil
 }
 
 func (biz AuthBiz) Login(ctx context.Context, req *v1.LoginReq) (*v1.User, error) {
@@ -124,7 +140,11 @@ func (biz AuthBiz) Logout(ctx context.Context, req *v1.LogoutReq) (*v1.LogoutRep
 }
 
 func (biz AuthBiz) GetPermissions(ctx context.Context, req *v1.PermissionsReq) (*v1.PermissionsReply, error) {
-	return nil, status.Error(codes.Unimplemented, "测试错误")
+	rsp := new(v1.PermissionsReply)
+	head := GetHead(ctx, req)
+	js, _ := json.Marshal(head)
+	rsp.Permissions = []string{string(js)}
+	return rsp, nil
 }
 
 func (biz AuthBiz) GetPublicContent(ctx context.Context, req *v1.PublicContentReq) (*v1.PublicContentReply, error) {

@@ -152,11 +152,9 @@ components:
                 userid:
                     type: string
                 appid:
-                    type: integer
-                    format: int32
+                    type: string
                 channel:
-                    type: integer
-                    format: int32
+                    type: string
                 version:
                     type: string
                 region:

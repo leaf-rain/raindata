@@ -64,7 +64,7 @@ func Add(str ...string) string {
 }
 
 func GetDataByInterface(field string, data map[string]interface{}) string {
-	i, ok := data["authorityId"]
+	i, ok := data[field]
 	if !ok {
 		return ""
 	}

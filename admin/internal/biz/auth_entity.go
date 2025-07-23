@@ -6,7 +6,9 @@ import (
 	"github.com/go-kratos/kratos/v2/transport"
 	jwtv5 "github.com/golang-jwt/jwt/v5"
 	"github.com/leaf-rain/raindata/common/str"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type AuthUser struct {
@@ -70,7 +72,7 @@ func (su *AuthUser) CreateAccessJwtToken(secretKey []byte) string {
 	claims := jwtv5.NewWithClaims(jwtv5.SigningMethodHS256,
 		jwtv5.MapClaims{
 			"AuthorityId": su.AuthorityId,
-			"IssTime":     su.IssTime,
+			"IssTime":     strconv.FormatInt(time.Now().Unix(), 10),
 		})
 	signedToken, err := claims.SignedString(secretKey)
 	if err != nil {
