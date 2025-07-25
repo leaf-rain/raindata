@@ -3,30 +3,23 @@ package rredis
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
+	"github.com/google/wire"
 	"time"
 )
+
+var ProviderSet = wire.NewSet(NewRedis)
 
 type Client struct {
 	redis.Cmdable
 }
 
-type Config struct {
-	PoolSize     int      `yaml:"PoolSize"`
-	Addr         []string `yaml:"Addr"`
-	Pwd          string   `yaml:"Pwd"`
-	DialTimeout  int64    `yaml:"DialTimeout"`
-	ReadTimeout  int64    `yaml:"ReadTimeout"`
-	WriteTimeout int64    `yaml:"WriteTimeout"`
-	DB           int      `yaml:"DB"`
-}
-
-func NewRedis(o Config, ctx context.Context) (client *Client, err error) {
+func NewRedis(o *RedisCfg, ctx context.Context) (client *Client, err error) {
 	var redisCli redis.Cmdable
 	if len(o.Addr) > 1 {
 		redisCli = redis.NewClusterClient(
 			&redis.ClusterOptions{
 				Addrs:        o.Addr,
-				PoolSize:     o.PoolSize,
+				PoolSize:     int(o.PoolSize),
 				DialTimeout:  time.Second * time.Duration(o.DialTimeout),
 				ReadTimeout:  time.Second * time.Duration(o.ReadTimeout),
 				WriteTimeout: time.Second * time.Duration(o.WriteTimeout),
@@ -41,14 +34,14 @@ func NewRedis(o Config, ctx context.Context) (client *Client, err error) {
 				ReadTimeout:  time.Second * time.Duration(o.ReadTimeout),
 				WriteTimeout: time.Second * time.Duration(o.WriteTimeout),
 				Password:     o.Pwd,
-				PoolSize:     o.PoolSize,
-				DB:           o.DB,
+				PoolSize:     int(o.PoolSize),
+				DB:           int(o.DB),
 			},
 		)
 	}
 	err = redisCli.Ping(ctx).Err()
 	if nil != err {
-		panic(err)
+		return nil, err
 	}
 
 	client = new(Client)

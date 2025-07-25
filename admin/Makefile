@@ -30,6 +30,7 @@ init:
 config:
 	protoc --proto_path=./internal \
 	       --proto_path=./third_party \
+	       --proto_path=../common \
  	       --go_out=paths=source_relative:./internal \
 	       $(INTERNAL_PROTO_FILES)
 

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package rredis;
+
+option go_package = "github.com/leaf-rain/raindata/common/rredis;rredis";
+
+message RedisCfg {
+  uint64 PoolSize = 1;
+  repeated string Addr = 2;
+  string Pwd = 3;
+  int64 DialTimeout = 4;
+  int64 ReadTimeout = 5;
+  int64 WriteTimeout = 6;
+  int64 DB = 7;
+}

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/go-kratos/kratos/v2/middleware/logging"
 	v1 "github.com/leaf-rain/raindata/admin/api/admin/v1"
 	"github.com/leaf-rain/raindata/admin/internal/conf"
 	"github.com/leaf-rain/raindata/admin/internal/service"
@@ -18,6 +19,7 @@ func NewGRPCServer(
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
 			recovery.Recovery(),
+			logging.Server(logger),
 		),
 	}
 	if c.Grpc.Network != "" {

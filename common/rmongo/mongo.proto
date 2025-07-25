@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package rmongo;
+
+option go_package = "github.com/leaf-rain/raindata/common/rmongo;rmongo";
+
+message MongoCfg {
+  string Url = 1;
+  string Db = 2;
+  uint64 MaxPoolSize = 3;
+  uint64 MinPoolSize = 4;
+  uint64 MaxIdleTimeMS = 5;
+  int64 ConnectTimeoutMS = 7;
+}
